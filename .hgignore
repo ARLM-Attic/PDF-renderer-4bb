@@ -1,0 +1,12 @@
+#ignore file for Eclipse
+
+# use glob syntax
+syntax: glob
+
+# ignore files
+.locale_interfaces
+.preprocessed
+.settings
+bin
+deliverables
+doc
