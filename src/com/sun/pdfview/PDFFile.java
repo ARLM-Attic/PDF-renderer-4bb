@@ -25,7 +25,19 @@ package com.sun.pdfview;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
+
+import com.sun.pdfview.decrypt.EncryptionUnsupportedByPlatformException;
+import com.sun.pdfview.decrypt.EncryptionUnsupportedByProductException;
+import com.sun.pdfview.decrypt.IdentityDecrypter;
+import com.sun.pdfview.decrypt.PDFAuthenticationFailureException;
+import com.sun.pdfview.decrypt.PDFDecrypter;
+import com.sun.pdfview.decrypt.PDFDecrypterFactory;
+import com.sun.pdfview.decrypt.PDFPassword;
+
+import net.rim.device.api.ui.XYRect;
+import net.rim.device.api.util.EmptyEnumeration;
 
 /**
  * An encapsulation of a .pdf file.  The methods of this class
@@ -205,7 +217,7 @@ public class PDFFile
         }
         else
         {
-            return new Vector().elements();
+            return new EmptyEnumeration();
         }
     }
 
@@ -530,5 +542,1228 @@ public class PDFFile
         return versionString;
     }
     
-    //TODO
+    /**
+     * read an entire &lt;&lt; dictionary &gt;&gt;.  The initial
+     * &lt;&lt; has already been read.
+     * @param objNum the object number of the object containing the dictionary
+     *  being read; negative only if the object number is unavailable, which
+     *  should only happen if we're reading a dictionary placed directly
+     *  in the trailer
+     * @param objGen the object generation of the object containing the object
+     *  being read; negative only if the objNum is unavailable
+     * @param decrypter the decrypter to use
+     * @return the Dictionary as a PDFObject.
+     */
+    private PDFObject readDictionary(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    {
+    	Hashtable hm = new Hashtable();
+        // we've already read the <<.  Now get /Name obj pairs until >>
+        PDFObject name;
+        while ((name = readObject(objNum, objGen, decrypter)) != null)
+        {
+            // make sure first item is a NAME
+            if (name.getType() != PDFObject.NAME)
+            {
+                throw new PDFParseException("First item in dictionary must be a /Name.  (Was " + name + ")");
+            }
+            PDFObject value= readObject(objNum, objGen, decrypter);
+            if (value != null)
+            {
+                hm.put(name.getStringValue(), value);
+            }
+        }
+        //	System.out.println("End of dictionary at location "+raf.getFilePointer());
+        if (!nextItemIs(">>"))
+        {
+            throw new PDFParseException("End of dictionary wasn't '>>'");
+        }
+        //	System.out.println("Dictionary closed at location "+raf.getFilePointer());
+        return new PDFObject(this, PDFObject.DICTIONARY, hm);
+    }
+    
+    /**
+     * read a character, and return its value as if it were a hexidecimal
+     * digit.
+     * @return a number between 0 and 15 whose value matches the next
+     * hexidecimal character.  Returns -1 if the next character isn't in
+     * [0-9a-fA-F]
+     */
+    private int readHexDigit() throws IOException
+    {
+        int a;
+        while (isWhiteSpace(a = buf.get()));
+        switch (a)
+        {
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                a -= '0';
+                break;
+            case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+                a -= 'a' - 10;
+                break;
+            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+                a -= 'A' - 10;
+                break;
+            default:
+                a = -1;
+                break;
+        }
+        return a;
+    }
+
+    /**
+     * return the 8-bit value represented by the next two hex characters.
+     * If the next two characters don't represent a hex value, return -1
+     * and reset the read head.  If there is only one hex character,
+     * return its value as if there were an implicit 0 after it.
+     */
+    private int readHexPair() throws IOException
+    {
+        int first = readHexDigit();
+        if (first < 0)
+        {
+            buf.position(buf.position() - 1);
+            return -1;
+        }
+        int second = readHexDigit();
+        if (second < 0)
+        {
+            buf.position(buf.position() - 1);
+            return (first << 4);
+        }
+        else
+        {
+            return (first << 4) + second;
+        }
+    }
+
+    /**
+     * read a < hex string >.  The initial < has already been read.
+     * @param objNum the object number of the object containing the dictionary
+     *  being read; negative only if the object number is unavailable, which
+     *  should only happen if we're reading a string placed directly
+     *  in the trailer
+     * @param objGen the object generation of the object containing the object
+     *  being read; negative only if the objNum is unavailable
+     * @param decrypter the decrypter to use
+     */
+    private PDFObject readHexString(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    {
+        // we've already read the <. Now get the hex bytes until >
+        int val;
+        StringBuffer sb = new StringBuffer();
+        while ((val = readHexPair()) >= 0)
+        {
+            sb.append((char)val);
+        }
+        if (buf.get() != '>')
+        {
+            throw new PDFParseException("Bad character in Hex String");
+        }
+        String unicodeString = unicode(sb.toString());
+        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, unicodeString));
+    }
+    
+    /**
+     * take a string and determine if it is unicode by looking at the lead
+     * characters, and that the string must be a multiple of 2 chars long.
+     * Convert a unicoded string's characters into the true unicode.
+     *
+     * @param input
+     * @return
+     */
+    private String unicode(String input)
+    {
+        // determine if we have unicode, if so, translate it
+        if (input.length() < 2 || (input.length() % 2) != 0)
+        {
+            return input;
+        }
+        int c0 = input.charAt(0) & 0xFF;
+        int c1 = input.charAt(1) & 0xFF;
+        if ((c0 == 0xFE && c1 == 0xFF) || (c0 == 0xFF && c1 == 0xFE))
+        {
+            // we have unicode
+            boolean bigEndian = (input.charAt(1) == 0xFFFF);
+            StringBuffer out = new StringBuffer();
+            for (int i = 2; i < input.length(); i += 2)
+            {
+                if (bigEndian)
+                {
+                    out.append((char)(((input.charAt(i + 1) & 0xFF) << 8) + (input.charAt(i) & 0xFF)));
+                }
+                else
+                {
+                    out.append((char)(((input.charAt(i) & 0xFF) << 8) + (input.charAt(i + 1) & 0xFF)));
+                }
+            }
+            return out.toString();
+        }
+        else
+        {
+            return input;
+        }
+    }
+    
+    /**
+     * <p>read a ( character string ).  The initial ( has already been read.
+     * Read until a *balanced* ) appears.</p>
+     *
+     * <p>PDF Reference Section 3.8.1, Table 3.31 "PDF Data Types" defines
+     * String data as:<pre>
+     * "text string     Bytes that represent characters encoded
+     *                  using either PDFDocEncoding or UTF-16BE with a
+     *                  leading byte-order marker (as defined in
+     *                  "Text String Type" on page 158.)
+     * </pre></p>
+     *
+     * <p>Section 5.3.2 defines character sequences and escapes.<br>
+     * "The strings must conform to the syntax for string objects.
+     * When a string is written by enclosing the data in parentheses,
+     * bytes whose values are the same as those of the ASCII characters
+     * left parenthesis (40), right parenthesis (41), and backslash (92)
+     * must be preceded by a backslash character. All other byte values
+     * between 0 and 255 may be used in a string object. <br>
+     * These rules apply to each individual byte in a string object,
+     * whether the string is interpreted by the text-showing operators
+     * as single-byte or multiple-byte character codes."</p>
+     *
+     * <p>This only reads 8 bit basic 'strings' so as to avoid a text string
+     * interpretation when one is not desired (e.g., for byte strings).
+     * For a text string interpretation of a string, use
+     * {@link PDFStringUtil#asTextString} ()} or
+     * {@link PDFObject#getTextStringValue()} </p>
+
+     * @param objNum the object number of the object containing the dictionary
+     *  being read; negative only if the object number is unavailable, which
+     *  should only happen if we're reading a dictionary placed directly
+     *  in the trailer
+     * @param objGen the object generation of the object containing the object
+     *  being read; negative only if the objNum is unavailable
+     * @param decrypter the decrypter to use
+     */
+    private PDFObject readLiteralString(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    {
+        int c;
+
+        // we've already read the (.  now get the characters until a
+        // *balanced* ) appears.  Translate \r \n \t \b \f \( \) \\ \ddd
+        // if a cr/lf follows a backslash, ignore the cr/lf
+        int parencount = 1;
+        StringBuffer sb = new StringBuffer();
+
+        while (parencount > 0)
+        {
+            c = buf.get() & 0xFF;
+            // process unescaped parenthesis
+            if (c == '(')
+            {
+                parencount++;
+            }
+            else if (c == ')')
+            {
+                parencount--;
+                if (parencount == 0)
+                {
+                    c = -1;
+                    break;
+                }
+            }
+            else if (c == '\\')
+            {
+                // time to do some work
+                c = buf.get() & 0xFF;
+                if (c >= '0' && c <= '9')
+                {
+                    // \ddd form - three OCTAL digits
+                    int count = 0;
+                    int val = 0;
+                    while (c >= '0' && c <= '8' && count < 3)
+                    {
+                        val = val * 8 + c - '0';
+                        c = buf.get() & 0xFF;
+                        count++;
+                    }
+                    buf.position(buf.position() - 1);
+                    c = val;
+                }
+                else if (c == 'r')
+                {
+                    c = '\n';   // translate to 0Ah
+                }
+                else if (c == 'n')
+                {
+                    c = '\n';
+                }
+                else if (c == 't')
+                {
+                    c = '\t';
+                }
+                else if (c == 'b')
+                {
+                    c = '\b';
+                }
+                else if (c == 'f')
+                {
+                    c = '\f';
+                }
+                else
+                {
+	                //  ignore escaped EOL
+	                if (c == '\r')
+	                {
+	                    // check for following \n
+	                    c = buf.get() & 0xFF;
+	                    if (c != '\n')
+	                    {
+	                        buf.position(buf.position() - 1);
+	                    }
+	                    c = -1;
+	                }
+	                else if (c == '\n')
+	                {
+	                    c = -1;
+	                }
+                }
+            }
+            if (c >= 0)
+            {
+                sb.append((char) c);
+            }
+        }
+        String unicodeString = unicode(sb.toString());
+        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, unicodeString));
+    }
+
+    /**
+     * Read a line of text.  This follows the semantics of readLine() in
+     * DataInput -- it reads character by character until a '/n' is
+     * encountered.  If a '/r' is encountered, it is discarded.
+     */
+    private String readLine()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        while (buf.remaining() > 0)
+        {
+            char c = (char) buf.get();
+
+            if (c == '\r')
+            {
+                if (buf.remaining() > 0)
+                {
+                    char n = (char) buf.get(buf.position());
+                    if (n == '\n')
+                    {
+                        buf.get();
+                    }
+                }
+                break;
+            }
+            else if (c == '\n')
+            {
+                break;
+            }
+
+            sb.append(c);
+        }
+
+        return sb.toString();
+    }
+    
+    /**
+     * read an [ array ].  The initial [ has already been read.  PDFObjects
+     * are read until ].
+     * @param objNum the object number of the object containing the dictionary
+     *  being read; negative only if the object number is unavailable, which
+     *  should only happen if we're reading an array placed directly
+     *  in the trailer
+     * @param objGen the object generation of the object containing the object
+     *  being read; negative only if the objNum is unavailable
+     * @param decrypter the decrypter to use
+     */
+    private PDFObject readArray(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    {
+        // we've already read the [.  Now read objects until ]
+        Vector ary = new Vector();
+        PDFObject obj;
+        while((obj = readObject(objNum, objGen, decrypter)) != null)
+        {
+            ary.addElement(obj);
+        }
+        if (buf.get() != ']')
+        {
+            throw new PDFParseException("Array should end with ']'");
+        }
+        PDFObject[] objlist = new PDFObject[ary.size()];
+        /*
+        for (int i = 0; i < objlist.length; i++)
+        {
+            objlist[i] = (PDFObject)ary.get(i);
+        }
+        */
+        ary.copyInto(objlist);
+        return new PDFObject(this, PDFObject.ARRAY, objlist);
+    }
+
+    /**
+     * read a /name.  The / has already been read.
+     */
+    private PDFObject readName() throws IOException
+    {
+        // we've already read the / that begins the name.
+        // all we have to check for is #hh hex notations.
+        StringBuffer sb = new StringBuffer();
+        int c;
+        while (isRegularCharacter(c = buf.get()))
+        {
+            if (c < '!' && c > '~')
+            {
+                break;      // out-of-range, should have been hex
+            }
+            // H.3.2.4 indicates version 1.1 did not do hex escapes
+            if (c == '#' && (majorVersion != 1 && minorVersion != 1))
+            {
+                int hex = readHexPair();
+                if (hex >= 0)
+                {
+                    c = hex;
+                }
+                else
+                {
+                    throw new PDFParseException("Bad #hex in /Name");
+                }
+            }
+            sb.append((char) c);
+        }
+        buf.position(buf.position() - 1);
+        return new PDFObject(this, PDFObject.NAME, sb.toString());
+    }
+    
+    /**
+     * read a number.  The initial digit or . or - is passed in as the
+     * argument.
+     */
+    private PDFObject readNumber(char start) throws IOException
+    {
+        // we've read the first digit (it's passed in as the argument)
+        boolean neg = start == '-';
+        boolean sawdot = start == '.';
+        double dotmult = sawdot ? 0.1 : 1;
+        double value = (start >= '0' && start <= '9') ? start - '0' : 0;
+        while (true)
+        {
+            int c = buf.get();
+            if (c == '.')
+            {
+                if (sawdot)
+                {
+                    throw new PDFParseException("Can't have two '.' in a number");
+                }
+                sawdot = true;
+                dotmult = 0.1;
+            }
+            else if (c >= '0' && c <= '9')
+            {
+                int val = c - '0';
+                if (sawdot)
+                {
+                    value += val * dotmult;
+                    dotmult *= 0.1;
+                }
+                else
+                {
+                    value = value * 10 + val;
+                }
+            }
+            else
+            {
+                buf.position(buf.position() - 1);
+                break;
+            }
+        }
+        if (neg)
+        {
+            value = -value;
+        }
+        return new PDFObject(this, PDFObject.NUMBER, new Double(value));
+    }
+
+    /**
+     * read a bare keyword.  The initial character is passed in as the
+     * argument.
+     */
+    private PDFObject readKeyword(char start) throws IOException
+    {
+        // we've read the first character (it's passed in as the argument)
+        StringBuffer sb = new StringBuffer(String.valueOf(start));
+        int c;
+        while (isRegularCharacter(c = buf.get()))
+        {
+            sb.append((char)c);
+        }
+        buf.position(buf.position() - 1);
+        return new PDFObject(this, PDFObject.KEYWORD, sb.toString());
+    }
+    
+    /**
+     * read an entire PDFObject.  The intro line, which looks something
+     * like "4 0 obj" has already been read.
+     * @param objNum the object number of the object being read, being
+     *  the first number in the intro line (4 in "4 0 obj")
+     * @param objGen the object generation of the object being read, being
+     *  the second number in the intro line (0 in "4 0 obj").
+     * @param decrypter the decrypter to use
+     */
+    private PDFObject readObjectDescription(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    {
+        // we've already read the 4 0 obj bit.  Next thing up is the object.
+        // object descriptions end with the keyword endobj
+        long debugpos = buf.position();
+        PDFObject obj= readObject(objNum, objGen, decrypter);
+        // see if it's a dictionary.  If so, this could be a stream.
+        PDFObject endkey= readObject(objNum, objGen, decrypter);
+        if (endkey.getType() != PDFObject.KEYWORD)
+        {
+            throw new PDFParseException("Expected 'stream' or 'endobj'");
+        }
+        if (obj.getType() == PDFObject.DICTIONARY && endkey.getStringValue().equals("stream"))
+        {
+            // skip until we see \n
+            readLine();
+            ByteBuffer data = readStream(obj);
+            if (data == null)
+            {
+                data = ByteBuffer.allocateDirect(0);
+            }
+            obj.setStream(data);
+            endkey= readObject(objNum, objGen, decrypter);
+        }
+        // at this point, obj is the object, keyword should be "endobj"
+        String endcheck = endkey.getStringValue();
+        if (endcheck == null || !endcheck.equals("endobj"))
+        {
+            System.out.println("WARNING: object at " + debugpos + " didn't end with 'endobj'");
+            //throw new PDFParseException("Object musst end with 'endobj'");
+        }
+        obj.setObjectId(objNum, objGen);
+        return obj;
+    }
+    
+    /**
+     * read the stream portion of a PDFObject.  Calls decodeStream to
+     * un-filter the stream as necessary.
+     *
+     * @param dict the dictionary associated with this stream.
+     * @return a ByteBuffer with the encoded stream data
+     */
+    private ByteBuffer readStream(PDFObject dict) throws IOException
+    {
+        // pointer is at the start of a stream.  read the stream and
+        // decode, based on the entries in the dictionary
+        PDFObject lengthObj = dict.getDictRef("Length");
+        int length = -1;
+        if (lengthObj != null)
+        {
+            length = lengthObj.getIntValue();
+        }
+        if (length < 0)
+        {
+            throw new PDFParseException("Unknown length for stream");
+        }
+        
+        // slice the data
+        int start = buf.position();
+        ByteBuffer streamBuf = buf.slice();
+        streamBuf.limit(length);
+        
+        // move the current position to the end of the data
+        buf.position(buf.position() + length);
+        int ending = buf.position();
+        
+        if (!nextItemIs("endstream"))
+        {
+            System.out.println("read " + length + " chars from " + start + " to " + ending);
+            throw new PDFParseException("Stream ended inappropriately");
+        }
+        
+        return streamBuf;
+        // now decode stream
+        // return PDFDecoder.decodeStream(dict, streamBuf);
+    }
+    
+    /**
+     * read the cross reference table from a PDF file.  When this method
+     * is called, the file pointer must point to the start of the word
+     * "xref" in the file.  Reads the xref table and the trailer dictionary.
+     * If dictionary has a /Prev entry, move file pointer
+     * and read new trailer
+     * @param password
+     */
+    private void readTrailer(PDFPassword password) 
+    	throws IOException, PDFAuthenticationFailureException, EncryptionUnsupportedByProductException, EncryptionUnsupportedByPlatformException
+    {
+        // the table of xrefs
+        objIdx = new PDFXref[50];
+        
+        PDFDecrypter newDefaultDecrypter = null;
+        
+        // read a bunch of nested trailer tables
+        while (true)
+        {
+            // make sure we are looking at an xref table
+            if (!nextItemIs("xref"))
+            {
+                throw new PDFParseException("Expected 'xref' at start of table");
+            }
+            
+            // read a bunch of linked tabled
+            while (true)
+            {
+                // read until the word "trailer"
+            	PDFObject obj=readObject(-1, -1, IdentityDecrypter.getInstance());
+                if (obj.getType() == PDFObject.KEYWORD && obj.getStringValue().equals("trailer"))
+                {
+                    break;
+                }
+                
+                // read the starting position of the reference
+                if (obj.getType() != PDFObject.NUMBER)
+                {
+                    throw new PDFParseException("Expected number for first xref entry");
+                }
+                int refstart = obj.getIntValue();
+                
+                // read the size of the reference table
+                obj = readObject(-1, -1, IdentityDecrypter.getInstance());
+                if (obj.getType() != PDFObject.NUMBER)
+                {
+                    throw new PDFParseException("Expected number for length of xref table");
+                }
+                int reflen = obj.getIntValue();
+                
+                // skip a line
+                readLine();
+                
+                // extend the objIdx table, if necessary
+                if (refstart + reflen >= objIdx.length)
+                {
+                    PDFXref nobjIdx[] = new PDFXref[refstart + reflen];
+                    System.arraycopy(objIdx, 0, nobjIdx, 0, objIdx.length);
+                    objIdx = nobjIdx;
+                }
+                
+                // read reference lines
+                for (int refID = refstart; refID < refstart + reflen; refID++)
+                {
+                    // each reference line is 20 bytes long
+                    byte[] refline = new byte[20];
+                    buf.get(refline);
+
+                    // ignore this line if the object ID is already defined
+                    if (objIdx[refID] != null)
+                    {
+                        continue;
+                    }
+                    
+                    // see if it's an active object
+                    if (refline[17] == 'n')
+                    {
+                        objIdx[refID] = new PDFXref(refline);
+                    }
+                    else
+                    {
+                        objIdx[refID] = new PDFXref(null);
+                    }
+                }
+            }
+            
+            // at this point, the "trailer" word (not EOL) has been read.
+            PDFObject trailerdict = readObject(-1, -1, IdentityDecrypter.getInstance());
+            if (trailerdict.getType() != PDFObject.DICTIONARY)
+            {
+                throw new IOException("Expected dictionary after \"trailer\"");
+            }
+            
+            // read the root object location
+            if (root == null)
+            {
+                root = trailerdict.getDictRef("Root");
+                if (root != null)
+                {
+                    root.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+                }
+            }
+            
+            // read the encryption information
+            if (encrypt == null)
+            {
+                encrypt = trailerdict.getDictRef("Encrypt");
+                if (encrypt != null)
+                {
+                    encrypt.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+                }
+                newDefaultDecrypter = PDFDecrypterFactory.createDecryptor(encrypt, trailerdict.getDictRef("ID"), password);
+            }
+            
+            if (info == null)
+            {
+                info = trailerdict.getDictRef("Info");
+                if (info != null)
+                {
+                    if (!info.isIndirect())
+                    {
+                        throw new PDFParseException("Info in trailer must be an indirect reference");
+                    }
+                    info.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+                }
+            }
+            
+            // read the location of the previous xref table
+            PDFObject prevloc = trailerdict.getDictRef("Prev");
+            if (prevloc != null)
+            {
+                buf.position(prevloc.getIntValue());
+            }
+            else
+            {
+                break;
+            }
+            // see if we have an optional Version entry
+            
+            if (root.getDictRef("Version") != null)
+            {
+                processVersion(root.getDictRef("Version").getStringValue());
+            }
+        }
+        
+        // make sure we found a root
+        if (root == null)
+        {
+            throw new PDFParseException("No /Root key found in trailer dictionary");
+        }
+        
+        // check what permissions are relevant
+        if (encrypt != null)
+        {
+            PDFObject permissions = encrypt.getDictRef("P");
+            if (permissions != null && !newDefaultDecrypter.isOwnerAuthorised())
+            {
+                int perms= permissions != null ? permissions.getIntValue() : 0;
+                if (permissions!=null)
+                {
+                    printable = (perms & 4) != 0;
+                    saveable = (perms & 16) != 0;
+                }
+            }
+            // Install the new default decrypter only after the trailer has
+            // been read, as nothing we're reading passing through is encrypted
+            defaultDecrypter = newDefaultDecrypter;
+        }
+        
+        // dereference the root object
+        root.dereference();
+    }
+    
+    /**
+     * build the PDFFile reference table.  Nothing in the PDFFile actually
+     * gets parsed, despite the name of this function.  Things only get
+     * read and parsed when they're needed.
+     * @param password
+     */
+    private void parseFile(PDFPassword password) throws IOException
+    {
+        // start at the begining of the file
+        buf.rewind();
+        String versionLine = readLine();
+        if (versionLine.startsWith(VERSION_COMMENT))
+        {
+            processVersion(versionLine.substring(VERSION_COMMENT.length()));
+        }
+        buf.rewind();
+        
+        // back up about 32 characters from the end of the file to find
+        // startxref\n
+        byte[] scan = new byte[32];
+        int scanPos = buf.remaining() - scan.length;
+        int loc = 0;
+        
+        while (scanPos >= 0)
+        {
+            buf.position(scanPos);
+            buf.get(scan);
+            
+            // find startxref in scan
+            String scans = new String(scan);
+            loc = scans.indexOf("startxref");
+            if (loc > 0)
+            {
+                if (scanPos + loc + scan.length <= buf.limit())
+                {
+                    scanPos = scanPos + loc;
+                    loc = 0;
+                }
+                
+                break;
+            }
+            scanPos -= scan.length - 10;
+        }
+        
+        if (scanPos < 0)
+        {
+            throw new IOException("This may not be a PDF File");
+        }
+        
+        buf.position(scanPos);
+        buf.get(scan);
+        String scans = new String(scan);
+        
+        loc += 10;  // skip over "startxref" and first EOL char
+        if (scans.charAt(loc) < 32)
+        {
+            loc++;
+        }  // skip over possible 2nd EOL char
+        while (scans.charAt(loc) == 32)
+        {
+            loc++;
+        } // skip over possible leading blanks
+        // read number
+        int numstart = loc;
+        while (loc < scans.length() && scans.charAt(loc) >= '0' && scans.charAt(loc) <= '9') {
+            loc++;
+        }
+        int xrefpos = Integer.parseInt(scans.substring(numstart, loc));
+        buf.position(xrefpos);
+        
+        try
+        {
+            readTrailer(password);
+        }
+        catch (UnsupportedEncryptionException e)
+        {
+            throw new PDFParseException(e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Gets the outline tree as a tree of OutlineNode, which is a subclass
+     * of DefaultMutableTreeNode.  If there is no outline tree, this method
+     * returns null.
+     */
+    public OutlineNode getOutline() throws IOException
+    {
+        // find the outlines entry in the root object
+        PDFObject oroot = root.getDictRef("Outlines");
+        OutlineNode work = null;
+        OutlineNode outline = null;
+        if (oroot != null)
+        {
+            // find the first child of the outline root
+            PDFObject scan = oroot.getDictRef("First");
+            outline = work = new OutlineNode("<top>");
+            
+            // scan each sibling in turn
+            while (scan != null)
+            {
+                // add the new node with it's name
+                String title = scan.getDictRef("Title").getTextStringValue();
+                OutlineNode build = new OutlineNode(title);
+                work.add(build);
+                
+                // find the action
+                PDFAction action = null;
+                
+                PDFObject actionObj = scan.getDictRef("A");
+                if (actionObj != null)
+                {
+                    action = PDFAction.getAction(actionObj, getRoot());
+                }
+                else
+                {
+                    // try to create an action from a destination
+                    PDFObject destObj = scan.getDictRef("Dest");
+                    if (destObj != null)
+                    {
+                        try
+                        {
+                            PDFDestination dest = PDFDestination.getDestination(destObj, getRoot());
+                            
+                            action = new GoToAction(dest);
+                        }
+                        catch (IOException ioe)
+                        {
+                            // oh well
+                        }
+                    }
+                }
+                
+                // did we find an action?  If so, add it
+                if (action != null)
+                {
+                    build.setAction(action);
+                }
+                
+                // find the first child of this node
+                PDFObject kid = scan.getDictRef("First");
+                if (kid != null)
+                {
+                    work = build;
+                    scan = kid;
+                }
+                else
+                {
+                    // no child.  Process the next sibling
+                    PDFObject next = scan.getDictRef("Next");
+                    while (next == null)
+                    {
+                        scan = scan.getDictRef("Parent");
+                        next = scan.getDictRef("Next");
+                        work = (OutlineNode)work.getParent();
+                        if (work == null)
+                        {
+                            break;
+                        }
+                    }
+                    scan = next;
+                }
+            }
+        }
+        
+        return outline;
+    }
+    
+    /**
+     * Gets the page number (starting from 1) of the page represented by
+     * a particular PDFObject.  The PDFObject must be a Page dictionary or
+     * a destination description (or an action).
+     * @return a number between 1 and the number of pages indicating the
+     * page number, or 0 if the PDFObject is not in the page tree.
+     */
+    public int getPageNumber(PDFObject page) throws IOException
+    {
+        if (page.getType() == PDFObject.ARRAY)
+        {
+            page = page.getAt(0);
+        }
+        
+        // now we've got a page.  Make sure.
+        PDFObject typeObj = page.getDictRef("Type");
+        if (typeObj == null || !typeObj.getStringValue().equals("Page"))
+        {
+            return 0;
+        }
+        
+        int count = 0;
+        while (true)
+        {
+            PDFObject parent = page.getDictRef("Parent");
+            if (parent == null)
+            {
+                break;
+            }
+            PDFObject kids[] = parent.getDictRef("Kids").getArray();
+            for (int i = 0; i < kids.length; i++)
+            {
+                if (kids[i].equals(page))
+                {
+                    break;
+                }
+                else
+                {
+                    PDFObject kcount = kids[i].getDictRef("Count");
+                    if (kcount != null)
+                    {
+                        count += kcount.getIntValue();
+                    }
+                    else
+                    {
+                        count += 1;
+                    }
+                }
+            }
+            page = parent;
+        }
+        return count;
+    }
+    
+    /**
+     * Get the page commands for a given page in a separate thread.
+     *
+     * @param pagenum the number of the page to get commands for
+     */
+    public PDFPage getPage(int pagenum)
+    {
+        return getPage(pagenum, false);
+    }
+    
+    /**
+     * Get the page commands for a given page.
+     *
+     * @param pagenum the number of the page to get commands for
+     * @param wait if true, do not exit until the page is complete.
+     */
+    public PDFPage getPage(int pagenum, boolean wait)
+    {
+        Integer key = new Integer(pagenum);
+        Hashtable resources = null;
+        PDFObject pageObj = null;
+        boolean needread = false;
+        
+        PDFPage page = cache.getPage(key);
+        PDFParser parser = cache.getPageParser(key);
+        if (page == null)
+        {
+            try
+            {
+                // hunt down the page!
+                resources = new Hashtable();
+
+                PDFObject topPagesObj = root.getDictRef("Pages");
+                pageObj = findPage(topPagesObj, 0, pagenum, resources);
+
+                if (pageObj == null)
+                {
+                    return null;
+                }
+                
+                page = createPage(pagenum, pageObj);
+                
+                byte[] stream = getContents(pageObj);
+                parser = new PDFParser(page, stream, resources);
+                
+                cache.addPage(key, page, parser);
+            }
+            catch (IOException ioe)
+            {
+                System.out.println("GetPage inner loop:");
+                ioe.printStackTrace();
+                return null;
+            }
+        }
+        
+        if (parser != null && !parser.isFinished())
+        {
+            parser.go(wait);
+        }
+        
+        return page;
+    }
+    
+    /**
+     * Stop the rendering of a particular image on this page
+     */
+    public void stop(int pageNum)
+    {
+        PDFParser parser = cache.getPageParser(new Integer(pageNum));
+        if (parser != null)
+        {
+            // stop it
+            parser.stop();
+        }
+    }
+    
+    /**
+     * get the stream representing the content of a particular page.
+     *
+     * @param pageObj the page object to get the contents of
+     * @return a concatenation of any content streams for the requested
+     * page.
+     */
+    private byte[] getContents(PDFObject pageObj) throws IOException
+    {
+        // concatenate all the streams
+        PDFObject contentsObj = pageObj.getDictRef("Contents");
+        if (contentsObj == null)
+        {
+            throw new IOException("No page contents!");
+        }
+        
+        PDFObject contents[] = contentsObj.getArray();
+        
+        // see if we have only one stream (the easy case)
+        if (contents.length == 1)
+        {
+            return contents[0].getStream();
+        }
+        
+        // first get the total length of all the streams
+        int len = 0;
+        for (int i = 0; i < contents.length; i++)
+        {
+            byte[] data = contents[i].getStream();
+            if (data == null)
+            {
+                throw new PDFParseException("No stream on content " + i + ": " + contents[i]);
+            }
+            len += data.length;
+        }
+        
+        // now assemble them all into one object
+        byte[] stream = new byte[len];
+        len = 0;
+        for (int i = 0; i < contents.length; i++)
+        {
+            byte data[] = contents[i].getStream();
+            System.arraycopy(data, 0, stream, len, data.length);
+            len += data.length;
+        }
+        
+        return stream;
+    }
+
+    /**
+     * Create a PDF Page object by finding the relevant inherited
+     * properties
+     *
+     * @param pageObj the PDF object for the page to be created
+     */
+    private PDFPage createPage(int pagenum, PDFObject pageObj) throws IOException
+    {
+        int rotation = 0;
+        XYRectFloat mediabox = null; // second choice, if no crop
+        XYRectFloat cropbox = null;  // first choice
+        
+        PDFObject mediaboxObj = getInheritedValue(pageObj, "MediaBox");
+        if (mediaboxObj != null)
+        {
+            mediabox = parseRect(mediaboxObj);
+        }
+        
+        PDFObject cropboxObj = getInheritedValue(pageObj, "CropBox");
+        if (cropboxObj != null)
+        {
+            cropbox = parseRect(cropboxObj);
+        }
+        
+        PDFObject rotateObj = getInheritedValue(pageObj, "Rotate");
+        if (rotateObj != null)
+        {
+            rotation = rotateObj.getIntValue();
+        }
+        
+        XYRectFloat bbox = ((cropbox == null) ? mediabox : cropbox);
+        
+        return new PDFPage(pagenum, bbox, rotation, cache);
+    }
+    
+    /**
+     * Get the PDFObject representing the content of a particular page. Note
+     * that the number of the page need not have anything to do with the
+     * label on that page.  If there are two blank pages, and then roman
+     * numerals for the page number, then passing in 6 will get page (iv).
+     *
+     * @param pagedict the top of the pages tree
+     * @param start the page number of the first page in this dictionary
+     * @param getPage the number of the page to find; NOT the page's label.
+     * @param resources a HashMap that will be filled with any resource
+     *                  definitions encountered on the search for the page
+     */
+    private PDFObject findPage(PDFObject pagedict, int start, int getPage,  Hashtable resources) throws IOException
+    {
+        PDFObject rsrcObj = pagedict.getDictRef("Resources");
+        if (rsrcObj != null)
+        {
+        	PDFUtil.Hashtable_putAll(resources, rsrcObj.getDictionary());
+        }
+        
+        PDFObject typeObj = pagedict.getDictRef("Type");
+        if (typeObj != null && typeObj.getStringValue().equals("Page"))
+        {
+            // we found our page!
+            return pagedict;
+        }
+        
+        // find the first child for which (start + count) > getPage
+        PDFObject kidsObj = pagedict.getDictRef("Kids");
+        if (kidsObj != null)
+        {
+            PDFObject[] kids = kidsObj.getArray();
+            for (int i = 0; i < kids.length; i++)
+            {
+                int count = 1;
+                // BUG: some PDFs (T1Format.pdf) don't have the Type tag.
+                // use the Count tag to indicate a Pages dictionary instead.
+                PDFObject countItem = kids[i].getDictRef("Count");
+                //                if (kids[i].getDictRef("Type").getStringValue().equals("Pages")) {
+                if (countItem != null)
+                {
+                    count = countItem.getIntValue();
+                }
+                
+                if (start + count >= getPage)
+                {
+                    return findPage(kids[i], start, getPage, resources);
+                }
+                
+                start += count;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Find a property value in a page that may be inherited.  If the value
+     * is not defined in the page itself, follow the page's "parent" links
+     * until the value is found or the top of the tree is reached.
+     *
+     * @param pageObj the object representing the page
+     * @param propName the name of the property we are looking for
+     */
+    private PDFObject getInheritedValue(PDFObject pageObj, String propName) throws IOException
+    {
+        // see if we have the property
+        PDFObject propObj = pageObj.getDictRef(propName);
+        if (propObj != null)
+        {
+            return propObj;
+        }
+        
+        // recursively see if any of our parent have it
+        PDFObject parentObj = pageObj.getDictRef("Parent");
+        if (parentObj != null)
+        {
+            return getInheritedValue(parentObj, propName);
+        }
+        
+        // no luck
+        return null;
+    }
+    
+    /**
+     * get a Rectangle2D.Float representation for a PDFObject that is an
+     * array of four Numbers.
+     * @param obj a PDFObject that represents an Array of exactly four
+     * Numbers.
+     */
+    public XYRectFloat parseRect(PDFObject obj) throws IOException
+    {
+        if (obj.getType() == PDFObject.ARRAY)
+        {
+            PDFObject bounds[] = obj.getArray();
+            if (bounds.length == 4)
+            {
+                return new XYRectFloat(bounds[0].getFloatValue(), bounds[1].getFloatValue(), bounds[2].getFloatValue() - bounds[0].getFloatValue(), 
+                		bounds[3].getFloatValue() - bounds[1].getFloatValue());
+            }
+            else
+            {
+                throw new PDFParseException("Rectangle definition didn't have 4 elements");
+            }
+        }
+        else
+        {
+            throw new PDFParseException("Rectangle definition not an array");
+        }
+    }
+
+    /**
+     * Get the default decrypter for the document
+     * @return the default decrypter; never null, even for documents that
+     *  aren't encrypted
+     */
+    public PDFDecrypter getDefaultDecrypter()
+    {
+        return defaultDecrypter;
+    }
 }

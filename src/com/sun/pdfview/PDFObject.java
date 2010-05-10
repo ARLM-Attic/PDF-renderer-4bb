@@ -27,6 +27,11 @@ import java.nio.ByteBuffer; //Implement preprocessor so this can be ignored in l
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import net.rim.device.api.util.EmptyEnumeration;
+
+import com.sun.pdfview.decrypt.IdentityDecrypter;
+import com.sun.pdfview.decrypt.PDFDecrypter;
+
 /**
  * a class encapsulating all the possibilities of content for
  * an object in a PDF file.
@@ -573,11 +578,11 @@ public class PDFObject
         }
         
         // wrong type
-        return new Hashtable().keys();
+        return new EmptyEnumeration();
     }
     
     /**
-     * get the dictionary as a HashMap.  If this isn't a DICTIONARY
+     * get the dictionary as a Hashtable.  If this isn't a DICTIONARY
      * or a STREAM, returns null
      */
     public Hashtable getDictionary() throws IOException
@@ -659,16 +664,8 @@ public class PDFObject
      */
     public void setObjectId(int objNum, int objGen)
     {
-    	//Manual asserts
-    	if(objNum < OBJ_NUM_TRAILER)
-    	{
-    		throw new RuntimeException("Assert error: objNum >= OBJ_NUM_TRAILER");
-    	}
-    	if(objGen < OBJ_NUM_TRAILER)
-    	{
-    		throw new RuntimeException("Assert error: objGen >= OBJ_NUM_TRAILER");
-    	}
-    	
+    	PDFUtil.assert(objNum >= OBJ_NUM_TRAILER, "objNum >= OBJ_NUM_TRAILER");
+    	PDFUtil.assert(objGen >= OBJ_NUM_TRAILER, "objGen >= OBJ_NUM_TRAILER");
         this.objNum = objNum;
         this.objGen = objGen;
     }
