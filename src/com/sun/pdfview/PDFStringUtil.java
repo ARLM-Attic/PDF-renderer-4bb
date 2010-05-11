@@ -24,6 +24,9 @@ package com.sun.pdfview;
 
 import java.io.UnsupportedEncodingException;
 
+import com.sun.pdfview.helper.CharacterCodingException;
+import com.sun.pdfview.helper.PDFUtil;
+
 /**
  * <p> Utility methods for dealing with PDF Strings, such as:
  * <ul>
@@ -126,7 +129,7 @@ public class PDFStringUtil
 		// we can just grab array since we know that if charset completes
 		// without error then there's the output buffer will be exactly
 		// correct in size, since there's only ever 1 byte for one char.
-		return new PDFDocCharsetEncoder().encode(CharBuffer.wrap(string)).array();
+		return new PDFDocCharsetEncoder().encode(PDFUtil.wrapString(string)).array();
 	}
     
     /**

@@ -24,6 +24,8 @@ package com.sun.pdfview;
 
 import java.lang.ref.WeakReference;
 
+import com.sun.pdfview.helper.SoftReference;
+
 /**
  * a cross reference representing a line in the PDF cross referencing
  * table.

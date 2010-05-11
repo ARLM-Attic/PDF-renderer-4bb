@@ -25,7 +25,7 @@ package com.sun.pdfview.decrypt;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
 import com.sun.pdfview.PDFStringUtil;
-import com.sun.pdfview.PDFUtil;
+import com.sun.pdfview.helper.PDFUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

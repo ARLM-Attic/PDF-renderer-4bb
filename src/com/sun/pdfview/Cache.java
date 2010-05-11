@@ -24,6 +24,9 @@ package com.sun.pdfview;
 
 import java.util.Hashtable;
 
+import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.SoftReference;
+
 import net.rim.device.api.system.Bitmap;
 
 /**
@@ -217,7 +220,7 @@ public class Cache
         {
             String val = (ref.get() == null) ? " not in " : " in ";
             // System.out.println("Page " + pageNumber + val + "cache");
-            return (PageRecord) ref.get();
+            return (PageRecord)ref.get();
         }
         
         // System.out.println("Page " + pageNumber + " not in cache");
@@ -260,7 +263,7 @@ public class Cache
         rec.generator = renderer;
         
         // add it to the cache
-        pageRec.images.put(info, new SoftReference<Record>(rec));
+        pageRec.images.put(info, new SoftReference(rec));
         
         return rec;
     }
@@ -280,7 +283,7 @@ public class Cache
         PageRecord pageRec = getPageRecord(pageNumber);
         if (pageRec != null)
         {
-            SoftReference ref = pageRec.images.get(info);
+            SoftReference ref = (SoftReference)pageRec.images.get(info);
             if (ref != null)
             {
                 String val = (ref.get() == null) ? " not in " : " in ";

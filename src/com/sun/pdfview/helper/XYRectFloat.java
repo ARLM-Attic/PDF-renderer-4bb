@@ -3,9 +3,6 @@
  * Version: 1.0
  * Initial Creation: May 6, 2010 6:05:40 PM
  *
- * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
- * Santa Clara, California 95054, U.S.A. All rights reserved.
- *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -20,10 +17,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package com.sun.pdfview;
+package com.sun.pdfview.helper;
 
 /**
- * Simple rectangle like XYRect only it store floating point values.
+ * Simple rectangle like {@link net.rim.device.api.ui.XYRect XYRect} only it store floating point values.
  * @author Vincent Simonetti
  */
 public class XYRectFloat
@@ -60,5 +57,23 @@ public class XYRectFloat
 		this.y = y;
 		this.width = width;
 		this.height = height;
+	}
+	
+	/**
+	 * Returns a string representation of the object.
+	 * @return A string representation of the object.
+	 */
+	public String toString()
+	{
+		StringBuffer buffer = new StringBuffer("{X = ");
+		buffer.append(this.x);
+		buffer.append(", Y = ");
+		buffer.append(this.y);
+		buffer.append(", Width = ");
+		buffer.append(this.width);
+		buffer.append(", Height = ");
+		buffer.append(this.height);
+		buffer.append('}');
+		return buffer.toString();
 	}
 }

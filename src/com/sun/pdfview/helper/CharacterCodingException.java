@@ -1,3 +1,7 @@
+//#preprocessor
+
+//#ifndef NATIVE_CHARSET_ENCODER
+
 /*
  * File: CharacterCodingException.java
  * Version: 1.0
@@ -19,7 +23,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.sun.pdfview;
+package com.sun.pdfview.helper;
 
 import java.io.IOException;
 
@@ -36,3 +40,5 @@ public class CharacterCodingException extends IOException
 		super();
 	}
 }
+
+//#endif

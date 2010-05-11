@@ -31,6 +31,8 @@ import net.rim.device.api.util.EmptyEnumeration;
 
 import com.sun.pdfview.decrypt.IdentityDecrypter;
 import com.sun.pdfview.decrypt.PDFDecrypter;
+import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.SoftReference;
 
 /**
  * a class encapsulating all the possibilities of content for

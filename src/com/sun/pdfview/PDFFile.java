@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import com.sun.pdfview.action.PDFAction;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByPlatformException;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByProductException;
 import com.sun.pdfview.decrypt.IdentityDecrypter;
@@ -35,6 +36,9 @@ import com.sun.pdfview.decrypt.PDFAuthenticationFailureException;
 import com.sun.pdfview.decrypt.PDFDecrypter;
 import com.sun.pdfview.decrypt.PDFDecrypterFactory;
 import com.sun.pdfview.decrypt.PDFPassword;
+import com.sun.pdfview.decrypt.UnsupportedEncryptionException;
+import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.XYRectFloat;
 
 import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.EmptyEnumeration;
@@ -1341,7 +1345,7 @@ public class PDFFile
         }
         catch (UnsupportedEncryptionException e)
         {
-            throw new PDFParseException(e.getMessage(), e);
+            throw new PDFParseException(e.getMessage());
         }
     }
     

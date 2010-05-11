@@ -1,17 +1,14 @@
 TODO:
 PDFCmd.java
-PDFDocCharsetEncoder.java
 PDFImage.java
 PDFPage.java
-PDFPaint.java
+PDFPaint.java //Paint == Brush
 PDFParser.java
-PDFRenderer.java //Stroke == Pen, Paint == Brush, Graphics2D has setStroke but it is abstract so find where Graphics2D is actually set and find out what setStroke does
+PDFRenderer.java //Stroke == Pen, Graphics2D has setStroke but it is abstract so find where Graphics2D is actually set and find out what setStroke does
 PDFShapeCmd.java
-PDFTextFormat.java
 /colorspace
 /decode
 /font
-/function
 /pattern
 
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
@@ -20,4 +17,5 @@ Add preprocessors
 
 PREPROCESSORS:
 USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold)
-NATIVE_SOFTREFERENCE (If SoftReference ever gets added nativly this will ignore the built-in implementation).
+NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore the built-in implementation).
+NATIVE_CHARSET_ENCODER (If CharsetEncoder ever gets added natively this will ignore the built-in implementation).

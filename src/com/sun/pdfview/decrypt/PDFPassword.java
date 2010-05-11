@@ -25,11 +25,12 @@ package com.sun.pdfview.decrypt;
 import java.nio.ByteBuffer;
 import java.util.Vector;
 
-import com.sun.pdfview.CharacterCodingException;
-import com.sun.pdfview.CharsetEncoder;
 import com.sun.pdfview.Identity8BitCharsetEncoder;
+import com.sun.pdfview.PDFDocCharsetEncoder;
 import com.sun.pdfview.PDFStringUtil;
-import com.sun.pdfview.PDFUtil;
+import com.sun.pdfview.helper.CharacterCodingException;
+import com.sun.pdfview.helper.CharsetEncoder;
+import com.sun.pdfview.helper.PDFUtil;
 
 import net.rim.device.api.util.Arrays;
 

@@ -1,6 +1,6 @@
 /*
  * File: GoToAction.java
- * Version: TODO
+ * Version: 1.2
  * Initial Creation: May 8, 2010 11:14:18 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,

@@ -25,6 +25,8 @@ package com.sun.pdfview;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
+import com.sun.pdfview.helper.CharsetEncoder;
+
 /**
  * A {@link CharsetEncoder} that attempts to write out the lower 8 bits
  * of any character. Characters &gt;= 256 in value are regarded
