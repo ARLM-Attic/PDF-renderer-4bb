@@ -1,21 +1,30 @@
 TODO:
-PDFCmd.java
-PDFImage.java
-PDFPage.java
-PDFPaint.java //Paint == Brush
-PDFParser.java
-PDFRenderer.java //Stroke == Pen, Graphics2D has setStroke but it is abstract so find where Graphics2D is actually set and find out what setStroke does
-PDFShapeCmd.java
-/colorspace
-/decode
-/font
 /pattern
+PDFShapeCmd.java
+PDFImage.java
+PDFRenderer.java //Stroke == Pen, Graphics2D has setStroke but it is abstract so find where Graphics2D is actually set and find out what setStroke does
+PDFPage.java
+PDFParser.java
+/font
+
+Implement ICC_ColorSpace.java
+Implement ICC_Profile.java (intergrate ICC file format reading into this)
+Figure out Paint type (make sure it has "int getColor()" to get the main paint color, format 0x00RRGGBB)
+Create AffineTransform and replace in PDFTextFormat and PDFGraphics
+Get a Path (graphics) system implemented.
+Update PDFPaint, PDFRenderer with Path system
 
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
-
 Add preprocessors
+
+
 
 PREPROCESSORS:
 USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold)
 NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore the built-in implementation).
 NATIVE_CHARSET_ENCODER (If CharsetEncoder ever gets added natively this will ignore the built-in implementation).
+
+
+NOTES:
+-Way more helper classes then desired, of possible cut down on them, intergrate functionality, cross fingers and hope something similar comes out natively...
+-ICC color space is going to drive me up a wall, why do standards tell you everything but what you NEED to know?

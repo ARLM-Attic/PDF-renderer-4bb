@@ -128,6 +128,75 @@ public class PDFUtil
 		return buffer;
 	}
 	
+	/**
+	 * Create a BlackBerry compatible color.
+	 * @param r The red component on a 0 - 1 scale.
+	 * @param g The green component on a 0 - 1 scale.
+	 * @param b The blue component on a 0 - 1 scale.
+	 * @return The BlackBerry compatible color in 0x00RRGGBB format.
+	 */
+	public static int createColor(float r, float g, float b)
+	{
+		return createColor(0, r, g, b);
+	}
+	
+	/**
+	 * Create a BlackBerry compatible color.
+	 * @param a The alpha component on a 0 - 1 scale.
+	 * @param r The red component on a 0 - 1 scale.
+	 * @param g The green component on a 0 - 1 scale.
+	 * @param b The blue component on a 0 - 1 scale.
+	 * @return The BlackBerry compatible color in 0xAARRGGBB format.
+	 */
+	public static int createColor(float a, float r, float g, float b)
+	{
+		int ai = (int)(a * 255);
+		int ri = (int)(r * 255);
+		int gi = (int)(g * 255);
+		int bi = (int)(b * 255);
+		return (ai << 24) | (ri << 16) | (gi << 8) | bi;
+	}
+	
+	/**
+	 * Returns the red component in the range 0-255 in the default sRGB space.
+	 * @param color The color to use.
+	 * @return The red component.
+	 */
+	public static int Color_getRed(int color)
+	{
+		return (color >> 16) & 0xFF;
+	}
+	
+	/**
+	 * Returns the green component in the range 0-255 in the default sRGB space.
+	 * @param color The color to use.
+	 * @return The green component.
+	 */
+	public static int Color_getGreen(int color)
+	{
+		return (color >> 8) & 0xFF;
+	}
+	
+	/**
+	 * Returns the blue component in the range 0-255 in the default sRGB space.
+	 * @param color The color to use.
+	 * @return The blue component.
+	 */
+	public static int Color_getBlue(int color)
+	{
+		return color & 0xFF;
+	}
+	
+	/**
+	 * Returns the alpha component in the range 0-255 in the default sRGB space.
+	 * @param color The color to use.
+	 * @return The alpha component.
+	 */
+	public static int Color_getAlpha(int color)
+	{
+		return (color >> 24) & 0xFF;
+	}
+	
 	private static boolean eq(Object a, Object b)
 	{
 		return a == null ? b == null : a.equals(b);

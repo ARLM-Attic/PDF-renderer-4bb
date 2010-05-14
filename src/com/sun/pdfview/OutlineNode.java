@@ -22,10 +22,13 @@
  */
 package com.sun.pdfview;
 
+import java.util.Vector;
+
 import com.sun.pdfview.action.PDFAction;
+import com.sun.pdfview.helper.DefaultMutableTreeNode;
 
 //Originally this extended javax.swing.tree.DefaultMutableTreeNode but the only element used visually is toString which is used by default on BlackBerry as well.
-public class OutlineNode
+public class OutlineNode extends DefaultMutableTreeNode
 {
 	// the name of this node
     private String title;

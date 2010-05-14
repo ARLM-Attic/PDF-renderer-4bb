@@ -220,7 +220,7 @@ public class Cache
         {
             String val = (ref.get() == null) ? " not in " : " in ";
             // System.out.println("Page " + pageNumber + val + "cache");
-            return (PageRecord)ref.get();
+            return (PageRecord) ref.get();
         }
         
         // System.out.println("Page " + pageNumber + " not in cache");

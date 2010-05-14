@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import com.sun.pdfview.action.GoToAction;
 import com.sun.pdfview.action.PDFAction;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByPlatformException;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByProductException;
@@ -1521,10 +1522,10 @@ public class PDFFile
             {
                 // hunt down the page!
                 resources = new Hashtable();
-
+                
                 PDFObject topPagesObj = root.getDictRef("Pages");
                 pageObj = findPage(topPagesObj, 0, pagenum, resources);
-
+                
                 if (pageObj == null)
                 {
                     return null;
