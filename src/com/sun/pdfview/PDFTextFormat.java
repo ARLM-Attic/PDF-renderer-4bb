@@ -25,6 +25,7 @@ package com.sun.pdfview;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 
 import net.rim.device.api.math.Matrix4f;
@@ -289,20 +290,17 @@ public class PDFTextFormat
      */
     public void setMatrix(float[] matrix)
     {
-    	float e1 = 0;
-    	float e2 = 0;
+    	float[] mat;
     	if(matrix.length > 4)
     	{
-    		e1 = matrix[4];
-    		e1 = matrix[5];
+    		mat = matrix;
     	}
-    	line = new Matrix4f(new float[]
+    	else
     	{
-    			matrix[0], matrix[2], 0, e1,
-    			matrix[1], matrix[3], 0, e2,
-    			0, 0, 1, 0,
-    			0, 0, 0, 1
-    	});
+    		mat = new float[6];
+    		System.arraycopy(matrix, 0, mat, 0, 4);
+    	}
+    	line = new Matrix4f(PDFUtil.affine2TransformMatrix(mat));
         cur.set(line);
     }
     

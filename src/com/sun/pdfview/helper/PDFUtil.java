@@ -22,6 +22,9 @@
  */
 package com.sun.pdfview.helper;
 
+import java.io.IOException;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.Enumeration;
@@ -37,6 +40,20 @@ import net.rim.device.api.util.CharacterUtilities;
  */
 public class PDFUtil
 {
+	/* BUFFER_BIG_ENDIAN == false
+	private static boolean BUFFER_BIG_ENDIAN;
+	
+	static
+	{
+		ByteBuffer buf = ByteBuffer.allocateDirect(4);
+		buf.putInt(0x11000022);
+		buf.rewind();
+		byte val = buf.get();
+		BUFFER_BIG_ENDIAN = val == 0x11;
+		buf = null;
+	}
+	*/
+	
 	/**
 	 * Copies all of the mappings from the specified map to this map.
 	 * These mappings will replace any mappings that this map had for
@@ -197,9 +214,416 @@ public class PDFUtil
 		return (color >> 24) & 0xFF;
 	}
 	
+	/**
+	 * Convert a 3x3 affine matrix from J2SE format to a transformation matrix compatible with Matrix4f.
+	 * @param mat The 3x2 matrix to convert.
+	 * @return The converted 4x4 matrix.
+	 */
+	public static float[] affine2TransformMatrix(float[] mat)
+	{
+		float[] result = new float[4*4];
+		affine2TransformMatrix(mat, result);
+		return result;
+	}
+	
+	/**
+	 * Convert a 3x3 affine matrix from J2SE format to a transformation matrix compatible with Matrix4f.
+	 * @param mat The 3x2 matrix to convert.
+	 * @param dest The converted 4x4 matrix.
+	 */
+	public static void affine2TransformMatrix(float[] mat, float[] dest)
+	{
+		/*
+		 * Affine:
+		 * 0, 1, 2
+		 * 3, 4, 5
+		 * ?, ?, ?
+		 * 
+		 * Transform:
+		 * 0, 2, ?, 4
+		 * 1, 3, ?, 5
+		 * ?, ?, ?, ?
+		 * ?, ?, ?, ?
+		 */
+		dest[0] = mat[0];
+		dest[1] = mat[2];
+		dest[3] = mat[4];
+		dest[4] = mat[1];
+		dest[5] = mat[3];
+		dest[7] = mat[5];
+	}
+	
+	/**
+	 * Unions the pair of source XYRectFloat objects and puts the result into the specified destination XYRectFloat object.
+	 * @param src1 the first of a pair of XYRectFloat objects to be combined with each other
+	 * @param src2 the second of a pair of XYRectFloat objects to be combined with each other
+	 * @param dst the XYRectFloat that holds the results of the union of src1 and src2
+	 */
+	public static void union(XYRectFloat src1, XYRectFloat src2, XYRectFloat dst)
+	{
+		float x1 = Math.min(src1.x, src2.x);
+		float y1 = Math.min(src1.y, src2.y);
+		float x2 = Math.max(src1.X2(), src2.X2());
+		float y2 = Math.max(src1.Y2(), src2.Y2());
+		dst.x = x1;
+		dst.y = y1;
+		dst.width = x2 - x1;
+		dst.height = y2 - y1;
+	}
+	
+	/**
+	 * Indicates whether the specified character is a whitespace character in Java.
+	 * @param c The character to check.
+	 * @return {@code true} if the supplied {@code c} is a whitespace character in Java; {@code false} otherwise.
+	 */
+	public static boolean Character_isWhiteSpace(char c)
+	{
+		//From Java source code
+		// Optimized case for ASCII
+		if ((c >= 0x1c && c <= 0x20) || (c >= 0x9 && c <= 0xd))
+		{
+			return true;
+		}
+		if (c == 0x1680)
+		{
+			return true;
+		}
+		if (c < 0x2000 || c == 0x2007)
+		{
+			return false;
+		}
+		return c <= 0x200b || c == 0x2028 || c == 0x2029 || c == 0x3000;
+	}
+	
+	public static final String ERROR_DATA_PATH = "file:///store/appdata/tmp/";
+	
+	/**
+     * Ensure the specified path exists (do not create file).
+     */
+    public static void ensurePath(String path) throws IOException
+    {
+    	if(!path.endsWith("/"))
+    	{
+    		path = path.substring(0, path.lastIndexOf('/') + 1);
+    	}
+    	//TODO: Make sure the path up to the file exists so no errors occur
+	}
+    
+    /**
+     * Relative get method for reading a long value.
+     * @param buffer The ByteBuffer to reader the long from.
+     * @return The long value at the buffer's current position.
+     */
+    public static final long ByteBuffer_getLong(ByteBuffer buffer)
+    {
+    	int position = buffer.position();
+    	int newPosition = position + 8;
+    	if (newPosition > buffer.limit())
+    	{
+    		throw new BufferUnderflowException();
+    	}
+    	long result = ByteBuffer_loadLong(buffer, position);
+    	position = newPosition;
+    	return result;
+    }
+    
+    /**
+     * Relative put method for writing a long value  (optional operation).
+     * @param buffer The buffer to put a long in.
+     * @param value The long value to be written.
+     * @return The buffer.
+     */
+    public static ByteBuffer ByteBuffer_putLong(ByteBuffer buffer, long value)
+    {
+    	int position = buffer.position();
+    	int newPosition = position + 8;
+    	if (newPosition > buffer.limit())
+    	{
+    		throw new BufferOverflowException();
+    	}
+    	ByteBuffer_store(buffer, position, value);
+    	buffer.position(newPosition);
+    	return buffer;
+    }
+    
+    private static final void ByteBuffer_store(ByteBuffer buffer, int index, long value)
+    {
+    	int baseOffset = index;  //this is basically absolute since no "internal" fields are used.
+    	/*
+    	if (BUFFER_BIG_ENDIAN)
+    	{
+    		for (int i = 7; i >= 0; i--)
+    		{
+    			buffer.put(baseOffset + i, (byte)(value & 0xFF));
+    			value = value >> 8;
+    		}
+    	}
+    	else
+    	{
+    	*/
+    		for (int i = 0; i <= 7; i++)
+    		{
+    			buffer.put(baseOffset + i, (byte)(value & 0xFF));
+    			value = value >> 8;
+    		}
+    	//}
+    }
+    
+    private static final long ByteBuffer_loadLong(ByteBuffer buffer, int index)
+    {
+    	int baseOffset = index; //this is basically absolute since no "internal" fields are used.
+    	long bytes = 0;
+    	/*
+    	if (BUFFER_BIG_ENDIAN)
+    	{
+    		for (int i = 0; i < 8; i++)
+    		{
+    			bytes = bytes << 8;
+    			bytes = bytes | (buffer.get(baseOffset + i) & 0xFF);
+    		}
+    	}
+    	else
+    	{
+    	*/
+    		for (int i = 7; i >= 0; i--)
+    		{
+    			bytes = bytes << 8;
+    			bytes = bytes | (buffer.get(baseOffset + i) & 0xFF);
+    		}
+    	//}
+    	return bytes;
+    }
+	
 	private static boolean eq(Object a, Object b)
 	{
 		return a == null ? b == null : a.equals(b);
+	}
+	
+	/**
+	 * Returns a wrapper on the specified Vector which synchronizes all access to the Vector.
+	 * @param vector the Vector to wrap in a synchronized Vector.
+	 * @return a synchronized Vector.
+	 */
+	public static Vector synchronizedVector(Vector vector)
+	{
+		if (vector == null)
+		{
+			throw new NullPointerException();
+		}
+		return new SynchronizedVector(vector);
+	}
+	
+	private static class SynchronizedVector extends Vector
+	{
+		final Vector list;
+		final Object mutex;
+		
+		SynchronizedVector(Vector l)
+		{
+			this.list = l;
+			this.mutex = this;
+		}
+		
+		public void addElement(Object obj)
+		{
+			synchronized(mutex)
+			{
+				list.addElement(obj);
+			}
+		}
+		
+		public int capacity()
+		{
+			synchronized(mutex)
+			{
+				return list.capacity();
+			}
+		}
+		
+		public boolean contains(Object elem)
+		{
+			synchronized(mutex)
+			{
+				return list.contains(elem);
+			}
+		}
+		
+		public void copyInto(Object[] anArray)
+		{
+			synchronized(mutex)
+			{
+				list.copyInto(anArray);
+			}
+		}
+		
+		public Object elementAt(int index)
+		{
+			synchronized(mutex)
+			{
+				return list.elementAt(index);
+			}
+		}
+		
+		public Enumeration elements()
+		{
+			synchronized(mutex)
+			{
+				//Should this be a synchronized enumeration? The J2SE source code from Apache doesn't but if everything else is synced, why not this?
+				return list.elements();
+			}
+		}
+		
+		public void ensureCapacity(int minCapacity)
+		{
+			synchronized(mutex)
+			{
+				list.ensureCapacity(minCapacity);
+			}
+		}
+		
+		public boolean equals(Object obj)
+		{
+			synchronized(mutex)
+			{
+				return list.equals(obj);
+			}
+		}
+		
+		public Object firstElement()
+		{
+			synchronized(mutex)
+			{
+				return list.firstElement();
+			}
+		}
+		
+		public int hashCode()
+		{
+			synchronized(mutex)
+			{
+				return list.hashCode();
+			}
+		}
+		
+		public int indexOf(Object elem)
+		{
+			synchronized(mutex)
+			{
+				return list.indexOf(elem);
+			}
+		}
+		
+		public int indexOf(Object elem, int index)
+		{
+			synchronized(mutex)
+			{
+				return list.indexOf(elem, index);
+			}
+		}
+		
+		public void insertElementAt(Object obj, int index)
+		{
+			synchronized(mutex)
+			{
+				list.insertElementAt(obj, index);
+			}
+		}
+		
+		public boolean isEmpty()
+		{
+			synchronized(mutex)
+			{
+				return list.isEmpty();
+			}
+		}
+		
+		public Object lastElement()
+		{
+			synchronized(mutex)
+			{
+				return list.lastElement();
+			}
+		}
+		
+		public int lastIndexOf(Object elem)
+		{
+			synchronized(mutex)
+			{
+				return list.lastIndexOf(elem);
+			}
+		}
+		
+		public int lastIndexOf(Object elem, int index)
+		{
+			synchronized(mutex)
+			{
+				return list.lastIndexOf(elem, index);
+			}
+		}
+		
+		public void removeAllElements()
+		{
+			synchronized(mutex)
+			{
+				list.removeAllElements();
+			}
+		}
+		
+		public boolean removeElement(Object obj)
+		{
+			synchronized(mutex)
+			{
+				return list.removeElement(obj);
+			}
+		}
+		
+		public void removeElementAt(int index)
+		{
+			synchronized(mutex)
+			{
+				list.removeElementAt(index);
+			}
+		}
+		
+		public void setElementAt(Object obj, int index)
+		{
+			synchronized(mutex)
+			{
+				list.setElementAt(obj, index);
+			}
+		}
+		
+		public void setSize(int newSize)
+		{
+			synchronized(mutex)
+			{
+				list.setSize(newSize);
+			}
+		}
+		
+		public int size()
+		{
+			synchronized(mutex)
+			{
+				return list.size();
+			}
+		}
+		
+		public String toString()
+		{
+			synchronized(mutex)
+			{
+				return list.toString();
+			}
+		}
+		
+		public void trimToSize()
+		{
+			synchronized(mutex)
+			{
+				list.trimToSize();
+			}
+		}
 	}
 	
 	/**

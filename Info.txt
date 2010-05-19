@@ -1,19 +1,55 @@
 TODO:
-/pattern
-PDFShapeCmd.java
-PDFImage.java
-PDFRenderer.java //Stroke == Pen, Graphics2D has setStroke but it is abstract so find where Graphics2D is actually set and find out what setStroke does
-PDFPage.java
-PDFParser.java
-/font
+Matrix:
+First figure out how to create the proper matrix, tests:
+***********************************
+-Affine:
+1.0					-1.732050807568877	0.0
+2.598076211353316	1.5					0.0
+0					0					1
 
+-Mat (way I am doing matrix):
+2.0 	0.0 		0.0
+0.0 	-0.86602545	0.0
+0		0			1
+
+-Mat (multiply):
+2.0 	0.0 		0.0
+0.0 	1.4999999	0.0
+0		0			1
+
+Code:
+-Affine:
+AffineTransform t1 = AffineTransform.getScaleInstance(2, 3);
+AffineTransform t2 = AffineTransform.getRotateInstance(Math.PI / 3);
+t1.concatenate(t2);
+
+-Mat (way I am doing matrix):
+Matrix4f t1 = new Matrix4f();
+Matrix4f t2 = new Matrix4f();
+Matrix4f.createScale(2, 3, 1, t1);
+Matrix4f.createRotationX((float)(Math.PI / 3), t2);
+Matrix4f.multiply(t2, t1, t1);
+
+-Mat (multiply):
+t1 = new Matrix4f();
+t2 = new Matrix4f();
+Matrix4f.createScale(2, 3, 1, t1);
+Matrix4f.createRotationX((float)(Math.PI / 3), t2);
+t1.multiply(t2);
+************************************
+In other words, nothing worked.
+Worst comes to worst:
+Create AffineTransform and replace in different classes. (Check out SVGMatrix, it is an interface but with some code it can get created) (System.Windows.Media.Matrix)
+
+Add a "general" Charset type so what is done in NameTable works and update NameTable so that it uses the built in CharSet
 Implement ICC_ColorSpace.java
 Implement ICC_Profile.java (intergrate ICC file format reading into this)
 Figure out Paint type (make sure it has "int getColor()" to get the main paint color, format 0x00RRGGBB)
-Create AffineTransform and replace in PDFTextFormat and PDFGraphics
-Get a Path (graphics) system implemented.
-Update PDFPaint, PDFRenderer with Path system
+Get a Path (graphics) system implemented. It should include a function called "setNativeGlyphOutline(net.rim.device.api.ui.Font,char)" so that fonts that I can't get the outline for can be drawn anyway.
+Update classes with Path system.
 
+Implement PDFGraphics systems (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
+Add function to helper/DefaultMutableTreeNode.java to load the tree to a net.rim.device.api.ui.TreeField. Also add some generic functions in case the user is making a MIDlet.
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
 Add preprocessors
 

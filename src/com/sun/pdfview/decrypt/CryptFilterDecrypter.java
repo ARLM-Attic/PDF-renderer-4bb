@@ -63,7 +63,6 @@ public class CryptFilterDecrypter implements PDFDecrypter
      */
     public CryptFilterDecrypter(Hashtable decrypters, String defaultStreamCryptName, String defaultStringCryptName) throws PDFParseException
     {
-
         this.decrypters = decrypters;
         PDFUtil.assert(this.decrypters.containsKey("Identity"), "this.decrypters.containsKey(\"Identity\")", "Crypt Filter map does not contain required Identity filter");
         defaultStreamDecrypter = (PDFDecrypter)this.decrypters.get(defaultStreamCryptName);

@@ -60,6 +60,31 @@ public class XYRectFloat
 	}
 	
 	/**
+	 * Get the right edge of the rectangle.
+	 */
+	public float X2()
+	{
+		return x + width;
+	}
+	
+	/**
+	 * Get the bottom edge of the rectangle.
+	 */
+	public float Y2()
+	{
+		return y + height;
+	}
+	
+	/**
+	 * Determines whether the XYRectFloat is empty.
+	 * @return true if the XYRectFloat is empty; false otherwise.
+	 */
+	public boolean isEmpty()
+	{
+		return this.width == 0 && this.height == 0;
+	}
+	
+	/**
 	 * Returns a string representation of the object.
 	 * @return A string representation of the object.
 	 */

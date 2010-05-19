@@ -22,6 +22,8 @@
  */
 package com.sun.pdfview;
 
+import com.sun.pdfview.helper.XYRectFloat;
+
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.XYRect;
 
@@ -29,15 +31,15 @@ public class ImageInfo
 {
 	int width;
     int height;
-    XYRect clip;
+    XYRectFloat clip;
     int bgColor;
     
-    public ImageInfo(int width, int height, XYRect clip)
+    public ImageInfo(int width, int height, XYRectFloat clip)
     {
         this(width, height, clip, Color.WHITE);
     }
     
-    public ImageInfo(int width, int height, XYRect clip, int bgColor)
+    public ImageInfo(int width, int height, XYRectFloat clip, int bgColor)
     {
         this.width = width;
         this.height = height;

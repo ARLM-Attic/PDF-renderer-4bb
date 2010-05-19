@@ -64,7 +64,8 @@ public class PDFDocCharsetEncoder extends CharsetEncoder
     final static Hashtable EXTENDED_TO_PDF_DOC_ENCODING_MAP = new Hashtable();
     static
     {
-        for (byte i = 0; i < PDFStringUtil.PDF_DOC_ENCODING_MAP.length; ++i)
+    	int len = PDFStringUtil.PDF_DOC_ENCODING_MAP.length;
+        for (byte i = 0; i < len; ++i)
         {
             final short c = (short)PDFStringUtil.PDF_DOC_ENCODING_MAP[i];
             final boolean identical = (c == i);

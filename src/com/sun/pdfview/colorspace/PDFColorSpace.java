@@ -131,7 +131,7 @@ public class PDFColorSpace
         
         if (resources != null)
         {
-            colorSpaces = (PDFObject) resources.get("ColorSpace");
+            colorSpaces = (PDFObject)resources.get("ColorSpace");
         }
         
         if (csobj.getType() == PDFObject.NAME)
@@ -192,6 +192,7 @@ public class PDFColorSpace
             ByteArrayInputStream bais = new ByteArrayInputStream(ary[1].getStream());
             ICC_Profile profile = ICC_Profile.getInstance(bais);
             value = new PDFColorSpace(new ICC_ColorSpace(profile));
+            bais.close();
         }
         else if (name.equals("Separation") || name.equals("DeviceN"))
         {

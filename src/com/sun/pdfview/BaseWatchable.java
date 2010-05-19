@@ -418,7 +418,8 @@ public abstract class BaseWatchable implements Watchable, Runnable
          */
         public boolean iterate()
         {
-            if (!timeBased) {
+            if (!timeBased)
+            {
                 nextGate--;
             }
             
