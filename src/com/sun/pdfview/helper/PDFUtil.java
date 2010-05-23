@@ -32,6 +32,9 @@ import java.util.Hashtable;
 import java.util.NoSuchElementException;
 import java.util.Vector;
 
+import com.sun.pdfview.helper.graphics.Geometry;
+
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.util.CharacterUtilities;
 
 /**
@@ -392,6 +395,18 @@ public class PDFUtil
     		}
     	//}
     	return bytes;
+    }
+    
+    /**
+     * Creates a Geometry by mapping characters to glyphs one-to-one based on the Unicode cmap in a Font.
+     * @param f The font to get the Geometry object from.
+     * @param charecter The character to get the Geometry object from.
+     * @return A new Geometry created with the specified character.
+     */
+    public static Geometry Font_createGlyphVector(Font f, char charecter)
+    {
+    	//TODO: Glyphs should be cached for speed in later operations.
+    	return null;
     }
 	
 	private static boolean eq(Object a, Object b)

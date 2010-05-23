@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.helper.XYPointFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * Supports width operations for Type1, Type1C, TrueType and Type3 fonts
@@ -133,7 +134,7 @@ public abstract class OutlineFont extends PDFFont
      */
     protected PDFGlyph getGlyph(char src, String name)
     {
-        GeneralPath outline = null;
+    	Geometry outline = null;
         float width = getWidth(src, name);
         
         // first try by name
@@ -159,7 +160,7 @@ public abstract class OutlineFont extends PDFFont
      * @param name the name of the desired glyph
      * @return the glyph outline, or null if unavailable
      */
-    protected abstract GeneralPath getOutline(String name, float width);
+    protected abstract Geometry getOutline(String name, float width);
     
     /**
      * Get a glyph outline by character code
@@ -169,5 +170,5 @@ public abstract class OutlineFont extends PDFFont
      * @param src the character code of the desired glyph
      * @return the glyph outline
      */
-    protected abstract GeneralPath getOutline(char src, float width);
+    protected abstract Geometry getOutline(char src, float width);
 }

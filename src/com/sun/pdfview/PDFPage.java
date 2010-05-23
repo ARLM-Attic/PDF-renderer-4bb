@@ -34,6 +34,8 @@ import net.rim.device.api.ui.XYDimension;
 
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.BasicStroke;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A PDFPage encapsulates the parsed commands required to render a
@@ -628,7 +630,7 @@ public class PDFPage
      * @param style the style: PDFShapeCmd.STROKE, PDFShapeCmd.FILL,
      * PDFShapeCmd.BOTH, PDFShapeCmd.CLIP, or some combination.
      */
-    public void addPath(GeneralPath path, int style)
+    public void addPath(Geometry path, int style)
     {
         addCommand(new PDFShapeCmd(path, style));
     }

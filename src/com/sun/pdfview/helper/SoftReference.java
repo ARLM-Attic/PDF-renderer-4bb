@@ -35,6 +35,8 @@ import net.rim.device.api.system.RuntimeStore;
  */
 public class SoftReference
 {
+	private static Object mem;
+	
 	/**
 	 * The low memory listener that should execute to remove any references that are being contained in it.
 	 */
@@ -42,23 +44,29 @@ public class SoftReference
 	{
 		public boolean freeStaleObject(int priority)
 		{
-			//Manually retrieve the reference so that it doesn't try to create a new array if one is not avalible. Shouldn't be a problem since the LowMemoryListsner is 
-			//only called if the vector had to be created.
-			RuntimeStore store = RuntimeStore.getRuntimeStore();
-			
-			Object obj;
-			if((obj = store.get(SOFT_REFERENCE_ID)) != null)
-			{
-				synchronized(obj)
-				{
-					store.remove(SOFT_REFERENCE_ID);
-					LowMemoryManager.markAsRecoverable(obj);
-					LowMemoryManager.removeLowMemoryListener(this); //The only reason for the listener has been executed, no need to have it called again.
-					return true;
-				}
-			}
-			return false;
+			return freeReferences(this);
 		}
+	}
+	
+	private static boolean freeReferences(LowMemoryListener man)
+	{
+		//Manually retrieve the reference so that it doesn't try to create a new array if one is not avalible. Shouldn't be a problem since the LowMemoryListsner is 
+		//only called if the vector had to be created.
+		RuntimeStore store = RuntimeStore.getRuntimeStore();
+		
+		Object obj;
+		if((obj = store.get(SOFT_REFERENCE_ID)) != null)
+		{
+			synchronized(obj)
+			{
+				store.remove(SOFT_REFERENCE_ID);
+				LowMemoryManager.markAsRecoverable(obj);
+				obj = null;
+				LowMemoryManager.removeLowMemoryListener(man); //The only reason for the listener has been executed, no need to have it called again.
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	private static final long SOFT_REFERENCE_ID = 0xB334695D1A6DB320L;
@@ -75,9 +83,11 @@ public class SoftReference
 		if((obj = store.get(SOFT_REFERENCE_ID)) == null)
 		{
 			SoftReferenceMemoryManager ref = new SoftReference(null).new SoftReferenceMemoryManager();
+			mem = ref;
 			LowMemoryManager.addLowMemoryListener(ref);
 			store.put(SOFT_REFERENCE_ID, obj = new Vector());
 		}
+		//Could end up with having old references when an application is closed.
 		return (Vector)obj;
 	}
 	
@@ -92,30 +102,45 @@ public class SoftReference
 			//Null, nothing todo
 			return;
 		}
-		Vector vect = getReferences();
-		synchronized(vect)
+		boolean cont = true;
+		if(referent instanceof String[])
 		{
-			int len = vect.size();
-			int ind = -1;
-			for(int i = 0; i < len; i++)
+			//Little hack to cleanup memory
+			String[] ary = (String[])referent;
+			if(ary[0].equals("CLEANUP_REFRENCES_CALLBACK") && ary[1].equals("PSW:00221133")) //Yes this is open source but hopefully no one will want to clean all the references unless the app is closing, in which case there is a nice helper function for that in PDFFile.
 			{
-				//See if a space is available so the array doesn't need to be resized.
-				if(vect.elementAt(i) == null)
+				cont = false;
+				this.index = -1;
+				freeReferences((LowMemoryListener)mem);
+			}
+		}
+		if(cont)
+		{
+			Vector vect = getReferences();
+			synchronized(vect)
+			{
+				int len = vect.size();
+				int ind = -1;
+				for(int i = 0; i < len; i++)
 				{
-					ind = i;
-					break;
+					//See if a space is available so the array doesn't need to be resized.
+					if(vect.elementAt(i) == null)
+					{
+						ind = i;
+						break;
+					}
 				}
-			}
-			//Set/add the reference
-			if(ind == -1)
-			{
-				this.index = len;
-				vect.addElement(referent);
-			}
-			else
-			{
-				this.index = ind;
-				vect.setElementAt(referent, ind);
+				//Set/add the reference
+				if(ind == -1)
+				{
+					this.index = len;
+					vect.addElement(referent);
+				}
+				else
+				{
+					this.index = ind;
+					vect.setElementAt(referent, ind);
+				}
 			}
 		}
 	}
@@ -125,14 +150,17 @@ public class SoftReference
 	 */
 	public void clear()
 	{
-		Vector vect = getReferences();
-		synchronized(vect)
+		if(this.index >= 0)
 		{
-			//Remove the reference from the array and mark it as recoverable
-			//Object obj = vect.elementAt(this.index);
-			//LowMemoryManager.markAsRecoverable(obj);
-			vect.setElementAt(null, this.index);
-			this.index = -1;
+			Vector vect = getReferences();
+			synchronized(vect)
+			{
+				//Remove the reference from the array and mark it as recoverable
+				//Object obj = vect.elementAt(this.index);
+				//LowMemoryManager.markAsRecoverable(obj);
+				vect.setElementAt(null, this.index);
+				this.index = -1;
+			}
 		}
 	}
 	

@@ -36,6 +36,7 @@ import com.sun.pdfview.PDFParser;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A Type 3 Font, in which each glyph consists of a sequence of PDF
@@ -171,7 +172,7 @@ public class Type3Font extends PDFFont
         if (pageObj == null)
         {
             // glyph not found.  Return an empty glyph...
-            return new PDFGlyph(src, name, new GeneralPath(), new XYPointFloat(0, 0));
+            return new PDFGlyph(src, name, new Geometry(), new XYPointFloat(0, 0));
         }
         
         try

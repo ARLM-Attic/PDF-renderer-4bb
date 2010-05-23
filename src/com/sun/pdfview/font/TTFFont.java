@@ -39,6 +39,7 @@ import com.sun.pdfview.font.ttf.HmtxTable;
 import com.sun.pdfview.font.ttf.PostTable;
 import com.sun.pdfview.font.ttf.TrueTypeFont;
 import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A true-type font
@@ -101,7 +102,7 @@ public class TTFFont extends OutlineFont
     /**
      * Get the outline of a character given the character code
      */
-    protected synchronized GeneralPath getOutline(char src, float width)
+    protected synchronized Geometry getOutline(char src, float width)
     {
         // find the cmaps
         CmapTable cmap = (CmapTable)font.getTable("cmap");
@@ -138,7 +139,7 @@ public class TTFFont extends OutlineFont
      * @param width
      * @return GeneralPath
      */
-    protected synchronized GeneralPath getOutlineFromCMaps(char val, float width)
+    protected synchronized Geometry getOutlineFromCMaps(char val, float width)
     {
         // find the cmaps
         CmapTable cmap = (CmapTable)font.getTable("cmap");
@@ -166,7 +167,7 @@ public class TTFFont extends OutlineFont
     /**
      * Get the outline of a character given the character name
      */
-    protected synchronized GeneralPath getOutline(String name, float width)
+    protected synchronized Geometry getOutline(String name, float width)
     {
         int idx;
         PostTable post = (PostTable)font.getTable("post");
@@ -183,7 +184,7 @@ public class TTFFont extends OutlineFont
         Integer res = AdobeGlyphList.getGlyphNameIndex(name);
         if(res != null)
         {
-        	idx = res;
+        	idx = res.intValue();
         	return getOutlineFromCMaps((char)idx, width);
         }
         return null;
@@ -192,13 +193,13 @@ public class TTFFont extends OutlineFont
     /**
      * Get the outline of a character given the glyph id
      */
-    protected synchronized GeneralPath getOutline(int glyphId, float width)
+    protected synchronized Geometry getOutline(int glyphId, float width)
     {
         // find the glyph itself
         GlyfTable glyf = (GlyfTable) font.getTable("glyf");
         Glyf g = glyf.getGlyph(glyphId);
         
-        GeneralPath gp = null;
+        Geometry gp = null;
         if (g instanceof GlyfSimple)
         {
             gp = renderSimpleGlyph((GlyfSimple)g);
@@ -209,7 +210,7 @@ public class TTFFont extends OutlineFont
         }
         else
         {
-            gp = new GeneralPath();
+            gp = new Geometry();
         }
         
         // calculate the advance
@@ -234,14 +235,14 @@ public class TTFFont extends OutlineFont
     /**
      * Render a simple glyf
      */
-    protected GeneralPath renderSimpleGlyph(GlyfSimple g)
+    protected Geometry renderSimpleGlyph(GlyfSimple g)
     {
         // the current contour
         int curContour = 0;
         
         // the render state
         RenderState rs = new RenderState();
-        rs.gp = new GeneralPath();
+        rs.gp = new Geometry();
         
         int len = g.getNumPoints();
         for (int i = 0; i < len; i++)
@@ -284,16 +285,16 @@ public class TTFFont extends OutlineFont
     /**
      * Render a compound glyf
      */
-    protected GeneralPath renderCompoundGlyph(GlyfTable glyf, GlyfCompound g)
+    protected Geometry renderCompoundGlyph(GlyfTable glyf, GlyfCompound g)
     {
-        GeneralPath gp = new GeneralPath();
+    	Geometry gp = new Geometry();
         
         int len = g.getNumComponents();
         for (int i = 0; i < len; i++)
         {
             // find and render the component glyf
             GlyfSimple gs = (GlyfSimple)glyf.getGlyph(g.getGlyphIndex(i));
-            GeneralPath path = renderSimpleGlyph(gs);
+            Geometry path = renderSimpleGlyph(gs);
             
             // multiply the translations by units per em
             float[] matrix = g.getTransform(i);
@@ -347,7 +348,7 @@ public class TTFFont extends OutlineFont
     class RenderState
     {
         // the shape itself
-        GeneralPath gp;
+    	Geometry gp;
         // the first off and on-curve points in the current segment
         PointRec firstOn;
         PointRec firstOff;

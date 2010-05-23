@@ -34,6 +34,8 @@ import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.function.FunctionType0;
 import com.sun.pdfview.helper.ColorSpace;
+import com.sun.pdfview.helper.XYPointFloat;
+import com.sun.pdfview.helper.graphics.Paint;
 import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
 
 /**
@@ -302,7 +304,7 @@ public class PDFImage
         
         // create a compatible raster
         SampleModel sm = cm.createCompatibleSampleModel(getWidth(), getHeight());
-        WritableRaster raster = Raster.createWritableRaster(sm, db, new Point(0, 0));
+        WritableRaster raster = Raster.createWritableRaster(sm, db, new XYPointFloat(0, 0));
         
         /* 
          * Workaround for a bug on the Mac -- a class cast exception in
@@ -521,7 +523,7 @@ public class PDFImage
         
         if (cs instanceof IndexedColor)
         {
-            IndexedColor ics = (IndexedColor) cs;
+            IndexedColor ics = (IndexedColor)cs;
             
             byte[] components = ics.getColorComponents();
             int num = ics.getCount();
@@ -633,7 +635,7 @@ public class PDFImage
     {
         public DecodeComponentColorModel(ColorSpace cs, int[] bpc)
         {
-            super(cs, bpc, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            super(cs, bpc, false, false, Paint.TRANSPARENCY_OPAQUE, DataBuffer.TYPE_BYTE);
             
             if (bpc != null)
             {

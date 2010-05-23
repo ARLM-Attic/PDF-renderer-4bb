@@ -30,6 +30,7 @@ import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A representation, with parser, of an Adobe Type 1C font.
@@ -459,18 +460,17 @@ public class Type1CFont extends OutlineFont
             }
             else if (cmd == 1007) // fontmatrix
             {
+            	float[] mAt;
                 if (stackptr == 4)
                 {
-                    at = new AffineTransform ((float) stack[0], (float) stack[1],
-                            (float) stack[2], (float) stack[3],
-                            0, 0);
+                	mAt = new float[6];
+                	System.arraycopy(stack, 0, mAt, 0, 4);
                 }
                 else
                 {
-                    at = new AffineTransform ((float) stack[0], (float) stack[1],
-                            (float) stack[2], (float) stack[3],
-                            (float) stack[4], (float) stack[5]);
+                	mAt = stack;
                 }
+                at = new Matrix4f(PDFUtil.affine2TransformMatrix(mAt));
             }
             else if (cmd == 15) // charset
             {
@@ -759,7 +759,7 @@ public class Type1CFont extends OutlineFont
      * @param base the start of the glyph table
      * @param offset the index of this glyph in the glyph table
      */
-    private synchronized GeneralPath readGlyph (int base, int offset)
+    private synchronized Geometry readGlyph (int base, int offset)
     {
         FlPoint pt = new FlPoint ();
         
@@ -767,7 +767,7 @@ public class Type1CFont extends OutlineFont
         Range r = getIndexEntry(base, offset);
         
         // create a path
-        GeneralPath gp = new GeneralPath();
+        Geometry gp = new Geometry();
         
         // rember the start position (for recursive calls due to seac)
         int hold = pos;
@@ -835,10 +835,10 @@ public class Type1CFont extends OutlineFont
      * @param gp the GeneralPath into which the combined glyph will be
      * written.
      */
-    private void buildAccentChar(float x, float y, char b, char a, GeneralPath gp)
+    private void buildAccentChar(float x, float y, char b, char a, Geometry gp)
     {
         // get the outline of the accent
-        GeneralPath pathA = getOutline(a, getWidth(a, null));
+    	Geometry pathA = getOutline(a, getWidth(a, null));
         
         // undo the effect of the transform applied in read
         Matrix4f xformA = new Matrix4f();
@@ -851,7 +851,7 @@ public class Type1CFont extends OutlineFont
         }
         pathA.transform(xformA);
         
-        GeneralPath pathB = getOutline(b, getWidth(b, null));
+        Geometry pathB = getOutline(b, getWidth(b, null));
         
         if(inv)
         {
@@ -868,7 +868,7 @@ public class Type1CFont extends OutlineFont
      * @param gp a GeneralPath in which to store the glyph outline
      * @param pt a FlPoint representing the end of the current path
      */
-    void parseGlyph(Range r, GeneralPath gp, FlPoint pt)
+    void parseGlyph(Range r, Geometry gp, FlPoint pt)
     {
         pos = r.getStart();
         int i;
@@ -921,7 +921,7 @@ public class Type1CFont extends OutlineFont
                         {
                             pt.y += stack[i++];
                         }
-                        gp.lineTo (pt.x, pt.y);
+                        gp.lineTo(pt.x, pt.y);
                     }
                     pt.open = true;
                     stackptr = 0;
@@ -937,7 +937,7 @@ public class Type1CFont extends OutlineFont
                         {
                             pt.x += stack[i++];
                         }
-                        gp.lineTo (pt.x, pt.y);
+                        gp.lineTo(pt.x, pt.y);
                     }
                     pt.open = true;
                     stackptr = 0;
@@ -951,7 +951,7 @@ public class Type1CFont extends OutlineFont
                         y2 = y1 + stack[i++];
                         pt.x = x2 + stack[i++];
                         pt.y = y2 + stack[i++];
-                        gp.curveTo (x1, y1, x2, y2, pt.x, pt.y);
+                        gp.curveTo(x1, y1, x2, y2, pt.x, pt.y);
                     }
                     pt.open = true;
                     stackptr = 0;
@@ -973,7 +973,7 @@ public class Type1CFont extends OutlineFont
                     }
                     if (pt.open)
                     {
-                        gp.closePath ();
+                        gp.closePath();
                     }
                     pt.open = false;
                     stackptr = 0;
@@ -1124,7 +1124,7 @@ public class Type1CFont extends OutlineFont
                                 pt.y += stack[i++];
                             }
                         }
-                        gp.curveTo (x1, y1, x2, y2, pt.x, pt.y);
+                        gp.curveTo(x1, y1, x2, y2, pt.x, pt.y);
                     }
                     pt.open = true;
                     stackptr = 0;
@@ -1339,7 +1339,7 @@ public class Type1CFont extends OutlineFont
      * @param name the name of the desired glyph
      * @return the glyph outline, or null if unavailable
      */
-    protected GeneralPath getOutline (String name, float width)
+    protected Geometry getOutline (String name, float width)
     {
         // first find the index of this name
         int index = getNameIndex (name);
@@ -1366,7 +1366,7 @@ public class Type1CFont extends OutlineFont
      * @param src the character code of the desired glyph
      * @return the glyph outline
      */
-    protected GeneralPath getOutline (char src, float width)
+    protected Geometry getOutline (char src, float width)
     {
         // ignore high bits
         int index = (int)(src & 0xff);

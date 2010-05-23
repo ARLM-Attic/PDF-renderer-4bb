@@ -1,6 +1,6 @@
 /*
  * File: ShaderType2.java
- * Version: TODO
+ * Version: 1.2
  * Initial Creation: May 14, 2010 11:50:42 AM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -25,6 +25,10 @@ package com.sun.pdfview.pattern;
 import java.io.IOException;
 
 import net.rim.device.api.math.Matrix4f;
+import net.rim.device.api.math.Vector3f;
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.PDFObject;
@@ -34,6 +38,9 @@ import com.sun.pdfview.function.PDFFunction;
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.Paint;
+import com.sun.pdfview.helper.graphics.PaintGenerator;
+import com.sun.pdfview.helper.graphics.TranslatedBitmap;
 
 /**
  * A shader that performs axial shader based on a function.
@@ -241,38 +248,53 @@ public class ShaderType2 extends PDFShader
     /**
      * A subclass of paint that uses this shader to generate a paint
      */
-    class Type2Paint implements Paint
+    class Type2Paint extends Paint
     {
         public Type2Paint()
         {
         }
         
         /** create a paint context */
-        public PaintContext createContext(ColorModel cm, XYRectFloat deviceBounds, XYRectFloat userBounds, Matrix4f xform, RenderingHints hints) 
+        public PaintGenerator createGenerator(Matrix4f xform) 
         {
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-            ColorModel model = new ComponentColorModel(cs, true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
             
-            XYPointFloat devStart = xform.transform(getAxisStart(), null);
-            XYPointFloat devEnd = xform.transform(getAxisEnd(), null);
+            XYPointFloat devStart = getAxisStart();
+            Vector3f tmp = new Vector3f(devStart.x, devStart.y, 0);
+            xform.transformPoint(tmp);
+            devStart.x = tmp.x;
+            devStart.y = tmp.y;
+            
+            XYPointFloat devEnd = getAxisEnd();
+            tmp.x = devEnd.x;
+            tmp.y = devEnd.y;
+            tmp.z = 0;
+            xform.transformPoint(tmp);
+            devEnd.x = tmp.x;
+            devEnd.y = tmp.y;
           
-            return new Type2PaintContext(model, devStart, devEnd);
+            return new Type2PaintContext(cs, devStart, devEnd);
         }
         
         public int getTransparency()
         {
-            return Transparency.TRANSLUCENT;
+            return Paint.TRANSPARENCY_TRANSLUCENT;
         }
+
+        public int getColor()
+		{
+			return Color.BLACK;
+		}
     }
     
     /** 
      * A simple paint context that uses an existing raster in device
      * space to generate pixels
      */
-    class Type2PaintContext implements PaintContext
+    class Type2PaintContext extends PaintGenerator
     {
-        /** the color model */
-        private ColorModel colorModel;
+        /** the color space */
+        private ColorSpace colorSpace;
         
         /** the start of the axis */
         private XYPointFloat start;
@@ -283,28 +305,28 @@ public class ShaderType2 extends PDFShader
         /**
          * Create a paint context
          */
-        Type2PaintContext(ColorModel colorModel, XYPointFloat start, XYPointFloat end)
+        Type2PaintContext(ColorSpace colorSpace, XYPointFloat start, XYPointFloat end)
         {
-            this.colorModel = colorModel;
+            this.colorSpace = colorSpace;
             this.start = start;
             this.end = end;
         }
         
         public void dispose()
         {
-            colorModel = null;
+        	colorSpace = null;
         }
         
-        public ColorModel getColorModel()
+        public ColorSpace getColorSpace()
         {
-            return colorModel;
+            return colorSpace;
         }
         
-        public Raster getRaster(int x, int y, int w, int h)
+        public TranslatedBitmap getBitmap(int x, int y, int w, int h)
         {
-            ColorSpace cs = getColorModel().getColorSpace();
+            ColorSpace cs = getColorSpace();
             
-            PDFFunction functions[] = getFunctions();
+            PDFFunction[] functions = getFunctions();
             int numComponents = cs.getNumComponents();
             
             float x0 = start.x;
@@ -316,7 +338,7 @@ public class ShaderType2 extends PDFShader
             float[] outputs = new float[numComponents];
             
             // all the data, plus alpha channel
-            int[] data = new int[w * h * (numComponents + 1)];
+            byte[] data = new byte[w * h * (numComponents + 1)];
             
             // for each device coordinate
             for (int j = 0; j < h; j++)
@@ -347,17 +369,31 @@ public class ShaderType2 extends PDFShader
                         int base = (j * w + q) * (numComponents + 1);
                         for (int c = 0; c < numComponents; c++)
                         {
-                            data[base + c] = (int) (outputs[c] * 255);
+                            data[base + c] = (byte)(outputs[c] * 255);
                         }
-                        data[base + numComponents] = 255; 
+                        data[base + numComponents] = (byte)255; 
                     }
                 }
             }
             
-            WritableRaster raster = getColorModel().createCompatibleWritableRaster(w, h);
-            raster.setPixels(0, 0, w, h, data);
+            Bitmap raster = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, w, h);
+            raster.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+            //Convert the data it compatible image data
+            int len;
+            int com = numComponents + 1;
+            int[] imgData = new int[len = (w * h)];
+            for(int i = 0, b = 0; i < len; i++)
+            {
+            	//TODO: need to make sure that the format is correct
+            	for(int c = 0; c < com; c++)
+            	{
+            		imgData[i] |= data[b + c] << ((numComponents - c) * 8);
+            	}
+            }
+            raster.setARGB(imgData, 0, w, 0, 0, w, h);
             
-            Raster child = raster.createTranslatedChild(x, y);
+            TranslatedBitmap child = new TranslatedBitmap(raster, x, y);
+            
             return child;
         }
         

@@ -26,6 +26,7 @@ import java.util.Vector;
 
 /**
  * A <code>DefaultMutableTreeNode</code> is a general-purpose node in a tree data structure. In the context of PDF Renderer only a subset of functions are included.
+ * @author Anton Avtamonov, Vincent Simonetti
  */
 public class DefaultMutableTreeNode
 {

@@ -42,6 +42,7 @@ import com.sun.pdfview.font.PDFFont;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
 import com.sun.pdfview.pattern.PDFShader;
 
 /**
@@ -63,7 +64,7 @@ public class PDFParser extends BaseWatchable
     private Stack parserStates;    // stack of RenderState
     // the current render state
     private ParserState state;
-    private GeneralPath path;
+    private Geometry path;
     private int clip;
     private int loc;
     private boolean resend = false;
@@ -561,7 +562,7 @@ public class PDFParser extends BaseWatchable
         stack = new Stack();
         parserStates = new Stack();
         state = new ParserState();
-        path = new GeneralPath();
+        path = new Geometry();
         loc = 0;
         clip = 0;
         
@@ -726,7 +727,7 @@ public class PDFParser extends BaseWatchable
                 // stroke the path
                 cmds.addPath(path, PDFShapeCmd.STROKE | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("s"))
             {
@@ -734,37 +735,37 @@ public class PDFParser extends BaseWatchable
                 path.closePath();
                 cmds.addPath(path, PDFShapeCmd.STROKE | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("f") || cmd.equals("F"))
             {
                 // fill the path (close/not close identical)
                 cmds.addPath(path, PDFShapeCmd.FILL | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("f*"))
             {
                 // fill the path using even/odd rule
-                path.setWindingRule(GeneralPath.WIND_EVEN_ODD);
+                path.setWindingRule(Geometry.WIND_EVEN_ODD);
                 cmds.addPath(path, PDFShapeCmd.FILL | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("B"))
             {
                 // fill and stroke the path
                 cmds.addPath(path, PDFShapeCmd.BOTH | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("B*"))
             {
                 // fill path using even/odd rule and stroke it
-                path.setWindingRule(GeneralPath.WIND_EVEN_ODD);
+                path.setWindingRule(Geometry.WIND_EVEN_ODD);
                 cmds.addPath(path, PDFShapeCmd.BOTH | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("b"))
             {
@@ -772,16 +773,16 @@ public class PDFParser extends BaseWatchable
                 path.closePath();
                 cmds.addPath(path, PDFShapeCmd.BOTH | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("b*"))
             {
                 // close path, fill using even/odd rule, then stroke it
                 path.closePath();
-                path.setWindingRule(GeneralPath.WIND_EVEN_ODD);
+                path.setWindingRule(Geometry.WIND_EVEN_ODD);
                 cmds.addPath(path, PDFShapeCmd.BOTH | clip);
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("n"))
             {
@@ -791,7 +792,7 @@ public class PDFParser extends BaseWatchable
                     cmds.addPath(path, clip);
                 }
                 clip = 0;
-                path = new GeneralPath();
+                path = new Geometry();
             }
             else if (cmd.equals("W"))
             {
@@ -801,7 +802,7 @@ public class PDFParser extends BaseWatchable
             else if (cmd.equals("W*"))
             {
                 // mark this path using even/odd rule for clipping
-                path.setWindingRule(GeneralPath.WIND_EVEN_ODD);
+                path.setWindingRule(Geometry.WIND_EVEN_ODD);
                 clip = PDFShapeCmd.CLIP;
             }
             else if (cmd.equals("sh"))
@@ -1511,7 +1512,7 @@ public class PDFParser extends BaseWatchable
         if (bbox != null)
         {
             cmds.addFillPaint(shader.getPaint());
-            cmds.addPath(new GeneralPath(bbox), PDFShapeCmd.FILL);
+            cmds.addPath(new Geometry(bbox), PDFShapeCmd.FILL);
         }
         
         cmds.addPop();

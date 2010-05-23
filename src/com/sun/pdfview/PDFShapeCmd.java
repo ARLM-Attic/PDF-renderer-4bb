@@ -24,7 +24,10 @@ package com.sun.pdfview;
 
 import net.rim.device.api.math.Matrix4f;
 
+import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.BasicStroke;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * Encapsulates a path.  Also contains extra fields and logic to check
@@ -45,7 +48,7 @@ public class PDFShapeCmd extends PDFCmd
     /** set the clip region to the path */
     public static final int CLIP = 4;
     /** base path */
-    private GeneralPath gp;
+    private Geometry gp;
     /** the style */
     private int style;
     /** the bounding box of the path */
@@ -60,9 +63,9 @@ public class PDFShapeCmd extends PDFCmd
      * @param style the style: an OR of STROKE, FILL, or CLIP.  As a
      * convenience, BOTH = STROKE | FILL.
      */
-    public PDFShapeCmd(GeneralPath gp, int style)
+    public PDFShapeCmd(Geometry gp, int style)
     {
-        this.gp = new GeneralPath(gp);
+        this.gp = new Geometry(gp);
         this.style = style;
         bounds = gp.getBounds2D();
     }
@@ -78,7 +81,7 @@ public class PDFShapeCmd extends PDFCmd
         {
             rect = state.fill(gp);
             
-            GeneralPath strokeagain = checkOverlap(state);
+            Geometry strokeagain = checkOverlap(state);
             if (strokeagain != null)
             {
                 state.draw(strokeagain, againstroke);
@@ -98,7 +101,7 @@ public class PDFShapeCmd extends PDFCmd
             }
             else
             {
-                rect = rect.createUnion(strokeRect);
+            	PDFUtil.union(strokeRect, rect, rect);
             }
         }
         if ((style & CLIP) != 0)
@@ -113,7 +116,7 @@ public class PDFShapeCmd extends PDFCmd
      * Check for overlap with the previous shape to make anti-aliased shapes
      * that are near each other look good
      */
-    private GeneralPath checkOverlap(PDFRenderer state)
+    private Geometry checkOverlap(PDFRenderer state)
     {
         if (style == FILL && gp != null && state.getLastShape() != null)
         {
@@ -133,7 +136,7 @@ public class PDFShapeCmd extends PDFCmd
                         if ((Math.abs(mypoints[j + 2] - prevpoints[i]) < 0.01 && Math.abs(mypoints[j + 3] - prevpoints[i + 1]) < 0.01 && 
                         		Math.abs(mypoints[j] - prevpoints[i + 2]) < 0.01 && Math.abs(mypoints[j + 1] - prevpoints[i + 3]) < 0.01))
                         {
-                            GeneralPath strokeagain = new GeneralPath();
+                        	Geometry strokeagain = new Geometry();
                             strokeagain.moveTo(mypoints[j], mypoints[j + 1]);
                             strokeagain.lineTo(mypoints[j + 2], mypoints[j + 3]);
                             return strokeagain;
@@ -151,7 +154,7 @@ public class PDFShapeCmd extends PDFCmd
      * Get an array of 16 points from a path
      * @return the number of points we actually got
      */
-    private int getPoints(GeneralPath path, float[] mypoints)
+    private int getPoints(Geometry path, float[] mypoints)
     {
         int count = 0;
         float x = 0;
@@ -160,7 +163,7 @@ public class PDFShapeCmd extends PDFCmd
         float starty = 0;
         float[] coords = new float[6];
         
-        PathIterator pi = path.getPathIterator(new Matrix4f());
+        Geometry.Enumeration pi = path.getPathIterator(new Matrix4f());
         while (!pi.isDone())
         {
             if (count >= mypoints.length)
@@ -172,25 +175,25 @@ public class PDFShapeCmd extends PDFCmd
             int pathtype = pi.currentSegment(coords);
             switch (pathtype)
             {
-                case PathIterator.SEG_MOVETO:
+                case Geometry.Enumeration.SEG_MOVETO:
                     startx = x = coords[0];
                     starty = y = coords[1];
                     break;
-                case PathIterator.SEG_LINETO:
+                case Geometry.Enumeration.SEG_LINETO:
                     mypoints[count++] = x;
                     mypoints[count++] = y;
                     x = mypoints[count++] = coords[0];
                     y = mypoints[count++] = coords[1];
                     break;
-                case PathIterator.SEG_QUADTO:
+                case Geometry.Enumeration.SEG_QUADTO:
                     x = coords[2];
                     y = coords[3];
                     break;
-                case PathIterator.SEG_CUBICTO:
+                case Geometry.Enumeration.SEG_CUBICTO:
                     x = mypoints[4];
                     y = mypoints[5];
                     break;
-                case PathIterator.SEG_CLOSE:
+                case Geometry.Enumeration.SEG_CLOSE:
                     mypoints[count++] = x;
                     mypoints[count++] = y;
                     x = mypoints[count++] = startx;

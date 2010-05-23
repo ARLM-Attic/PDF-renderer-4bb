@@ -28,6 +28,7 @@ import java.util.Hashtable;
 
 /**
  * Partial implementation of java.util.Properties
+ * @author Vincent Simonetti
  */
 public class Properties extends Hashtable
 {

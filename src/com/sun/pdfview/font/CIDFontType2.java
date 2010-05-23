@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
 import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * a font object derived from a CID font.
@@ -291,7 +292,7 @@ public class CIDFontType2 extends TTFFont
      * interpose here in order to avoid using the CMap of the font in
      * a CID mapped font.
      */
-    protected synchronized GeneralPath getOutline(char src, float width)
+    protected synchronized Geometry getOutline(char src, float width)
     {
         int glyphId = (int)(src & 0xffff);
         

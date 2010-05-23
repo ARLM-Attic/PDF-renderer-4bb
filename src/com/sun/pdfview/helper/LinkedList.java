@@ -24,6 +24,7 @@ import java.util.Vector;
 
 /**
  * Simplistic linked list based off a Vector.
+ * @author Vincent Simonetti
  */
 public class LinkedList extends Vector
 {

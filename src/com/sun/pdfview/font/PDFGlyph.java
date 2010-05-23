@@ -27,6 +27,7 @@ import net.rim.device.api.math.Matrix4f;
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFShapeCmd;
 import com.sun.pdfview.helper.XYPointFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A single glyph in a stream of PDF text, which knows how to write itself
@@ -44,13 +45,13 @@ public class PDFGlyph
     private XYPointFloat advance;
     
     /** the shape represented by this glyph (for all fonts but type 3) */
-    private GeneralPath shape;
+    private Geometry shape;
     
     /** the PDFPage storing this glyph's commands (for type 3 fonts) */
     private PDFPage page;
     
     /** Creates a new instance of PDFGlyph based on a shape */
-    public PDFGlyph(char src, String name, GeneralPath shape, XYPointFloat advance)
+    public PDFGlyph(char src, String name, Geometry shape, XYPointFloat advance)
     {
         this.shape = shape;
         this.advance = advance;
@@ -80,7 +81,7 @@ public class PDFGlyph
     }
     
     /** Get the shape of this glyph */
-    public GeneralPath getShape()
+    public Geometry getShape()
     {
         return shape;
     }
@@ -96,7 +97,7 @@ public class PDFGlyph
     {
         if(shape != null)
         {
-            GeneralPath outline = (GeneralPath)shape.createTransformedShape(transform);
+        	Geometry outline = (Geometry)shape.createTransformedShape(transform);
             cmds.addCommand(new PDFShapeCmd(outline, mode));
         }
         else if(page != null)

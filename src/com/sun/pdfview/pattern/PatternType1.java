@@ -26,6 +26,10 @@ import java.io.IOException;
 import java.util.Hashtable;
 
 import net.rim.device.api.math.Matrix4f;
+import net.rim.device.api.math.Vector3f;
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.XYRect;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPage;
@@ -35,7 +39,13 @@ import com.sun.pdfview.PDFRenderer;
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.Composite;
+import com.sun.pdfview.helper.graphics.Geometry;
+import com.sun.pdfview.helper.graphics.Paint;
+import com.sun.pdfview.helper.graphics.PaintGenerator;
+import com.sun.pdfview.helper.graphics.TranslatedBitmap;
 
 /**
  * A type 1 (tiling) pattern
@@ -148,28 +158,38 @@ public class PatternType1 extends PDFPattern
         // get actual image
         Paint paint = new Paint()
         {
-            public PaintContext createContext(ColorModel cm, Rectangle deviceBounds, Rectangle2D userBounds, AffineTransform xform, RenderingHints hints) 
+            public PaintGenerator createGenerator(Matrix4f xform) 
             {
                 ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-                ColorModel model = new ComponentColorModel(cs, true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
                 
-                Rectangle2D devBBox = xform.createTransformedShape(getBBox()).getBounds2D();
+                //Maybe to reduce memory usage, don't create a new Geometry object and instead create a helper function that will transform the Box and directly return the bounds.
+                XYRectFloat devBBox = new Geometry(getBBox()).createTransformedShape(xform).getBounds2D();
                 
-                double[] steps = new double[] { getXStep(), getYStep() };
-                xform.deltaTransform(steps, 0, steps, 0, 1);
+                Vector3f steps = new Vector3f(getXStep(), getYStep(), 0);
+                Matrix4f xformNoTrans = new Matrix4f(xform);
+                //Get rid of translation. In J2SE's AffineMatrix the difference between transform and deltaTransform is deltaTransform doesn't use the translation component.
+                xformNoTrans.set(0, 3, 0);
+                xformNoTrans.set(1, 3, 0);
+                xformNoTrans.set(2, 3, 0);
+                xformNoTrans.transformPoint(steps);
                 
-                int width = (int) Math.ceil(devBBox.getWidth());
-                int height = (int) Math.ceil(devBBox.getHeight());
+                int width = (int)Math.ceil(devBBox.width);
+                int height = (int)Math.ceil(devBBox.height);
                 
-                BufferedImage img = (BufferedImage)page.getImage(width, height, null, null, false, true);
+                Bitmap img = page.getImage(width, height, null, false, true);
                 
-                return new Type1PaintContext(model, devBBox, (float)steps[0], (float)steps[1], img.getData());
+                return new Type1PaintContext(cs, devBBox, steps.x, steps.y, img);
             }
             
             public int getTransparency()
             {
-                return Transparency.TRANSLUCENT;
+                return Paint.TRANSPARENCY_TRANSLUCENT;
             }
+
+			public int getColor()
+			{
+				return Color.BLACK;
+			}
         };
         
         return new TilingPatternPaint(paint, this);
@@ -222,7 +242,7 @@ public class PatternType1 extends PDFPattern
         /** Create a tiling pattern paint */
         public TilingPatternPaint(Paint paint, PatternType1 pattern)
         {
-            super (paint);
+            super(paint);
             
             this.pattern = pattern;
         }
@@ -235,11 +255,11 @@ public class PatternType1 extends PDFPattern
          * @param drawn a Rectangle2D into which the dirty area (area drawn)
          * will be added.
          */
-        public XYRectFloat fill(PDFRenderer state, PDFGraphics g, GeneralPath s)
+        public XYRectFloat fill(PDFRenderer state, PDFGraphics g, Geometry s)
         {
         	// first transform s into device space
             Matrix4f at = g.getTransform();
-            Shape xformed = s.createTransformedShape(at);
+            Geometry xformed = s.createTransformedShape(at);
             
             // push the graphics state so we can restore it
             state.push();
@@ -250,18 +270,15 @@ public class PatternType1 extends PDFPattern
             state.transform(pattern.getTransform());
             
             // now figure out where the shape should be
-            try
+            Matrix4f mat = state.getTransform();
+            if(!mat.invert(at))
             {
-                at = state.getTransform().createInverse();
+            	// oh well (?)
             }
-            catch (NoninvertibleTransformException nte)
-            {
-                // oh well (?)
-            }
-            xformed = at.createTransformedShape(xformed);
+            xformed.transform(at);
             
             // set the paint and draw the xformed shape
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
+            g.setComposite(Composite.getInstance(Composite.SRC_OVER));
             g.setPaint(getPaint());
             g.fill(xformed);
             
@@ -277,10 +294,10 @@ public class PatternType1 extends PDFPattern
      * A simple paint context that uses an existing raster in device
      * space to generate pixels
      */
-    class Type1PaintContext implements PaintContext
+    class Type1PaintContext extends PaintGenerator
     {
-        /** the color model */
-        private ColorModel colorModel;
+        /** the color space */
+        private ColorSpace colorSpace;
         
         /** the anchor box */
         private XYRectFloat bbox;
@@ -292,14 +309,15 @@ public class PatternType1 extends PDFPattern
         private float ystep;
         
         /** the image data, as a raster in device coordinates */
-        private Raster data;
+        private Bitmap data;
         
         /**
          * Create a paint context
          */
-        Type1PaintContext(ColorModel colorModel, XYRectFloat bbox, float xstep, float ystep, Raster data) 
+        Type1PaintContext(ColorSpace colorSpace, XYRectFloat bbox, float xstep, float ystep, Bitmap data) 
         {
-            this.colorModel = colorModel;
+            //this.colorSpace = colorSpace;
+        	this.colorSpace = null;
             this.bbox = bbox;
             this.xstep = xstep;
             this.ystep = ystep;
@@ -308,32 +326,35 @@ public class PatternType1 extends PDFPattern
         
         public void dispose()
         {
-            colorModel = null;
+        	//colorSpace = null;
             bbox = null;
             data = null;
         }
         
-        public ColorModel getColorModel()
+        public ColorSpace getColorSpace()
         {
-            return colorModel;
+            return colorSpace;
         }
         
-        public Raster getRaster(int x, int y, int w, int h)
+        public TranslatedBitmap getBitmap(int x, int y, int w, int h)
         {
-            ColorSpace cs = getColorModel().getColorSpace();
+            //ColorSpace cs = getColorSpace();
             
-            int numComponents = cs.getNumComponents();
+            //int numComponents = cs.getNumComponents(); //This is not needed because the whole pixel is stored 0xAARRGGBB
             
             // all the data, plus alpha channel
-            int[] imgData = new int[w * h * (numComponents + 1)];
+            int[] imgData = new int[w * h /* * (numComponents + 1)*/];
             
             // the x and y step, as ints	
-            int useXStep = (int) Math.abs(Math.ceil(xstep));
-            int useYStep = (int) Math.abs(Math.ceil(ystep));
+            int useXStep = (int)Math.abs(Math.ceil(xstep));
+            int useYStep = (int)Math.abs(Math.ceil(ystep));
             
             // a completely transparent pixel (alpha of 0)
-            int[] emptyPixel = new int[numComponents + 1];
-            int[] usePixel = new int[numComponents + 1];
+            int[] emptyPixel = new int[/*numComponents + */1];
+            int[] usePixel = new int[/*numComponents + */1];
+            
+            int width = data.getWidth();
+            int height = data.getHeight();
             
             // for each device coordinate
             for (int j = 0; j < h; j++)
@@ -359,12 +380,12 @@ public class PatternType1 extends PDFPattern
                     int[] pixel = emptyPixel;
                     
                     // check if we are inside the image
-                    if (xloc < data.getWidth() && yloc < data.getHeight())
+                    if (xloc < width && yloc < height)
                     {
-                        pixel = data.getPixel(xloc, yloc, usePixel); 
+                    	data.getARGB(usePixel, 0, width, xloc, yloc, 1, 1);
                     }
                     
-                    int base = (j * w + i) * (numComponents + 1);
+                    int base = (j * w + i)/* * (numComponents + 1)*/;
                     int len = pixel.length;
                     for (int c = 0; c < len; c++)
                     {
@@ -373,10 +394,11 @@ public class PatternType1 extends PDFPattern
                 }
             }
             
-            WritableRaster raster = getColorModel().createCompatibleWritableRaster(w, h);
-            raster.setPixels(0, 0, w, h, imgData);
+            Bitmap raster = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, w, h);
+            raster.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+            raster.setARGB(imgData, 0, w, 0, 0, w, h);
             
-            Raster child = raster.createTranslatedChild(x, y);
+            TranslatedBitmap child = new TranslatedBitmap(raster, x, y);
             
             return child;
         }

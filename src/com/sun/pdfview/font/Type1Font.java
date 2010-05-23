@@ -32,6 +32,7 @@ import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * A representation, with parser, of an Adobe Type 1 font.
@@ -571,7 +572,7 @@ public class Type1Font extends OutlineFont
      * @param pt a FlPoint object that will be used to generate the path
      * @param wid a FlPoint into which the advance width will be placed.
      */
-    private void parse(byte[] cs, GeneralPath gp, FlPoint pt, FlPoint wid)
+    private void parse(byte[] cs, Geometry gp, FlPoint pt, FlPoint wid)
     {
         //	System.out.println("--- cmd length is "+cs.length);
         int loc = 0;
@@ -843,10 +844,10 @@ public class Type1Font extends OutlineFont
      * @param gp the GeneralPath into which the combined glyph will be
      * written.
      */
-    private void buildAccentChar(float x, float y, char a, char b, GeneralPath gp)
+    private void buildAccentChar(float x, float y, char a, char b, Geometry gp)
     {
         // get the outline of the accent
-        GeneralPath pathA = getOutline(a, getWidth(a, null));
+    	Geometry pathA = getOutline(a, getWidth(a, null));
         
         // undo the effect of the transform applied in read 
         Matrix4f tmp = new Matrix4f();
@@ -857,10 +858,12 @@ public class Type1Font extends OutlineFont
         }
         else
         {
-        	pathA.transform(AffineTransform.getTranslateInstance(x, y));
+        	Matrix4f trans = new Matrix4f();
+        	Matrix4f.createTranslation(x, y, 0, trans);
+        	pathA.transform(trans);
         }
         
-        GeneralPath pathB = getOutline(b, getWidth(b, null));
+        Geometry pathB = getOutline(b, getWidth(b, null));
         
         tmp = new Matrix4f();
         if(at.invert(tmp))
@@ -900,7 +903,7 @@ public class Type1Font extends OutlineFont
                     getOutline(key, 0);
                 }
                 
-                FlPoint width = name2width.get(key);
+                FlPoint width = (FlPoint)name2width.get(key);
                 if (width != null)
                 {
                     return width.x / getDefaultWidth();
@@ -917,9 +920,9 @@ public class Type1Font extends OutlineFont
     /**
      * Decrypt a glyph stored in byte form
      */
-    private synchronized GeneralPath parseGlyph(byte[] cs, FlPoint advance, Matrix4f at)
+    private synchronized Geometry parseGlyph(byte[] cs, FlPoint advance, Matrix4f at)
     {
-        GeneralPath gp = new GeneralPath();
+    	Geometry gp = new Geometry();
         FlPoint curpoint = new FlPoint();
         
         sloc = 0;
@@ -935,7 +938,7 @@ public class Type1Font extends OutlineFont
      * @param name the name of the desired glyph
      * @return the glyph outline, or null if unavailable
      */
-    protected GeneralPath getOutline(String name, float width)
+    protected Geometry getOutline(String name, float width)
     {
         // make sure we have a valid name
         if (name == null || !name2outline.containsKey(name))
@@ -948,16 +951,16 @@ public class Type1Font extends OutlineFont
         
         // if it's a byte array, it needs to be parsed
         // otherwise, just return the path
-        if (obj instanceof GeneralPath)
+        if (obj instanceof Geometry)
         {
-            return (GeneralPath)obj;
+            return (Geometry)obj;
         }
         else
         {
             byte[] cs = (byte[])obj;
             FlPoint advance = new FlPoint();
             
-            GeneralPath gp = parseGlyph(cs, advance, at);
+            Geometry gp = parseGlyph(cs, advance, at);
             
             if (width != 0 && advance.x != 0)
             {
@@ -981,12 +984,12 @@ public class Type1Font extends OutlineFont
     /**
      * Get a glyph outline by character code
      *
-     * Note this method must always return an outline 
+     * Note this method must always return an outline
      *
      * @param src the character code of the desired glyph
      * @return the glyph outline
      */
-    protected GeneralPath getOutline(char src, float width)
+    protected Geometry getOutline(char src, float width)
     {
         return getOutline(chr2name[src & 0xff], width);
     }

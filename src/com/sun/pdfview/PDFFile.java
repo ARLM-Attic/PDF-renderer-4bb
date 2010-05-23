@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PDFFile.java
  * Version: 1.15
@@ -39,6 +41,7 @@ import com.sun.pdfview.decrypt.PDFDecrypterFactory;
 import com.sun.pdfview.decrypt.PDFPassword;
 import com.sun.pdfview.decrypt.UnsupportedEncryptionException;
 import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.SoftReference;
 import com.sun.pdfview.helper.XYRectFloat;
 
 import net.rim.device.api.ui.XYRect;
@@ -57,7 +60,7 @@ public class PDFFile
 {
 	public final static int NUL_CHAR = 0;
     public final static int FF_CHAR = 12;
-
+    
     private String versionString = "1.1";
     private int majorVersion = 1;
     private int minorVersion = 1;
@@ -77,10 +80,10 @@ public class PDFFile
     PDFObject root = null;
     /** the Encrypt PDFObject, from the trailer */
     PDFObject encrypt = null;
-
+    
     /** The Info PDFPbject, from the trailer, for simple metadata */
     PDFObject info = null;
-
+    
     /** a mapping of page numbers to parsed PDF commands */
     Cache cache;
     /**
@@ -91,13 +94,25 @@ public class PDFFile
      * whether the file is saveable or not (trailer -> Encrypt -> P & 0x10)
      */
     private boolean saveable = true;
-
+    
     /**
      * The default decrypter for streams and strings. By default, no
      * encryption is expected, and thus the IdentityDecrypter is used.
      */
     private PDFDecrypter defaultDecrypter = IdentityDecrypter.getInstance();
-
+    
+    /**
+     * Developer should call this whenever their app closes and it uses/used any object in this library.
+     */
+    public static void appClosing()
+    {
+//#ifndef NATIVE_SOFTREFERENCE
+    	//Little hack to clean up references to this library. This won't work if multiple apps access this library at the same time. Luckily the SoftReferences that this
+    	//would clean up will be recreated if they are removed.
+    	new SoftReference(new String[]{"CLEANUP_REFRENCES_CALLBACK", "PSW:00221133"});
+//#endif
+    }
+    
     /**
      * get a PDFFile from a .pdf file.  The file must me a random access file
      * at the moment.  It should really be a file mapping from the nio package.

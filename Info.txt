@@ -1,4 +1,5 @@
 TODO:
+Figure out Paint type (make sure it has "int getColor()" to get the main paint color, format 0x00RRGGBB)
 Matrix:
 First figure out how to create the proper matrix, tests:
 ***********************************
@@ -41,12 +42,10 @@ In other words, nothing worked.
 Worst comes to worst:
 Create AffineTransform and replace in different classes. (Check out SVGMatrix, it is an interface but with some code it can get created) (System.Windows.Media.Matrix)
 
-Add a "general" Charset type so what is done in NameTable works and update NameTable so that it uses the built in CharSet
+Add a "general" Charset type so what is done in NameTable (font, setData(...) works and update NameTable so that it uses the built in CharSet
 Implement ICC_ColorSpace.java
 Implement ICC_Profile.java (intergrate ICC file format reading into this)
-Figure out Paint type (make sure it has "int getColor()" to get the main paint color, format 0x00RRGGBB)
 Get a Path (graphics) system implemented. It should include a function called "setNativeGlyphOutline(net.rim.device.api.ui.Font,char)" so that fonts that I can't get the outline for can be drawn anyway.
-Update classes with Path system.
 
 Implement PDFGraphics systems (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 Add function to helper/DefaultMutableTreeNode.java to load the tree to a net.rim.device.api.ui.TreeField. Also add some generic functions in case the user is making a MIDlet.
@@ -56,11 +55,12 @@ Add preprocessors
 
 
 PREPROCESSORS:
-USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold)
+USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold, maybe a special class that can switch between them.)
 NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore the built-in implementation).
 NATIVE_CHARSET_ENCODER (If CharsetEncoder ever gets added natively this will ignore the built-in implementation).
+//TODO: add more preprocessors
 
 
 NOTES:
 -Way more helper classes then desired, of possible cut down on them, intergrate functionality, cross fingers and hope something similar comes out natively...
--ICC color space is going to drive me up a wall, why do standards tell you everything but what you NEED to know?
+-ICC color space is going to drive me up a wall, why do standards tell you everything but what you NEED to know? UPDATE: Little CMS Engine has saved me, for a bit.

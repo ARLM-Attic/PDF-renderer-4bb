@@ -23,8 +23,13 @@ package com.sun.pdfview.helper.graphics.color;
 //TODO: Finish and add documentation
 //http://www.docjar.com/html/api/java/awt/color/ICC_ColorSpace.java.html
 
+import net.rim.device.api.system.UnsupportedOperationException;
+
 import com.sun.pdfview.helper.ColorSpace;
 
+/**
+ * Partial implementation of java.awt.color.ICC_ColorSpace.
+ */
 public class ICC_ColorSpace extends ColorSpace
 {
 	/**
@@ -40,9 +45,14 @@ public class ICC_ColorSpace extends ColorSpace
 	private static final float XYZ2SHORT_FACTOR = MAX_SHORT/MAX_XYZ;
 	
 	private ICC_Profile profile = null;
-	private float minValues[] = null;
-	private float maxValues[] = null;
+	private float[] minValues = null;
+	private float[] maxValues = null;
 	
+	/**
+	 * Constructs a new ICC_ColorSpace from an ICC_Profile object.
+	 * @param pf The specified ICC_Profile object.
+	 * @throws IllegalArgumentException If profile is inappropriate for representing a ColorSpace.
+	 */
 	public ICC_ColorSpace(ICC_Profile pf)
 	{
 		super(pf.getColorSpaceType(), pf.getNumComponents());
@@ -64,31 +74,70 @@ public class ICC_ColorSpace extends ColorSpace
 		fillMinMaxValues();
 	}
 	
+	private void fillMinMaxValues()
+	{
+        int n = getNumComponents();
+        maxValues = new float[n];
+        minValues = new float[n];
+        switch (getType())
+        {
+        	/*
+            case ColorSpace.TYPE_XYZ:
+                minValues[0] = 0;
+                minValues[1] = 0;
+                minValues[2] = 0;
+                maxValues[0] = MAX_XYZ;
+                maxValues[1] = MAX_XYZ;
+                maxValues[2] = MAX_XYZ;
+                break;
+             */
+            case ColorSpace.TYPE_Lab:
+                minValues[0] = 0;
+                minValues[1] = -128;
+                minValues[2] = -128;
+                maxValues[0] = 100;
+                maxValues[1] = 127;
+                maxValues[2] = 127;
+                break;
+            default:
+                for(int i=0; i<n; i++)
+                {
+                    minValues[i] = 0;
+                    maxValues[i] = 1;
+                }
+                break;
+        }
+    }
+	
 	/* (non-Javadoc)
 	 * @see com.sun.pdfview.helper.ColorSpace#fromCIEXYZ(float[])
 	 */
-	public float[] fromCIEXYZ(float[] colorvalue) {
-		return null;
+	public float[] fromCIEXYZ(float[] colorvalue)
+	{
+		throw new UnsupportedOperationException("To Implement");
 	}
 
 	/* (non-Javadoc)
 	 * @see com.sun.pdfview.helper.ColorSpace#fromRGB(float[])
 	 */
-	public float[] fromRGB(float[] rgbvalue) {
-		return null;
+	public float[] fromRGB(float[] rgbvalue)
+	{
+		throw new UnsupportedOperationException("To Implement");
 	}
 
 	/* (non-Javadoc)
 	 * @see com.sun.pdfview.helper.ColorSpace#toCIEXYZ(float[])
 	 */
-	public float[] toCIEXYZ(float[] colorvalue) {
-		return null;
+	public float[] toCIEXYZ(float[] colorvalue)
+	{
+		throw new UnsupportedOperationException("To Implement");
 	}
 
 	/* (non-Javadoc)
 	 * @see com.sun.pdfview.helper.ColorSpace#toRGB(float[])
 	 */
-	public float[] toRGB(float[] colorvalue) {
-		return null;
+	public float[] toRGB(float[] colorvalue)
+	{
+		throw new UnsupportedOperationException("To Implement");
 	}
 }

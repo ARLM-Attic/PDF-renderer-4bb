@@ -37,6 +37,9 @@ import net.rim.device.api.ui.XYRect;
 import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.BasicStroke;
+import com.sun.pdfview.helper.graphics.Composite;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * This class turns a set of PDF Commands from a PDF page into an image.  It
@@ -69,7 +72,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /** the total region of this image that has been written to */
     private XYRectFloat globalDirtyRegion;
     /** the last shape we drew (to check for overlaps) */
-    private GeneralPath lastShape;
+    private Geometry lastShape;
     /** the info about the image, if we need to recreate it */
     private ImageInfo imageinfo;
     /** the next time the image should be notified about updates */
@@ -128,9 +131,9 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     private void setupRendering(PDFGraphics g)
     {
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+        g.setRenderingHint(PDFGraphics.KEY_ANTIALIASING, PDFGraphics.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(PDFGraphics.KEY_INTERPOLATION, PDFGraphics.VALUE_INTERPOLATION_BICUBIC);
+        g.setRenderingHint(PDFGraphics.KEY_ALPHA_INTERPOLATION, PDFGraphics.VALUE_ALPHA_INTERPOLATION_QUALITY);
         
         //Default background color is black (0x00000000)
         if (imageinfo.bgColor != 0)
@@ -151,8 +154,8 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         state.stroke = new BasicStroke();
         state.strokePaint = PDFPaint.getColorPaint(Color.BLACK);
         state.fillPaint = state.strokePaint;
-        state.fillAlpha = AlphaComposite.getInstance(AlphaComposite.SRC);
-        state.strokeAlpha = AlphaComposite.getInstance(AlphaComposite.SRC);
+        state.fillAlpha = Composite.getInstance(Composite.SRC);
+        state.strokeAlpha = Composite.getInstance(Composite.SRC);
         state.xform = g.getTransform();
         
         // initialize the stack
@@ -194,10 +197,10 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * drawn will be added.  May also be null, in which case no dirty
      * region will be recorded.
      */
-    public XYRectFloat stroke(GeneralPath s)
+    public XYRectFloat stroke(Geometry s)
     {
         g.setComposite(state.strokeAlpha);
-        s = new GeneralPath(autoAdjustStrokeWidth(g, state.stroke).createStrokedShape(s));
+        s = new Geometry(autoAdjustStrokeWidth(g, state.stroke).createStrokedGeometry(s));
         return state.strokePaint.fill(this, g, s);
     }
     
@@ -213,7 +216,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * @param bs
      * @return
      */
-    private BasicStroke autoAdjustStrokeWidth(Graphics2D g, BasicStroke bs)
+    private BasicStroke autoAdjustStrokeWidth(PDFGraphics g, BasicStroke bs)
     {
         Matrix4f bt = new Matrix4f(g.getTransform());
         Vector3f scale = new Vector3f();
@@ -246,7 +249,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * @param p the path to draw
      * @param bs the stroke with which to draw the path
      */
-    public void draw(GeneralPath p, BasicStroke bs)
+    public void draw(Geometry p, BasicStroke bs)
     {
         g.setComposite(state.fillAlpha);
         g.setPaint(state.fillPaint.getPaint());
@@ -258,7 +261,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * fill an outline using the current fill paint
      * @param s the path to fill
      */
-    public XYRectFloat fill(GeneralPath s)
+    public XYRectFloat fill(Geometry s)
     {
         g.setComposite(state.fillAlpha);
         return state.fillPaint.fill(this, g, s);
@@ -300,7 +303,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         });
         */
         
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
+        g.setComposite(Composite.getInstance(Composite.SRC_OVER));
         if (!g.drawImage(bi, at))
         {
             System.out.println("Image not completed!");
@@ -326,7 +329,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * add the path to the current clip.  The new clip will be the intersection
      * of the old clip and given path.
      */
-    public void clip(GeneralPath s)
+    public void clip(Geometry s)
     {
         g.clip(s);
     }
@@ -335,7 +338,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      * set the clip to be the given shape.  The current clip is not taken
      * into account.
      */
-    private void setClip(Shape s)
+    private void setClip(Geometry s)
     {
         state.cliprgn = s;
         g.setClip(null);
@@ -461,7 +464,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     public void setStrokeAlpha(float alpha)
     {
-        state.strokeAlpha = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha);
+        state.strokeAlpha = Composite.getInstance(Composite.SRC_OVER, alpha);
     }
     
     /**
@@ -469,13 +472,13 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     public void setFillAlpha(float alpha)
     {
-        state.fillAlpha = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha);
+        state.fillAlpha = Composite.getInstance(Composite.SRC_OVER, alpha);
     }
     
     /**
      * Set the last shape drawn
      */
-    public void setLastShape(GeneralPath shape)
+    public void setLastShape(Geometry shape)
     {
         this.lastShape = shape;
     }
@@ -483,7 +486,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /**
      * Get the last shape drawn
      */
-    public GeneralPath getLastShape()
+    public Geometry getLastShape()
     {
         return lastShape;
     }
@@ -660,7 +663,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     private Bitmap getMaskedImage(Bitmap bi)
     {
         // get the color of the current paint
-        int col = (int)state.fillPaint.getPaint();
+        int col = state.fillPaint.getPaint().getColor();
         
         // format as 8 bits each of ARGB
         int paintColor = PDFUtil.Color_getAlpha(col) << 24;
@@ -688,7 +691,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
             int[] dstPixels = new int[width];
             
             // read a row of pixels from the source
-            bi.getARGB(srcPixels, o, height, startX, startY + i, width, 1);
+            bi.getARGB(srcPixels, 0, height, startX, startY + i, width, 1);
             
             // figure out which ones should get painted
             for (int j = 0; j < width; j++)
@@ -713,7 +716,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     class GraphicsState
     {
         /** the clip region */
-        Shape cliprgn;
+    	Geometry cliprgn;
         /** the current stroke */
         BasicStroke stroke;
         /** the current paint for drawing strokes */
@@ -721,9 +724,9 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         /** the current paint for filling shapes */
         PDFPaint fillPaint;
         /** the current compositing alpha for stroking */
-        AlphaComposite strokeAlpha;
+        Composite strokeAlpha;
         /** the current compositing alpha for filling */
-        AlphaComposite fillAlpha;
+        Composite fillAlpha;
         /** the current transform */
         Matrix4f xform;
         

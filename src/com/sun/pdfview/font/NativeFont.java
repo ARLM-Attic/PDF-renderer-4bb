@@ -24,11 +24,16 @@ package com.sun.pdfview.font;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.FontFamily;
+import net.rim.device.api.ui.FontManager;
 import net.rim.device.api.ui.Ui;
 
 import com.sun.pdfview.PDFObject;
@@ -43,6 +48,8 @@ import com.sun.pdfview.font.ttf.NameTable;
 import com.sun.pdfview.font.ttf.PostTable;
 import com.sun.pdfview.font.ttf.TrueTypeFont;
 import com.sun.pdfview.font.ttf.TrueTypeTable;
+import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
  * a font object derived from a true type font.
@@ -116,18 +123,25 @@ public class NativeFont extends OutlineFont
             {
                 style |= Font.ITALIC;
             }
-            FontFamily family;
-            if ((flags & PDFFontDescriptor.FIXED_PITCH) != 0) // fixed width
+            FontFamily family = null;
+            try
             {
-            	family = FontFamily.forName("BBSerifFixed"); //BlackBerry equivalent of "Monospaced"
+	            if ((flags & PDFFontDescriptor.FIXED_PITCH) != 0) // fixed width
+	            {
+	            	family = FontFamily.forName("BBSerifFixed"); //BlackBerry equivalent of "Monospaced"
+	            }
+	            else if ((flags & PDFFontDescriptor.SERIF) != 0) // serif font
+	            {
+	            	family = FontFamily.forName("BBAlpha Serif"); //BlackBerry equivalent of "Serif"
+	            }
+	            else
+	            {
+	            	family = FontFamily.forName("BBSansSerif"); //BlackBerry equivalent of "Sans-serif"
+	            }
             }
-            else if ((flags & PDFFontDescriptor.SERIF) != 0) // serif font
+            catch(ClassNotFoundException cnfe)
             {
-            	family = FontFamily.forName("BBAlpha Serif"); //BlackBerry equivalent of "Serif"
-            }
-            else
-            {
-            	family = FontFamily.forName("BBSansSerif"); //BlackBerry equivalent of "Sans-serif"
+            	//Not going to happen
             }
             setFont(family.getFont(style, 1, Ui.UNITS_pt));
         }
@@ -139,7 +153,7 @@ public class NativeFont extends OutlineFont
      * @param name the name of the desired glyph
      * @return the glyph outline, or null if unavailable
      */
-    protected GeneralPath getOutline (String name, float width)
+    protected Geometry getOutline (String name, float width)
     {
         if (postTable != null && cmapTable != null)
         {
@@ -186,7 +200,7 @@ public class NativeFont extends OutlineFont
      * @param src the character code of the desired glyph
      * @return the glyph outline
      */
-    protected GeneralPath getOutline(char src, float width)
+    protected Geometry getOutline(char src, float width)
     {
         // some true type fonts put characters in the undefined
         // region of Unicode instead of as normal characters.
@@ -204,12 +218,9 @@ public class NativeFont extends OutlineFont
             }
         }
         
-        char[] glyph = new char[1];
-        glyph[0] = src;
-        
         //TODO: Options for handling this, have a special function in the Path class that allows images so this can draw the glyph or to implement a basic OCR system. Leaning towards special image but if it is possible to get it fast enough go OCR because it allows easier scaling.
-        GlyphVector gv = f.createGlyphVector(basecontext, glyph); //Don't worry about basecontext
-        GeneralPath gp = new GeneralPath(gv.getGlyphOutline(0));
+        Geometry gv = PDFUtil.Font_createGlyphVector(f, src);
+        Geometry gp = new Geometry(gv);
         
         // this should be gv.getGlyphMetrics(0).getAdvance(), but that is
         // broken on the Mac, so we need to read the advance from the
@@ -233,9 +244,9 @@ public class NativeFont extends OutlineFont
      */
     protected void setFont(Font f)
     {
-        this.f = f;
+    	this.f = f;
         
-        //TODO: Not sure how this will work out
+        /*Can't get tables from native Font object, skip it
         
         // if it's an OpenType font, parse the relevant tables to get
         // glyph name to code mappings
@@ -254,6 +265,7 @@ public class NativeFont extends OutlineFont
             postTable = (PostTable)TrueTypeTable.createTable(ttf, "post", ByteBuffer.wrap(postData));
             ttf.addTable ("post", postTable);
         }
+        */
     }
     
     /**
@@ -317,21 +329,38 @@ public class NativeFont extends OutlineFont
                 // System.out.println(ttf.toString());
                 fontdata = ttf.writeFont();
                 
-              //TODO: Update test
-                // FileOutputStream fos2 = new FileOutputStream("/tmp/" + getBaseFont() + ".fix");
-                // fos2.write(fontdata);
-                // fos2.close();
+                //try
+                //{
+                //	String path = PDFUtil.ERROR_DATA_PATH + getBaseFont() + ".fix";
+                //	PDFUtil.ensurePath(path);
+                //	FileConnection con = (FileConnection)Connector.open(path, Connector.READ);
+                //	OutputStream fos2 = con.openOutputStream();
+                //	fos2.write(fontdata);
+                //	fos2.close();
+                //	con.close();
+                //}
+                //catch(Exception e)
+                //{
+                //}
             }
         }
         catch (Exception ex)
         {
-            System.out.println ("Error parsing font : " + getBaseFont());
+            System.out.println("Error parsing font : " + getBaseFont());
             ex.printStackTrace ();
         }
         
-        //TODO: In 5.0 can load this as an Application font and load it, otherwise need to figure out
         ByteArrayInputStream bais = new ByteArrayInputStream(fontdata);
-        f = Font.createFont(Font.TRUETYPE_FONT, bais);
+        if(FontManager.getInstance().load(bais, getBaseFont(), FontManager.APPLICATION_FONT) == FontManager.SUCCESS)
+        {
+        	try
+	        {
+				f = FontFamily.forName(getBaseFont()).getFont(Font.PLAIN, 1);
+			}
+	        catch (ClassNotFoundException e)
+	        {
+			}
+        }
         bais.close ();
     }
     

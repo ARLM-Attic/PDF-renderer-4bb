@@ -20,6 +20,8 @@
  */
 package com.sun.pdfview.helper;
 
+import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
+
 /**
  * Implementation of java.awt.color.ColorSpace.
  * @author Vincent Simonetti

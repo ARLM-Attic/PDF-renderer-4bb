@@ -19,6 +19,11 @@
  */
 package com.sun.pdfview.helper;
 
+import com.sun.pdfview.helper.graphics.BasicStroke;
+import com.sun.pdfview.helper.graphics.Composite;
+import com.sun.pdfview.helper.graphics.Geometry;
+import com.sun.pdfview.helper.graphics.Paint;
+
 import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.system.Bitmap;
 
@@ -27,9 +32,38 @@ import net.rim.device.api.system.Bitmap;
  * {@link net.rim.device.api.ui.Graphics BlackBerry Graphics}, or even {@link javax.microedition.khronos.opengles.GL OpenGL} the graphics drawing will be the same.
  * <p>
  * <b>Implementation notes:</b> Default background color and current color should be black.
+ * @author Vincent Simonetti
  */
 public abstract class PDFGraphics
 {
+	/** Antialiasing hint key.*/
+	public static final int KEY_ANTIALIASING = 0xAAA;
+	/** Interpolation hint key.*/
+	public static final int KEY_INTERPOLATION = 0xEA;
+	/** Alpha interpolation hint key.*/
+	public static final int KEY_ALPHA_INTERPOLATION = 0xAAEA;
+	
+	/** Antialiasing hint values -- rendering is done with antialiasing.*/
+	public static final int VALUE_ANTIALIAS_ON = 2;
+	/** Antialiasing hint values -- rendering is done without antialiasing.*/
+	public static final int VALUE_ANTIALIAS_OFF = 1;
+	/** Antialiasing hint values -- rendering is done with the platform default antialiasing mode.*/
+	public static final int VALUE_ANTIALIAS_DEFAULT = VALUE_ANTIALIAS_ON;
+	
+	/** Interpolation hint value -- INTERPOLATION_NEAREST_NEIGHBOR.*/
+	public static final int VALUE_INTERPOLATION_NEAREST_NEIGHBOR = 1;
+	/** Interpolation hint value -- INTERPOLATION_BILINEAR.*/
+	public static final int VALUE_INTERPOLATION_BILINEAR = 2;
+	/** Interpolation hint value -- INTERPOLATION_BICUBIC.*/
+	public static final int VALUE_INTERPOLATION_BICUBIC = 3;
+	
+	/** Alpha interpolation hint value -- ALPHA_INTERPOLATION_QUALITY.*/
+	public static final int VALUE_ALPHA_INTERPOLATION_QUALITY = 2;
+	/** Alpha interpolation hint value -- ALPHA_INTERPOLATION_SPEED.*/
+	public static final int VALUE_ALPHA_INTERPOLATION_SPEED = 1;
+	/** Alpha interpolation hint value -- ALPHA_INTERPOLATION_DEFAULT.*/
+	public static final int VALUE_ALPHA_INTERPOLATION_DEFAULT = VALUE_ALPHA_INTERPOLATION_SPEED;
+	
 	/**
 	 * Create a new PDFGraphics device.
 	 * @param drawingDevice The graphics device to draw with.
@@ -40,7 +74,7 @@ public abstract class PDFGraphics
 		System.err.println("Graphics creation is not supported yet.");
 		return null;
 		
-		//TYES: Bitmap, RIM Graphics, J2ME Graphics
+		//TYPES: Bitmap, RIM Graphics, J2ME Graphics
 		//TODO: Testing needs to be done to determine what types the drawing objects will return and how to create the new drawing item. Should be dynamic so if someone creates their own drawing device it can still work.
 	}
 	
@@ -54,7 +88,7 @@ public abstract class PDFGraphics
 	 * Gets the current clipping area.
 	 * @return A Shape object representing the current clipping area, or null if no clip is set.
 	 */
-	public abstract Shape getClip();
+	public abstract Geometry getClip();
 	
 	/**
 	 * Sets the Composite for the PDFGraphics context.
@@ -85,19 +119,19 @@ public abstract class PDFGraphics
 	 * @param hintKey The key of the hint to be set.
 	 * @param hintValue The value indicating preferences for the specified hint category.
 	 */
-	public abstract void setRenderingHint(RenderingHints.Key hintKey, Object hintValue);
+	public abstract void setRenderingHint(int hintKey, int hintValue);
 	
 	/**
 	 * Sets the Stroke for the PDFGraphics context.
 	 * @param s The Stroke object to be used to stroke a Shape during the rendering process.
 	 */
-	public abstract void setStroke(Stroke s);
+	public abstract void setStroke(BasicStroke s);
 	
 	/**
 	 * Intersects the current Clip with the interior of the specified Shape and sets the Clip to the resulting intersection.
 	 * @param s The Shape to be intersected with the current Clip. If s is null, this method clears the current Clip.
 	 */
-	public void clip(Shape s)
+	public void clip(Geometry s)
 	{
 		setClip(s, false);
 	}
@@ -106,7 +140,7 @@ public abstract class PDFGraphics
 	 * Sets the current clipping area to an arbitrary clip shape.
 	 * @param s The Shape to use to set the clip.
 	 */
-	public void setClip(Shape s)
+	public void setClip(Geometry s)
 	{
 		setClip(s, true);
 	}
@@ -117,7 +151,7 @@ public abstract class PDFGraphics
 	 * @param direct true if the clip should set the device's actual clip, false if the clip area should be added (or if no clip exists, set) to the devices clip. If 
 	 * <code>s</code> is null then the device clip should be cleared regardless of this flag.
 	 */
-	protected abstract void setClip(Shape s, boolean direct);
+	protected abstract void setClip(Geometry s, boolean direct);
 	
 	/**
 	 * Composes an Matrix4f object with the Transform in this PDFGraphics according to the rule last-specified-first-applied.
@@ -155,7 +189,7 @@ public abstract class PDFGraphics
 	 * Fills the interior of a <code>Shape</code> using the settings of the <code>PDFGraphics</code> context.
 	 * @param s The Shape to be filled.
 	 */
-	public abstract void fill(Shape s);
+	public abstract void fill(Geometry s);
 	
 	/**
 	 * Clears a region to the current background color.
@@ -170,7 +204,7 @@ public abstract class PDFGraphics
 	 * Strokes the outline of a Shape using the settings of the current PDFGraphics context.
 	 * @param s The Shape to be rendered.
 	 */
-	public abstract void draw(Shape s);
+	public abstract void draw(Geometry s);
 	
 	/**
 	 * Renders an image, applying a transform from image space into user space before drawing.

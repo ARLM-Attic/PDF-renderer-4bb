@@ -24,6 +24,8 @@ package com.sun.pdfview;
 
 import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.XYRectFloat;
+import com.sun.pdfview.helper.graphics.Geometry;
+import com.sun.pdfview.helper.graphics.Paint;
 
 /**
  * PDFPaint is some kind of shader that knows how to fill a path.
@@ -48,8 +50,7 @@ public class PDFPaint
      */
     public static PDFPaint getColorPaint(int c)
     {
-    	//TODO
-        return getPaint(c);
+        return getPaint(Paint.getInstance(c));
     }
     
     /**
@@ -66,7 +67,7 @@ public class PDFPaint
      * @param g the graphics into which to draw
      * @param s the path to fill
      */
-    public XYRectFloat fill(PDFRenderer state, PDFGraphics g, GeneralPath s)
+    public XYRectFloat fill(PDFRenderer state, PDFGraphics g, Geometry s)
     {
         g.setPaint(mainPaint);
         g.fill(s);
