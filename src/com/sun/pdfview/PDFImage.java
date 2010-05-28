@@ -22,7 +22,9 @@
  */
 package com.sun.pdfview;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -131,7 +133,7 @@ public class PDFImage
             image.setBitsPerComponent(1);
             
             // create the indexed color space for the mask
-            // [PATCHED by michal.busta@gmail.com] - default value od Decode according to PDF spec. is [0, 1]
+            // [PATCHED by michal.busta@gmail.com] - default value of Decode according to PDF spec. is [0, 1]
         	// so the color arry should be:  
             int[] colors = {Color.BLACK, Color.WHITE};
             
@@ -263,7 +265,7 @@ public class PDFImage
     }
     
     /**
-     * <p>Parse the image stream into a buffered image.  Note that this is
+     * <p>Parse the image stream into a Bitmap. Note that this is
      * guaranteed to be called after all the other setXXX methods have been 
      * called.</p>
      *
@@ -295,56 +297,8 @@ public class PDFImage
 //   		System.out.println("\n");
 //    		System.out.flush();
 //    	}
-        // create the data buffer
-        DataBuffer db = new DataBufferByte(data, data.length);
         
-        // pick a color model, based on the number of components and
-        // bits per component
-        ColorModel cm = getColorModel();
-        
-        // create a compatible raster
-        SampleModel sm = cm.createCompatibleSampleModel(getWidth(), getHeight());
-        WritableRaster raster = Raster.createWritableRaster(sm, db, new XYPointFloat(0, 0));
-        
-        /* 
-         * Workaround for a bug on the Mac -- a class cast exception in
-         * drawImage() due to the wrong data buffer type (?)
-         */
-        BufferedImage bi = null;
-        if (cm instanceof IndexColorModel)
-        {
-            IndexColorModel icm = (IndexColorModel)cm;
-            
-            // choose the image type based on the size
-            int type = BufferedImage.TYPE_BYTE_BINARY;
-            if (getBitsPerComponent() == 8)
-            {
-                type = BufferedImage.TYPE_BYTE_INDEXED;
-            }
-            
-            // create the image with an explicit indexed color model.
-            bi = new BufferedImage(getWidth(), getHeight(), type, icm);
-            
-            // set the data explicitly as well
-            bi.setData(raster);
-        }
-        else
-        {
-            bi = new BufferedImage(cm, raster, true, null);
-        }
-        
-        // hack to avoid *very* slow conversion
-        ColorSpace cs = cm.getColorSpace();
-        ColorSpace rgbCS = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-        if (!isImageMask() && cs instanceof ICC_ColorSpace && !cs.equals(rgbCS))
-        {
-            ColorConvertOp op = new ColorConvertOp(cs, rgbCS, null);
-            
-            Bitmap converted = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, getWidth(), getHeight());
-            converted.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
-            
-            bi = op.filter(bi, converted);
-        }
+        Bitmap bi = loadImage(data);
         
         // add in the alpha data supplied by the SMask, if any
         PDFImage sMaskImage = getSMask();
@@ -365,7 +319,7 @@ public class PDFImage
                 
                 for (int j = 0; j < width; j++)
                 {
-                    int ac = 0xff000000;
+                    int ac = 0xFF000000;
                     
                     maskArray[j] = ((maskArray[j] & 0xff) << 24) | (srcArray[j] & ~ac);
                 }
@@ -512,93 +466,185 @@ public class PDFImage
     }
     
     /**
-     * get a Java ColorModel consistent with the current color space,
-     * number of bits per component and decode array
-     * 
-     * @param bpc the number of bits per component
+     * Consolidation function to parse data that could represent a index or component based image into a Bitmap. Consolidates getColorModel(), class DecodeComponentColorModel, and part of parseData(byte[]).
      */
-    private ColorModel getColorModel()
+    private Bitmap loadImage(byte[] data)
     {
-        PDFColorSpace cs = getColorSpace();
-        
-        if (cs instanceof IndexedColor)
-        {
-            IndexedColor ics = (IndexedColor)cs;
-            
-            byte[] components = ics.getColorComponents();
-            int num = ics.getCount();
-            
-            // process the decode array
-            if (decode != null)
+    	Bitmap bi = null;
+    	InputStream seek = null;
+    	try
+    	{
+    		seek = new ByteArrayInputStream(data);
+    		
+    		//Create the image data itself
+    		int[] pixData = new int[getWidth() * getHeight()];
+    		boolean alpha = false;
+    		
+    		//Create the pixel data
+    		//TODO: This can be made much more efficient.
+    		PDFColorSpace cs = getColorSpace();
+    		byte[] bData = readData(seek, cs);
+            int imgLen = bData.length;
+    		
+    		if (cs instanceof IndexedColor)
             {
-                byte[] normComps = new byte[components.length];
+    			//IndexedColorModel
+                IndexedColor ics = (IndexedColor)cs;
                 
-                // move the components array around
-                for (int i = 0; i < num; i++)
+                byte[] components = ics.getColorComponents();
+                int num = ics.getCount();
+                
+                // process the decode array
+                if (decode != null)
                 {
-                    byte[] orig = new byte[1];
-                    orig[0] = (byte)i;
+                    byte[] normComps = new byte[components.length];
                     
-                    float[] res = normalize(orig, null, 0);
-                    int idx = (int) res[0];
+                    // move the components array around
+                    for (int i = 0; i < num; i++)
+                    {
+                        byte[] orig = new byte[1];
+                        orig[0] = (byte)i;
+                        
+                        float[] res = normalize(orig, null, 0);
+                        int idx = (int) res[0];
+                        
+                        normComps[i * 3] = components[idx * 3];
+                        normComps[(i * 3) + 1] = components[(idx * 3) + 1];
+                        normComps[(i * 3) + 2] = components[(idx * 3) + 2];
+                    }
                     
-                    normComps[i * 3] = components[idx * 3];
-                    normComps[(i * 3) + 1] = components[(idx * 3) + 1];
-                    normComps[(i * 3) + 2] = components[(idx * 3) + 2];
+                    components = normComps;
                 }
                 
-                components = normComps;
-            }
-            
-            // make sure the size of the components array is 2 ^ numBits
-            // since if it's not, Java will complain
-            int correctCount = 1 << getBitsPerComponent();
-            if (correctCount < num)
-            {
-                byte[] fewerComps = new byte[correctCount * 3];
-                
-                System.arraycopy(components, 0, fewerComps, 0, correctCount * 3);
-                
-                components = fewerComps;
-                num = correctCount;
-            }
-            if (colorKeyMask == null || colorKeyMask.length == 0)
-            {
-                return new IndexColorModel(getBitsPerComponent(), num, components, 0, false);
+                // make sure the size of the components array is 2 ^ numBits
+                // since if it's not, Java will complain
+                int correctCount = 1 << getBitsPerComponent();
+                if (correctCount < num)
+                {
+                    byte[] fewerComps = new byte[correctCount * 3];
+                    
+                    System.arraycopy(components, 0, fewerComps, 0, correctCount * 3);
+                    
+                    components = fewerComps;
+                    num = correctCount;
+                }
+                if (colorKeyMask == null || colorKeyMask.length == 0)
+                {
+                	alpha = false;
+                	for(int i = 0; i < imgLen; i++)
+                	{
+                		int pos = bData[i];
+                		pixData[i] = (components[pos + 0] << 16) | (components[pos + 1] << 8) | components[pos + 2];
+                	}
+                }
+                else
+                {
+                    byte[] aComps = new byte[num * 4];
+                    int idx = 0;
+                    for (int i = 0; i < num; i++)
+                    {
+                        aComps[idx++] = components[(i * 3)];
+                        aComps[idx++] = components[(i * 3) + 1];
+                        aComps[idx++] = components[(i * 3) + 2];
+                        aComps[idx++] = (byte)0xFF;
+                    }
+                    int len = colorKeyMask.length;
+                    for (int i = 0; i < len; i += 2)
+                    {
+                        for (int j = colorKeyMask[i]; j <= colorKeyMask[i + 1]; j++)
+                        {
+                            aComps[(j * 4) + 3] = 0;    // make transparent
+                        }
+                    }
+                    alpha = true;
+                    for(int i = 0; i < imgLen; i++)
+                	{
+                		int pos = bData[i];
+                		pixData[i] = (aComps[pos + 3] << 24) | (aComps[pos + 0] << 16) | (aComps[pos + 1] << 8) | aComps[pos + 2];
+                	}
+                }
             }
             else
             {
-                byte[] aComps = new byte[num * 4];
-                int idx = 0;
-                for (int i = 0; i < num; i++)
-                {
-                    aComps[idx++] = components[(i * 3)];
-                    aComps[idx++] = components[(i * 3) + 1];
-                    aComps[idx++] = components[(i * 3) + 2];
-                    aComps[idx++] = (byte)0xFF;
-                }
-                int len = colorKeyMask.length;
-                for (int i = 0; i < len; i += 2)
-                {
-                    for (int j = colorKeyMask[i]; j <= colorKeyMask[i + 1]; j++)
-                    {
-                        aComps[(j * 4) + 3] = 0;    // make transparent
-                    }
-                }
-                return new IndexColorModel(getBitsPerComponent(), num, aComps, 0, true);
+            	//ComponentColorModel, most code is based off of ComponentColorModel and ColorModel.
+            	ColorSpace jcs = cs.getColorSpace(); //Might need to convert values to RGB
+            	ComponentDecoder dec = new ComponentDecoder(jcs, getBitsPerComponent());
+            	alpha = false;
+            	
+            	dec.decode(bData, imgLen, pixData, pixData.length);
             }
-        }
-        else
-        {
-            int[] bits = new int[cs.getNumComponents()];
-            int len = bits.length;
-            for (int i = 0; i < len; i++)
-            {
-                bits[i] = getBitsPerComponent();
-            }
-            
-            return new DecodeComponentColorModel(cs.getColorSpace(), bits);
-        }
+    		
+    		bi = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, getWidth(), getHeight());
+    		if(alpha)
+    		{
+    			bi.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+    		}
+    		
+    		//Set the data
+    		bi.setARGB(pixData, 0, getWidth(), 0, 0, getWidth(), getHeight());
+    	}
+    	catch(Exception e)
+    	{
+    	}
+    	finally
+    	{
+    		if(seek != null)
+    		{
+    			try
+    			{
+    				seek.close();
+    			}
+    			catch(IOException ioe)
+    			{
+    			}
+    		}
+    	}
+    	
+    	return bi;
+    }
+    
+    /**
+     * Read in component based/packed pixel based images.
+     * @return The image data.
+     */
+    private byte[] readData(InputStream in, PDFColorSpace cs) throws IOException
+    {
+    	int comCount = cs.getNumComponents();
+    	int len = in.available();
+    	byte[] data;
+    	if(comCount == 1 && getBitsPerComponent() < 8)
+    	{
+    		//Packed
+    		
+    		int bpc = getBitsPerComponent();
+    		int finalShift = 8 - bpc;
+    		int finalMask = ((byte)(0xF << finalShift)) & 0xFF;
+    		int pixPerByte = 8 / bpc;
+    		len *= pixPerByte;
+    		data = new byte[len];
+    		int offset = len - in.available();
+    		in.read(data, offset, in.available());
+    		for(int d = 0, s = offset; d < len; s++)
+    		{
+    			int shift = finalShift;
+    			int mask = finalMask;
+    			for(int i = 0; i < pixPerByte; i++)
+    			{
+    				data[d++] = (byte)((data[s] & mask) >>> shift);
+    				shift -= finalShift;
+    				mask >>= bpc;
+    			}
+    		}
+    	}
+    	else
+    	{
+    		//Component
+    		
+    		//PDFImage does everything with bytes so no need to worry about SHORT/USHORT/etc. sized items.
+    		data = new byte[len];
+    		in.read(data, 0, len); //ComponentSampleModel simply reads the data as it is.
+    	}
+    	return data;
     }
     
     /**
@@ -628,60 +674,111 @@ public class PDFImage
     }
     
     /**
-     * A wrapper for ComponentColorSpace which normalizes based on the 
-     * decode array.
+     * Decoder for component based images. DOES NOT HANDLE ALPHA!
      */
-    class DecodeComponentColorModel extends ComponentColorModel
+    class ComponentDecoder
     {
-        public DecodeComponentColorModel(ColorSpace cs, int[] bpc)
-        {
-            super(cs, bpc, false, false, Paint.TRANSPARENCY_OPAQUE, DataBuffer.TYPE_BYTE);
-            
-            if (bpc != null)
+    	//Based off of java.awt.image.ComponentColorModel and java.awt.image.ColorModel.
+    	
+    	private ColorSpace cs;
+    	private boolean is_sRGB;
+    	private int numComponents;
+    	private int bitsPerCom;
+    	private byte[][] colorLUTs;
+    	private float scaleFactor;
+    	
+		public ComponentDecoder(ColorSpace cs, int bitsPerComponent)
+		{
+			this.cs = cs;
+			this.is_sRGB = cs.isCS_sRGB();
+			this.numComponents = cs.getNumComponents();
+			this.bitsPerCom = bitsPerComponent;
+			
+			int maxValue = (1 << bitsPerCom) - 1;
+			scaleFactor = 1.0f / maxValue;
+			
+            for (int i = 0; i < numComponents; i++)
             {
-                pixel_bits = bpc.length * bpc[0];
-            }
-        }
-        
-        public SampleModel createCompatibleSampleModel(int width, int height)
-        {
-            // workaround -- create a MultiPixelPackedSample models for 
-            // single-sample, less than 8bpp color models
-            if (getNumComponents() == 1 && getPixelSize() < 8)
-            {
-                return new MultiPixelPackedSampleModel(getTransferType(), width, height, getPixelSize());
-            }
-            
-            return super.createCompatibleSampleModel(width, height);
-        }
-        
-        public boolean isCompatibleRaster(Raster raster)
-        {
-            if (getNumComponents() == 1 && getPixelSize() < 8)
-            {
-                SampleModel sm = raster.getSampleModel();
-                
-                if (sm instanceof MultiPixelPackedSampleModel)
+                if (cs.getMinValue(i) != 0.0f || cs.getMaxValue(i) != 1.0f)
                 {
-                    return (sm.getSampleSize(0) == getPixelSize());
-                }
-                else
-                {
-                    return false;
+                	throw new IllegalArgumentException("ColorSpace does not support unnormalized values.");
                 }
             }
-            
-            return super.isCompatibleRaster(raster);
-        }
-        
-        public float[] getNormalizedComponents(Object pixel, float[] normComponents, int normOffset)
+			
+			this.colorLUTs = new byte[3][];
+			if (is_sRGB)
+			{
+                for (int i = 0; i < numComponents; i++)
+                {
+                    if (bitsPerCom != 8)
+                    {
+                        colorLUTs[i] = new byte[maxValue + 1];
+                        for (int j = 0; j <= maxValue; j++)
+                        {
+                            colorLUTs[i][j] = (byte)(scaleFactor * j + 0.5f);
+                        }
+                    }
+                }
+            }
+		}
+		
+		public int decode(byte[] input, int iLen, int[] output, int oLen)
+		{
+			int o, i;
+			byte[] in = new byte[numComponents];
+			float[] normComp = null;
+			for(o = 0, i = 0; o < oLen && i < iLen; o++, i += numComponents)
+        	{
+				System.arraycopy(input, i, in, 0, numComponents);
+        		if (is_sRGB)
+        		{
+                    int comp1 = getDefComponent(in, 0);
+                    int comp2 = getDefComponent(in, 1);
+                    int comp3 = getDefComponent(in, 2);
+                    if (bitsPerCom != 8)
+                    {
+                    	comp1 = colorLUTs[0][comp1] & 0xff;
+                    	comp2 = colorLUTs[1][comp2] & 0xff;
+                    	comp3 = colorLUTs[2][comp3] & 0xff;
+                    }
+                    output[o] = (comp1 << 16) | (comp2 << 8) | comp3;
+                }
+        		else
+        		{
+	                normComp = getNormalizedComponents(in, normComp, 0);
+	                float[] rgbComp = cs.toRGB(normComp);
+	                output[o] = rgb2int(rgbComp[0], rgbComp[1], rgbComp[2]);
+        		}
+        	}
+			return o;
+		}
+		
+		private int getDefComponent(byte[] pixel, int idx)
+		{
+            return pixel[idx] & 0xff;
+		}
+		
+		private int rgb2int(float r, float g, float b)
+		{
+			return (((int)(r * 255.0f + 0.5f)) << 16) | (((int)(g * 255.0f + 0.5f)) << 8) | ((int)(b * 255.0f + 0.5f));
+		}
+		
+		public float[] getNormalizedComponents(byte[] pixel, float[] normComponents, int normOffset)
         {
             if (getDecode() == null)
             {
-                return super.getNormalizedComponents(pixel, normComponents, normOffset);
+            	if (normComponents == null)
+            	{
+                    normComponents = new float[numComponents + normOffset];
+                }
+            	for (int i = 0, idx = normOffset; i < numComponents; i++, idx++)
+            	{
+                    normComponents[idx] = (pixel[i] & 0xff) * scaleFactor;
+                }
+            	return normComponents;
             }
             
-            return normalize((byte[])pixel, normComponents, normOffset);
+            return normalize(pixel, normComponents, normOffset);
         }
     }
 }

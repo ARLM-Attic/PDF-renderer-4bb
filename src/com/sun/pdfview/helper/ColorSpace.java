@@ -21,6 +21,7 @@
 package com.sun.pdfview.helper;
 
 import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
+import com.sun.pdfview.helper.graphics.color.ICC_ProfileStub;
 
 /**
  * Implementation of java.awt.color.ColorSpace.
@@ -35,6 +36,8 @@ public abstract class ColorSpace
 	/**  The built-in linear gray scale color space.*/
 	public static final int CS_GRAY = 1003;
 	
+	/** Any of the family of XYZ color spaces.*/
+	public static final int TYPE_XYZ = 0;
 	/** Any of the family of Lab color spaces.*/
 	public static final int TYPE_Lab = 1;
 	/** Any of the family of RGB color spaces.*/

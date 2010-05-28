@@ -1,5 +1,4 @@
 TODO:
-Figure out Paint type (make sure it has "int getColor()" to get the main paint color, format 0x00RRGGBB)
 Matrix:
 First figure out how to create the proper matrix, tests:
 ***********************************
@@ -42,7 +41,7 @@ In other words, nothing worked.
 Worst comes to worst:
 Create AffineTransform and replace in different classes. (Check out SVGMatrix, it is an interface but with some code it can get created) (System.Windows.Media.Matrix)
 
-Add a "general" Charset type so what is done in NameTable (font, setData(...) works and update NameTable so that it uses the built in CharSet
+Go through and make sure licenses and authors are noted and given credit to.
 Implement ICC_ColorSpace.java
 Implement ICC_Profile.java (intergrate ICC file format reading into this)
 Get a Path (graphics) system implemented. It should include a function called "setNativeGlyphOutline(net.rim.device.api.ui.Font,char)" so that fonts that I can't get the outline for can be drawn anyway.
@@ -52,6 +51,7 @@ Add function to helper/DefaultMutableTreeNode.java to load the tree to a net.rim
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
 Add preprocessors
 
+Add resources for internationalization.
 
 
 PREPROCESSORS:

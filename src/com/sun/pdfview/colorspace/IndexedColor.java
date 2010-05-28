@@ -72,7 +72,8 @@ public class IndexedColor extends PDFColorSpace
         int finalloc = 0;
         for (int i = 0; i < count; i++)
         {
-            for (int j = 0; j < comps.length; j++)
+        	int len = comps.length;
+            for (int j = 0; j < len; j++)
             {
                 if (loc < data.length)
                 {

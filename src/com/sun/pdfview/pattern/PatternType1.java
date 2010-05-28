@@ -166,12 +166,7 @@ public class PatternType1 extends PDFPattern
                 XYRectFloat devBBox = new Geometry(getBBox()).createTransformedShape(xform).getBounds2D();
                 
                 Vector3f steps = new Vector3f(getXStep(), getYStep(), 0);
-                Matrix4f xformNoTrans = new Matrix4f(xform);
-                //Get rid of translation. In J2SE's AffineMatrix the difference between transform and deltaTransform is deltaTransform doesn't use the translation component.
-                xformNoTrans.set(0, 3, 0);
-                xformNoTrans.set(1, 3, 0);
-                xformNoTrans.set(2, 3, 0);
-                xformNoTrans.transformPoint(steps);
+                xform.transformNormal(steps);
                 
                 int width = (int)Math.ceil(devBBox.width);
                 int height = (int)Math.ceil(devBBox.height);

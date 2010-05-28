@@ -109,33 +109,21 @@ public class ICC_ColorSpace extends ColorSpace
         }
     }
 	
-	/* (non-Javadoc)
-	 * @see com.sun.pdfview.helper.ColorSpace#fromCIEXYZ(float[])
-	 */
 	public float[] fromCIEXYZ(float[] colorvalue)
 	{
 		throw new UnsupportedOperationException("To Implement");
 	}
-
-	/* (non-Javadoc)
-	 * @see com.sun.pdfview.helper.ColorSpace#fromRGB(float[])
-	 */
+	
 	public float[] fromRGB(float[] rgbvalue)
 	{
 		throw new UnsupportedOperationException("To Implement");
 	}
-
-	/* (non-Javadoc)
-	 * @see com.sun.pdfview.helper.ColorSpace#toCIEXYZ(float[])
-	 */
+	
 	public float[] toCIEXYZ(float[] colorvalue)
 	{
 		throw new UnsupportedOperationException("To Implement");
 	}
-
-	/* (non-Javadoc)
-	 * @see com.sun.pdfview.helper.ColorSpace#toRGB(float[])
-	 */
+	
 	public float[] toRGB(float[] colorvalue)
 	{
 		throw new UnsupportedOperationException("To Implement");
