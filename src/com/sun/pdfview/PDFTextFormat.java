@@ -25,11 +25,9 @@ package com.sun.pdfview;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
-
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
 
 import com.sun.pdfview.font.PDFFont;
 import com.sun.pdfview.font.PDFGlyph;
@@ -57,9 +55,9 @@ public class PDFTextFormat
     /** text knockout */
     private float tk = 0;
     /** current matrix transform */
-    private Matrix4f cur;
+    private AffineTransform cur;
     /** matrix transform at start of line */
-    private Matrix4f line;
+    private AffineTransform line;
     /** font */
     private PDFFont font;
     /** font size */
@@ -72,19 +70,19 @@ public class PDFTextFormat
     
     // this is where we build and keep the word list for this page.
     /** start location of the hunk of text */
-    private Vector3f wordStart;
+    private XYPointFloat wordStart;
     /** location of the end of the previous hunk of text */
-    private Vector3f prevEnd;
+    private XYPointFloat prevEnd;
     
     /**
      * create a new PDFTextFormat, with initial values
      */
     public PDFTextFormat()
     {
-        cur = new Matrix4f();
-        line = new Matrix4f();
-        wordStart = new Vector3f(-100, -100, 0);
-        prevEnd = new Vector3f(-100, -100, 0);
+        cur = new AffineTransform();
+        line = new AffineTransform();
+        wordStart = new XYPointFloat(-100, -100);
+        prevEnd = new XYPointFloat(-100, -100);
         
         tc = tw = tr = tk = 0;
         tm = PDFShapeCmd.FILL;
@@ -271,16 +269,14 @@ public class PDFTextFormat
      */
     public void carriageReturn(float x, float y)
     {
-    	Matrix4f trans = new Matrix4f();
-    	Matrix4f.createTranslation(x, y, 0, trans);
-    	Matrix4f.multiply(trans, line, line);
+    	line.concatenate(AffineTransform.createTranslation(x, y));
     	cur.set(line);
     }
     
     /**
      * Get the current transform
      */
-    public Matrix4f getTransform()
+    public AffineTransform getTransform()
     {
         return cur;
     }
@@ -290,17 +286,7 @@ public class PDFTextFormat
      */
     public void setMatrix(float[] matrix)
     {
-    	float[] mat;
-    	if(matrix.length > 4)
-    	{
-    		mat = matrix;
-    	}
-    	else
-    	{
-    		mat = new float[6];
-    		System.arraycopy(matrix, 0, mat, 0, 4);
-    	}
-    	line = new Matrix4f(PDFUtil.affine2TransformMatrix(mat));
+    	line = new AffineTransform(matrix);
         cur.set(line);
     }
     
@@ -311,15 +297,9 @@ public class PDFTextFormat
      */
     public void doText(PDFPage cmds, String text)
     {
-        Vector3f zero = new Vector3f();
-        Matrix4f scale = new Matrix4f(new float[]
-        {
-        		fsize, 0, 0, 0,
-        		0, fsize * th, 0, tr,
-        		0, 0, 1, 0,
-        		0, 0, 0, 1
-        });
-        Matrix4f at = new Matrix4f();
+        XYPointFloat zero = new XYPointFloat();
+        AffineTransform scale = new AffineTransform(fsize, 0, 0, fsize * th, 0, tr);
+        AffineTransform at = new AffineTransform();
         
         Vector l = font.getGlyphs(text);
         
@@ -328,7 +308,7 @@ public class PDFTextFormat
             PDFGlyph glyph = (PDFGlyph)i.nextElement();
             
             at.set(cur);
-            Matrix4f.multiply(scale, at, at);
+            at.concatenate(scale);
             
             XYPointFloat advance = glyph.addCommands(cmds, at, tm);
             
@@ -339,7 +319,7 @@ public class PDFTextFormat
             }
             advanceX *= th;
             
-            cur.translate(advanceX, advance.y, 0);
+            cur.translate(advanceX, advance.y);
         }
         
         cur.transformPoint(zero, prevEnd);
@@ -364,7 +344,7 @@ public class PDFTextFormat
             else if (ary[i] instanceof Double)
             {
                 float val = ((Double)ary[i]).floatValue() / 1000f;
-                cur.translate(-val * fsize * th, 0, 0);
+                cur.translate(-val * fsize * th, 0);
             }
             else
             {

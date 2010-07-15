@@ -24,8 +24,6 @@ package com.sun.pdfview.font;
 
 import java.io.IOException;
 
-import net.rim.device.api.math.Matrix4f;
-
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.font.ttf.AdobeGlyphList;
 import com.sun.pdfview.font.ttf.CMap;
@@ -38,6 +36,7 @@ import com.sun.pdfview.font.ttf.HeadTable;
 import com.sun.pdfview.font.ttf.HmtxTable;
 import com.sun.pdfview.font.ttf.PostTable;
 import com.sun.pdfview.font.ttf.TrueTypeFont;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.graphics.Geometry;
 
@@ -221,11 +220,9 @@ public class TTFFont extends OutlineFont
         float widthfactor = width / advance;
         
         // the base transform scales the glyph to 1x1
-        Matrix4f at = new Matrix4f();
-        Matrix4f.createScale(1 / unitsPerEm, 1 / unitsPerEm, 1, at);
-        Matrix4f tmpS = new Matrix4f();
-        Matrix4f.createScale(widthfactor, 1, 1, tmpS);
-        Matrix4f.multiply(tmpS, at, at);
+        AffineTransform at = AffineTransform.createScale(1 / unitsPerEm,
+                1 / unitsPerEm);
+        at.concatenate(AffineTransform.createScale(widthfactor, 1));
         
         gp.transform(at);
         
@@ -300,7 +297,7 @@ public class TTFFont extends OutlineFont
             float[] matrix = g.getTransform(i);
             
             // transform the path
-            path.transform(new Matrix4f(matrix));
+            path.transform(new AffineTransform(matrix));
             
             // add it to the global path
             gp.append(path, false);

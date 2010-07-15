@@ -22,8 +22,6 @@
  */
 package com.sun.pdfview;
 
-import java.util.Vector;
-
 import com.sun.pdfview.action.PDFAction;
 import com.sun.pdfview.helper.DefaultMutableTreeNode;
 

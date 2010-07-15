@@ -24,20 +24,17 @@ package com.sun.pdfview.pattern;
 
 import java.io.IOException;
 
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParseException;
 import com.sun.pdfview.function.PDFFunction;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.XYPointFloat;
-import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.Paint;
 import com.sun.pdfview.helper.graphics.PaintGenerator;
 import com.sun.pdfview.helper.graphics.TranslatedBitmap;
@@ -255,23 +252,15 @@ public class ShaderType2 extends PDFShader
         }
         
         /** create a paint context */
-        public PaintGenerator createGenerator(Matrix4f xform) 
+        public PaintGenerator createGenerator(AffineTransform xform) 
         {
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
             
             XYPointFloat devStart = getAxisStart();
-            Vector3f tmp = new Vector3f(devStart.x, devStart.y, 0);
-            xform.transformPoint(tmp);
-            devStart.x = tmp.x;
-            devStart.y = tmp.y;
+            xform.transformPoint(devStart, devStart);
             
             XYPointFloat devEnd = getAxisEnd();
-            tmp.x = devEnd.x;
-            tmp.y = devEnd.y;
-            tmp.z = 0;
-            xform.transformPoint(tmp);
-            devEnd.x = tmp.x;
-            devEnd.y = tmp.y;
+            xform.transformPoint(devEnd, devEnd);
           
             return new Type2PaintContext(cs, devStart, devEnd);
         }

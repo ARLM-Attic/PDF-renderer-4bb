@@ -34,8 +34,10 @@ import java.util.Vector;
 
 import com.sun.pdfview.helper.graphics.Geometry;
 
+import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.util.CharacterUtilities;
+import net.rim.device.api.util.LongVector;
 
 /**
  * Simple utilities to support performing operations that are not standard on BlackBerry.
@@ -217,11 +219,12 @@ public class PDFUtil
 		return (color >> 24) & 0xFF;
 	}
 	
+	/*
 	/**
 	 * Convert a 3x3 affine matrix from J2SE format to a transformation matrix compatible with Matrix4f.
 	 * @param mat The 3x2 matrix to convert.
 	 * @return The converted 4x4 matrix.
-	 */
+	 * /
 	public static float[] affine2TransformMatrix(float[] mat)
 	{
 		float[] result = new float[4*4];
@@ -233,7 +236,7 @@ public class PDFUtil
 	 * Convert a 3x3 affine matrix from J2SE format to a transformation matrix compatible with Matrix4f.
 	 * @param mat The 3x2 matrix to convert.
 	 * @param dest The converted 4x4 matrix.
-	 */
+	 * /
 	public static void affine2TransformMatrix(float[] mat, float[] dest)
 	{
 		/*
@@ -247,7 +250,7 @@ public class PDFUtil
 		 * 1, 3, ?, 5
 		 * ?, ?, ?, ?
 		 * ?, ?, ?, ?
-		 */
+		 * /
 		dest[0] = mat[0];
 		dest[1] = mat[2];
 		dest[3] = mat[4];
@@ -255,6 +258,7 @@ public class PDFUtil
 		dest[5] = mat[3];
 		dest[7] = mat[5];
 	}
+	*/
 	
 	/**
 	 * Unions the pair of source XYRectFloat objects and puts the result into the specified destination XYRectFloat object.

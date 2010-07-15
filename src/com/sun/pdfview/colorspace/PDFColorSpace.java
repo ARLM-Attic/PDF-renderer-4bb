@@ -25,6 +25,7 @@ package com.sun.pdfview.colorspace;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParseException;
+import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.function.PDFFunction;
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.PDFUtil;
@@ -72,8 +73,7 @@ public class PDFColorSpace
         
         try
         {
-            graySpace = new PDFColorSpace((!useSGray) ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : 
-            	new ICC_ColorSpace(ICC_Profile.getInstance(PDFColorSpace.class.getResourceAsStream(("sGray.icc")))));
+            graySpace = new PDFColorSpace((!useSGray) ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : new ICC_ColorSpace(ICC_Profile.getInstance(ResourceManager.getResource("colorspace").getStream("sGray.icc"))));
         }
         catch (Exception e)
         {

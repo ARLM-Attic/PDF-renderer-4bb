@@ -315,22 +315,24 @@ public class PDFObject
                 // decode
                 ByteBuffer streamBuf = decodeStream();
                 // ByteBuffer streamBuf = stream;
-
+                
                 // First try to use the array with no copying.  This can only
                 // be done if the buffer has a backing array, and is not a slice
-                if (streamBuf.hasArray() && streamBuf.arrayOffset() == 0) {
+                if (streamBuf.hasArray() && streamBuf.arrayOffset() == 0)
+                {
                     byte[] ary = streamBuf.array();
-
+                    
                     // make sure there is no extra data in the buffer
-                    if (ary.length == streamBuf.remaining()) {
+                    if (ary.length == streamBuf.remaining())
+                    {
                         return ary;
                     }
                 }
-
+                
                 // Can't use the direct buffer, so copy the data (bad)
                 data = new byte[streamBuf.remaining()];
                 streamBuf.get(data);
-
+                
                 // return the stream to its starting position
                 streamBuf.flip();
             }
@@ -826,15 +828,16 @@ public class PDFObject
         {
             PDFObject obj = null;
             
-            if (cache != null) {
-                obj = (PDFObject) cache.get();
+            if (cache != null)
+            {
+                obj = (PDFObject)cache.get();
             }
             
             if (obj == null || obj.value == null)
             {
                 if (owner == null)
                 {
-                    System.out.println("Bad seed (owner==null)!  Object=" + this);
+                    System.out.println("Bad seed (owner == null)!  Object=" + this);
                 }
                 
                 obj = owner.dereference((PDFXref)value, getDecrypter());

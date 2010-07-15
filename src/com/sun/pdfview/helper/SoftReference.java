@@ -44,6 +44,7 @@ public class SoftReference
 	{
 		public boolean freeStaleObject(int priority)
 		{
+			//Could use priority but it doesn't seem to change
 			return freeReferences(this);
 		}
 	}
@@ -55,34 +56,56 @@ public class SoftReference
 		RuntimeStore store = RuntimeStore.getRuntimeStore();
 		
 		Object obj;
+		boolean free = false;
 		if((obj = store.get(SOFT_REFERENCE_ID)) != null)
 		{
 			synchronized(obj)
 			{
 				store.remove(SOFT_REFERENCE_ID);
+				//free = freeVector((Vector)obj); //Originally freed each object in the array... For a 4MB PDF, pre-rendering then freeing it took about 6min. Way to 
+				//		long, though this is what RIM's sample code had they also say in their documents that when arrays are freed each element in the array is also 
+				//		freed. Let them do the work.
 				LowMemoryManager.markAsRecoverable(obj);
+				free = true;
 				obj = null;
 				LowMemoryManager.removeLowMemoryListener(man); //The only reason for the listener has been executed, no need to have it called again.
-				return true;
 			}
 		}
-		return false;
+		return free;
 	}
+	
+	/*
+	private static boolean freeVector(Vector v)
+	{
+		//RIM's samples free each element in a Vector so do it just because they know better on the internals of BlackBerry's JVM and how it frees memory.
+		boolean free = false;
+		int size = v.size();
+		for(int i = size - 1; i >= 0; i--)
+		{
+			Object obj = v.elementAt(i);
+			v.removeElementAt(i);
+			LowMemoryManager.markAsRecoverable(obj);
+			obj = null;
+			free = true;
+		}
+		return free;
+	}
+	*/
 	
 	private static final long SOFT_REFERENCE_ID = 0xB334695D1A6DB320L;
 	private int index;
 	
 	/**
-	 * Get a singleton vector that contains the refrences.
+	 * Get a singleton vector that contains the references.
 	 */
-	private synchronized static Vector getReferences()
+	private synchronized static Vector getReferences(SoftReference refS, boolean createIfNull)
 	{
 		RuntimeStore store = RuntimeStore.getRuntimeStore();
 		
 		Object obj;
-		if((obj = store.get(SOFT_REFERENCE_ID)) == null)
+		if((obj = store.get(SOFT_REFERENCE_ID)) == null && createIfNull)
 		{
-			SoftReferenceMemoryManager ref = new SoftReference(null).new SoftReferenceMemoryManager();
+			SoftReferenceMemoryManager ref = refS.new SoftReferenceMemoryManager();
 			mem = ref;
 			LowMemoryManager.addLowMemoryListener(ref);
 			store.put(SOFT_REFERENCE_ID, obj = new Vector());
@@ -111,12 +134,15 @@ public class SoftReference
 			{
 				cont = false;
 				this.index = -1;
-				freeReferences((LowMemoryListener)mem);
+				if(mem != null)
+				{
+					freeReferences((LowMemoryListener)mem);
+				}
 			}
 		}
 		if(cont)
 		{
-			Vector vect = getReferences();
+			Vector vect = getReferences(this, true);
 			synchronized(vect)
 			{
 				int len = vect.size();
@@ -152,13 +178,21 @@ public class SoftReference
 	{
 		if(this.index >= 0)
 		{
-			Vector vect = getReferences();
-			synchronized(vect)
+			Vector vect = getReferences(this, false);
+			if(vect != null)
 			{
-				//Remove the reference from the array and mark it as recoverable
-				//Object obj = vect.elementAt(this.index);
-				//LowMemoryManager.markAsRecoverable(obj);
-				vect.setElementAt(null, this.index);
+				synchronized(vect)
+				{
+					if(vect.size() > this.index)
+					{
+						//Remove the reference from the array and mark it as recoverable
+						vect.setElementAt(null, this.index);
+					}
+					this.index = -1;
+				}
+			}
+			else
+			{
 				this.index = -1;
 			}
 		}
@@ -173,10 +207,26 @@ public class SoftReference
 		if(index >= 0)
 		{
 			//Get the reference
-			Vector vect = getReferences();
-			synchronized(vect)
+			Vector vect = getReferences(this, false);
+			if(vect != null)
 			{
-				return vect.elementAt(this.index);
+				synchronized(vect)
+				{
+					if(vect.size() > this.index)
+					{
+						return vect.elementAt(this.index);
+					}
+					else
+					{
+						//Element has been freed, clear it for easier processing later
+						this.index = -1;
+					}
+				}
+			}
+			else
+			{
+				//Element has been freed, clear it for easier processing later
+				this.index = -1;
 			}
 		}
 		return null;

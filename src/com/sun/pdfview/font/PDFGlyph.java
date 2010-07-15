@@ -22,10 +22,9 @@
  */
 package com.sun.pdfview.font;
 
-import net.rim.device.api.math.Matrix4f;
-
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFShapeCmd;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.graphics.Geometry;
 
@@ -93,7 +92,7 @@ public class PDFGlyph
     }
     
     /** Add commands for this glyph to a page */
-    public XYPointFloat addCommands(PDFPage cmds, Matrix4f transform, int mode)
+    public XYPointFloat addCommands(PDFPage cmds, AffineTransform transform, int mode)
     {
         if(shape != null)
         {

@@ -28,7 +28,7 @@ import com.sun.pdfview.helper.ColorSpace;
  */
 public final class ICC_ProfileStub extends ICC_Profile
 {
-	transient int colorspace;
+	int colorspace;
 	
 	/**
 	 * Create a new ICC_ProfileStub.
@@ -79,6 +79,27 @@ public final class ICC_ProfileStub extends ICC_Profile
                 return ColorSpace.TYPE_GRAY;
             default:
                 throw new UnsupportedOperationException("Stub cannot perform this operation");
+		 }
+	 }
+	 
+	 public ICC_Profile loadProfile()
+	 {
+		 switch (colorspace)
+		 {
+		 	case ColorSpace.CS_sRGB:
+		 		return ICC_Profile.getInstance(ColorSpace.CS_sRGB);
+		 	case ColorSpace.CS_GRAY:
+		 		return ICC_Profile.getInstance(ColorSpace.CS_GRAY);
+		 	case ColorSpace.CS_CIEXYZ:
+		 		return ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ);
+		 		/*
+		 	case ColorSpace.CS_LINEAR_RGB:
+		 		return ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB);
+		 	case ColorSpace.CS_PYCC:
+		 		return ICC_Profile.getInstance(ColorSpace.CS_PYCC);
+		 		*/
+		 	default:
+		 		throw new UnsupportedOperationException("Stub cannot perform this operation");
 		 }
 	 }
 }

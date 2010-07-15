@@ -24,6 +24,8 @@ package com.sun.pdfview.helper;
 
 import java.util.Vector;
 
+import net.rim.device.api.ui.component.TreeField;
+
 /**
  * A <code>DefaultMutableTreeNode</code> is a general-purpose node in a tree data structure. In the context of PDF Renderer only a subset of functions are included.
  * @author Anton Avtamonov, Vincent Simonetti
@@ -165,6 +167,17 @@ public class DefaultMutableTreeNode
 		return child != null && children != null ? children.contains(child) : false;
 	}
 	
+	/**
+	 * Returns the child at the specified index in this node's child array.
+	 * @param index An index into this node's child array.
+	 * @return The DefaultMutableTreeNode in this node's child array at the specified index.
+	 * @throws ArrayIndexOutOfBoundsException If index is out of bounds.
+	 */
+	public DefaultMutableTreeNode getChildAt(int index)
+	{
+		return (DefaultMutableTreeNode)getChildren().elementAt(index);
+	}
+	
 	private Vector getChildren()
 	{
 		if(this.children == null)
@@ -172,5 +185,28 @@ public class DefaultMutableTreeNode
 			this.children = new Vector();
 		}
 		return this.children;
+	}
+	
+	/**
+	 * Load this tree node into a TreeField as the root element.
+	 * @param tree The TreeField to load this tree node in to.
+	 */
+	public void loadTree(TreeField tree)
+	{
+		//Always load as root
+		loadChild(0, tree, this);
+	}
+	
+	private void loadChild(int parentID, TreeField tree, DefaultMutableTreeNode child)
+	{
+		parentID = tree.addChildNode(parentID, child, false);
+		if(child.children != null)
+		{
+			int count = child.children.size();
+			for(int i = count - 1; i >= 0; i--)
+			{
+				loadChild(parentID, tree, (DefaultMutableTreeNode)child.children.elementAt(i));
+			}
+		}
 	}
 }

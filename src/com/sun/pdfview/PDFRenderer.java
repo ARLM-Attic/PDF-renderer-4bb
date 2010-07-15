@@ -23,19 +23,16 @@
 package com.sun.pdfview;
 
 import java.lang.ref.WeakReference;
-import java.util.Enumeration;
-import java.util.Vector;
 import java.util.Stack;
 
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.XYRect;
 
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.PDFUtil;
+import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Composite;
@@ -76,7 +73,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /** the info about the image, if we need to recreate it */
     private ImageInfo imageinfo;
     /** the next time the image should be notified about updates */
-    private long then = 0;
+    //private long then = 0;
     /** the sum of all the individual dirty regions since the last update */
     private XYRectFloat unupdatedRegion;
     /** how long (in milliseconds) to wait between image updates */
@@ -145,7 +142,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         g.setColor(Color.BLACK);
         
         // set the initial clip and transform on the graphics
-        Matrix4f at = getInitialTransform();
+        AffineTransform at = getInitialTransform();
         g.transform(at);
         
         // set up the initial graphics state
@@ -218,8 +215,8 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     private BasicStroke autoAdjustStrokeWidth(PDFGraphics g, BasicStroke bs)
     {
-        Matrix4f bt = new Matrix4f(g.getTransform());
-        Vector3f scale = new Vector3f();
+    	AffineTransform bt = new AffineTransform(g.getTransform());
+    	XYPointFloat scale = new XYPointFloat();
         bt.getScale(scale);
         float width = bs.getLineWidth() * scale.x;
         BasicStroke stroke = bs;
@@ -273,10 +270,10 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     public XYRectFloat drawImage(PDFImage image)
     {
-        Matrix4f at = new Matrix4f(PDFUtil.affine2TransformMatrix(new float[]{
+    	AffineTransform at = new AffineTransform(
         		1f / image.getWidth(), 0,
                 0, -1f / image.getHeight(),
-                0, 1}));
+                0, 1);
 
         Bitmap bi = image.getImage();
         if (image.isImageMask())
@@ -310,18 +307,18 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         }
         
         // get the total transform that was executed
-        Matrix4f bt = new Matrix4f(g.getTransform());
-        Matrix4f.multiply(at, bt, bt);
+        AffineTransform bt = new AffineTransform(g.getTransform());
+        bt.concatenate(at);
         
         //Original got the origin of the bitmap, it will always be 0 so save the trouble.
-        Vector3f point1 = new Vector3f(0, 0, 0);
-        Vector3f point2 = new Vector3f(bi.getWidth(), bi.getHeight(), 0);
-        bt.transformPoint(point1);
-        bt.transformPoint(point2);
+        float[] points = new float[]{
+            0, 0, bi.getWidth(), bi.getHeight()
+        };
+        bt.transform(points, 0, points, 0, 2);
         
-        return new XYRectFloat(point1.x, point1.y,
-        		point2.x - point1.x,
-        		point2.y - point1.y);
+        return new XYRectFloat(points[0], points[1],
+                points[2] - points[0],
+                points[3] - points[1]);
 
     }
     
@@ -348,7 +345,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /**
      * get the current affine transform
      */
-    public Matrix4f getTransform()
+    public AffineTransform getTransform()
     {
         return state.xform;
     }
@@ -356,16 +353,16 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /**
      * concatenate the given transform with the current transform
      */
-    public void transform(Matrix4f at)
+    public void transform(AffineTransform at)
     {
-    	Matrix4f.multiply(at, state.xform, state.xform);
+    	state.xform.concatenate(at);
         g.setTransform(state.xform);
     }
 
     /**
      * replace the current transform with the given one.
      */
-    public void setTransform(Matrix4f at)
+    public void setTransform(AffineTransform at)
     {
         state.xform = at;
         g.setTransform(state.xform);
@@ -374,7 +371,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     /**
      * get the initial transform from page space to Java space
      */
-    public Matrix4f getInitialTransform()
+    public AffineTransform getInitialTransform()
     {
         return page.getInitialTransform(imageinfo.width, imageinfo.height, imageinfo.clip);
     }
@@ -728,7 +725,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         /** the current compositing alpha for filling */
         Composite fillAlpha;
         /** the current transform */
-        Matrix4f xform;
+        AffineTransform xform;
         
         /** Clone this Graphics state.
          *
@@ -753,7 +750,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
                     stroke.getMiterLimit(),
                     stroke.getDashArray(),
                     stroke.getDashPhase());
-            cState.xform = new Matrix4f(xform);
+            cState.xform = new AffineTransform(xform);
             
             return cState;
         }

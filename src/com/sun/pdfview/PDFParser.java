@@ -33,12 +33,11 @@ import java.util.Stack;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
-import net.rim.device.api.math.Matrix4f;
-
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.colorspace.PatternSpace;
 import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.font.PDFFont;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
@@ -576,7 +575,7 @@ public class PDFParser extends BaseWatchable
     }
     
     /**
-     * parse the stream.  commands are added to the PDFPage initialized
+     * parse the stream. commands are added to the PDFPage initialized
      * in the constructor as they are encountered.
      * <p>
      * Page numbers in comments refer to the Adobe PDF specification.<br>
@@ -630,7 +629,7 @@ public class PDFParser extends BaseWatchable
             {
                 // set transform to array of values
                 float[] elts = popFloat(6);
-                Matrix4f xform = new Matrix4f(PDFUtil.affine2TransformMatrix(elts));
+                AffineTransform xform = new AffineTransform(elts);
                 cmds.addXform(xform);
             }
             else if (cmd.equals("w"))
@@ -715,7 +714,7 @@ public class PDFParser extends BaseWatchable
             else if (cmd.equals("re"))
             {
                 // path add rectangle
-                float a[] = popFloat(4);
+                float[] a = popFloat(4);
                 path.moveTo(a[0], a[1]);
                 path.lineTo(a[0] + a[2], a[1]);
                 path.lineTo(a[0] + a[2], a[1] + a[3]);
@@ -855,7 +854,7 @@ public class PDFParser extends BaseWatchable
                 if (state.fillCS instanceof PatternSpace)
                 {
                     cmds.addFillPaint(doPattern((PatternSpace) state.fillCS));
-                } 
+                }
                 else
                 {
                     int n = state.fillCS.getNumComponents();
@@ -1265,12 +1264,12 @@ public class PDFParser extends BaseWatchable
         if (formCmds == null)
         {
             // rats.  parse it.
-            Matrix4f at;
+        	AffineTransform at;
             XYRectFloat bbox;
             PDFObject matrix = obj.getDictRef("Matrix");
             if (matrix == null)
             {
-                at = new Matrix4f();
+                at = new AffineTransform();
             } 
             else
             {
@@ -1279,7 +1278,7 @@ public class PDFParser extends BaseWatchable
                 {
                     elts[i] = ((PDFObject)matrix.getAt(i)).getFloatValue();
                 }
-                at = new Matrix4f(PDFUtil.affine2TransformMatrix(elts));
+                at = new AffineTransform(elts);
             }
             PDFObject bobj = obj.getDictRef("BBox");
             bbox = new XYRectFloat(bobj.getAt(0).getFloatValue(),
@@ -1563,7 +1562,7 @@ public class PDFParser extends BaseWatchable
         }
         if ((d = gsobj.getDictRef("D")) != null)
         {
-            PDFObject pdash[] = d.getAt(0).getArray();
+            PDFObject[] pdash = d.getAt(0).getArray();
             int len;
             float[] dash = new float[len = pdash.length];
             for (int i = 0; i < len; i++)
@@ -1740,7 +1739,7 @@ public class PDFParser extends BaseWatchable
     }
     
     /**
-     * A class to store state needed whiel rendering.  This includes the
+     * A class to store state needed while rendering. This includes the
      * stroke and fill color spaces, as well as the text formatting
      * parameters.
      */
@@ -1765,7 +1764,7 @@ public class PDFParser extends BaseWatchable
             newState.strokeCS = strokeCS;
             
             // we do need to clone the textFormat
-            newState.textFormat = (PDFTextFormat) textFormat.clone();
+            newState.textFormat = (PDFTextFormat)textFormat.clone();
             
             return newState;
         }

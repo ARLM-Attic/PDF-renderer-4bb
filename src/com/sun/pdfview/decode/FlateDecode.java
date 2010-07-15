@@ -65,34 +65,24 @@ public class FlateDecode
         // know how big the output will be
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] decomp = new byte[bufSize];
-        int loc = 0;
+        //int loc = 0;
         int read = 0;
         
         try
         {
-            while (bais.available() > 0)
-            {
-                inf.read(decomp);
-                if (read <= 0)
-                {
-                	/*
-//                	System.out.println("Read = " + read + "! Params: " + params);
-                    if (inf.needsDictionary())
-                    {
-                        throw new PDFParseException("Don't know how to ask for a dictionary in FlateDecode");
-                    }
-                    else
-                    {
-//                    	System.out.println("Inflate data length=" + buf.remaining());
-                        return ByteBuffer.allocateDirect(0);
-//                        throw new PDFParseException("Inflater wants more data... but it's already here!");
-                    }
-                    */
-                	//No ability to check if a dictionary might be needed, instead just return an empty ByteBuffer.
-                	return ByteBuffer.allocateDirect(0);
-                }
-                baos.write(decomp, 0, read);
-            }
+        	while(true) //Read until there is no data left
+        	{
+        		read = inf.read(decomp);
+        		if (read <= 0)
+        		{
+        			if(baos.size() > 0)
+        			{
+        				break;
+        			}
+        			return ByteBuffer.allocateDirect(0);
+        		}
+        		baos.write(decomp, 0, read);
+        	}
         }
         catch (IOException dfe)
         {

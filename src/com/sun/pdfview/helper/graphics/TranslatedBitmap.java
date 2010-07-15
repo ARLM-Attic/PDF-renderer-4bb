@@ -28,8 +28,8 @@ import net.rim.device.api.ui.XYRect;
  */
 public class TranslatedBitmap
 {
-	XYRect rect;
-	Bitmap img;
+	protected XYRect rect;
+	protected Bitmap img;
 	
 	/**
 	 * Create a new TranslatedBitmap.

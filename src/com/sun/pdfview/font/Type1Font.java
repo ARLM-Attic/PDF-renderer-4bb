@@ -25,11 +25,9 @@ package com.sun.pdfview.font;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
-
 import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.graphics.Geometry;
@@ -46,7 +44,7 @@ public class Type1Font extends OutlineFont
     int lenIV;
     Hashtable name2outline;
     Hashtable name2width;
-    Matrix4f at;
+    AffineTransform at;
     /** the Type1 stack of command values */
     float stack[] = new float[100];
     /** the current position in the Type1 stack */
@@ -112,7 +110,7 @@ public class Type1Font extends OutlineFont
         if (matrixloc < 0)
         {
             System.out.println("No FontMatrix!");
-            at = new Matrix4f(PDFUtil.affine2TransformMatrix(new float[]{0.001f, 0, 0, 0.001f, 0, 0}));
+            at = new AffineTransform(0.001f, 0, 0, 0.001f, 0, 0);
         }
         else
         {
@@ -120,7 +118,7 @@ public class Type1Font extends OutlineFont
             // read [num num num num num num]
             float[] xf = psp2.readArray(6);
             // System.out.println("FONT MATRIX: " + xf);
-            at = new Matrix4f(PDFUtil.affine2TransformMatrix(xf));
+            at = new AffineTransform(xf);
         }
         
         subrs = readSubrs(data);
@@ -850,22 +848,20 @@ public class Type1Font extends OutlineFont
     	Geometry pathA = getOutline(a, getWidth(a, null));
         
         // undo the effect of the transform applied in read 
-        Matrix4f tmp = new Matrix4f();
+    	AffineTransform tmp = new AffineTransform();
         if(at.invert(tmp))
         {
-        	tmp.translate(x, y, 0);
+        	tmp.translate(x, y);
             pathA.transform(tmp);
         }
         else
         {
-        	Matrix4f trans = new Matrix4f();
-        	Matrix4f.createTranslation(x, y, 0, trans);
-        	pathA.transform(trans);
+        	pathA.transform(AffineTransform.createTranslation(x, y));
         }
         
         Geometry pathB = getOutline(b, getWidth(b, null));
         
-        tmp = new Matrix4f();
+        tmp = new AffineTransform();
         if(at.invert(tmp))
         {
             pathB.transform(tmp);
@@ -920,7 +916,7 @@ public class Type1Font extends OutlineFont
     /**
      * Decrypt a glyph stored in byte form
      */
-    private synchronized Geometry parseGlyph(byte[] cs, FlPoint advance, Matrix4f at)
+    private synchronized Geometry parseGlyph(byte[] cs, FlPoint advance, AffineTransform at)
     {
     	Geometry gp = new Geometry();
         FlPoint curpoint = new FlPoint();
@@ -965,13 +961,11 @@ public class Type1Font extends OutlineFont
             if (width != 0 && advance.x != 0)
             {
                 // scale the glyph to fit in the width
-            	Vector3f p = new Vector3f(advance.x, advance.y, 0);
-            	at.transformPoint(p);
+            	XYPointFloat p = new XYPointFloat(advance.x, advance.y);
+            	at.transformPoint(p, p);
                 
                 float scale = width / p.x;
-                Matrix4f xform = new Matrix4f();
-                Matrix4f.createScale(scale, 1, 1, xform);
-                gp.transform(xform);
+                gp.transform(AffineTransform.createScale(scale, 1));
             }
             
             // put the parsed object in the cache

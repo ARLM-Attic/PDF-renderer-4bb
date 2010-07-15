@@ -80,7 +80,7 @@ public abstract class PDFFunction
     /** the type of this function from the list of known types */
     private int type;
     
-  //TODO: Modify so it uses USE_FIXED32 to determine if Fixed32 should be used
+    //TODO: Modify so it uses USE_FIXED32 to determine if Fixed32 should be used
     /** the input domain of this function, an array of 2 * <i>m</i> floats */
     private float[] domain;
     

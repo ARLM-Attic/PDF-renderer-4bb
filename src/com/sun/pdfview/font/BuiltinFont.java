@@ -29,6 +29,8 @@ import java.util.Hashtable;
 import net.rim.device.api.ui.Font;
 
 import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.ResourceManager;
+import com.sun.pdfview.Resources;
 import com.sun.pdfview.helper.Properties;
 
 /**
@@ -194,11 +196,13 @@ public class BuiltinFont extends Type1Font
      */
     private void parseFont(String baseFont) throws IOException
     {
+    	Resources res = ResourceManager.getResource("font.res");
+    	
         // load the base fonts properties files, if it isn't already loaded
         if (props == null)
         {
             props = new Properties();
-            props.load(BuiltinFont.class.getResourceAsStream("res/BaseFonts.properties"));
+            props.load(res.getStream("BaseFonts.properties"));
         }
         
         // make sure we're a known font
@@ -219,7 +223,7 @@ public class BuiltinFont extends Type1Font
         
         // read the data from the file
         byte[] data = new byte[length];
-        InputStream fontStream = NativeFont.class.getResourceAsStream("res/" + file);
+        InputStream fontStream = res.getStream(file);
         int cur = 0;
         while (cur < length)
         {

@@ -25,14 +25,13 @@ package com.sun.pdfview.font;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
 import net.rim.device.api.ui.XYPoint;
 import net.rim.device.api.ui.XYRect;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFParser;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
@@ -53,7 +52,7 @@ public class Type3Font extends PDFFont
     /** bounding box for the font characters */
     XYRectFloat bbox;
     /** affine transform for the font characters */
-    Matrix4f at;
+    AffineTransform at;
     /** the widths */
     float[] widths;
     /** the start code */
@@ -87,7 +86,7 @@ public class Type3Font extends PDFFont
         {
             matrixAry[i] = matrix.getAt(i).getFloatValue();
         }
-        at = new Matrix4f(PDFUtil.affine2TransformMatrix(matrixAry));
+        at = new AffineTransform(matrixAry);
         
         // get the scale from the matrix
         float scale = matrixAry[0] + matrixAry[2];
@@ -185,8 +184,8 @@ public class Type3Font extends PDFFont
             
             float width = widths[src - firstChar];
             
-            Vector3f point = new Vector3f(width, 0, 0);
-            at.transformPoint(point);
+            XYPointFloat point = new XYPointFloat(width, 0);
+            at.transformPoint(point, point);
             
             return new PDFGlyph(src, name, page, new XYPointFloat(point.x, point.y));
         }

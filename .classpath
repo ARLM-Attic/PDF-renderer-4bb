@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="com/sun/pdfview/decode/CCITTCodes" kind="src" path="src"/>
+	<classpathentry excluding="com/sun/pdfview/helper/graphics/color/CMM.java|com/sun/pdfview/helper/graphics/color/ICC_Converter.java|com/sun/pdfview/helper/graphics/color/ICC_Pipeline.java|com/sun/pdfview/helper/graphics/color/ICC_Stage.java|com/sun/pdfview/helper/graphics/color/MAT3.java|com/sun/pdfview/helper/graphics/color/TagHandler.java|com/sun/pdfview/helper/graphics/color/VEC3.java|com/sun/pdfview/helper/graphics/color/ICC_ColorSpace_old.java|com/sun/pdfview/helper/graphics/color/ICC_Profile_old.java" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/net.rim.ejde.BlackBerryVMInstallType/BlackBerry JRE 5.0.0"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/PDFRendererResources"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/lcms2_4bb"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

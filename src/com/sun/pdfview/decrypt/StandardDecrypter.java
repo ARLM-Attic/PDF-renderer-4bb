@@ -52,7 +52,7 @@ import net.rim.device.api.crypto.SymmetricKey;
 import net.rim.device.api.crypto.SymmetricKeyFactory;
 import net.rim.device.api.util.Arrays;
 
-//TODO: Go through and redo exceptions, and make sure evrything works properly
+//TODO: Go through and redo exceptions, and make sure everything works properly
 
 /**
  * Standard simple decrypter for versions 1, 2 and 4 of the Standard

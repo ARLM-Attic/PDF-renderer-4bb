@@ -25,10 +25,10 @@ package com.sun.pdfview.font;
 import java.io.IOException;
 import java.util.Random;
 
-import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.graphics.Geometry;
 
@@ -58,7 +58,7 @@ public class Type1CFont extends OutlineFont
     
     String fontname;
     
-    Matrix4f at = new Matrix4f(PDFUtil.affine2TransformMatrix(new float[]{0.001f, 0, 0, 0.001f, 0, 0}));
+    AffineTransform at = new AffineTransform(0.001f, 0, 0, 0.001f, 0, 0);
     
     int num;
     
@@ -470,7 +470,7 @@ public class Type1CFont extends OutlineFont
                 {
                 	mAt = stack;
                 }
-                at = new Matrix4f(PDFUtil.affine2TransformMatrix(mAt));
+                at = new AffineTransform(mAt);
             }
             else if (cmd == 15) // charset
             {
@@ -841,13 +841,12 @@ public class Type1CFont extends OutlineFont
     	Geometry pathA = getOutline(a, getWidth(a, null));
         
         // undo the effect of the transform applied in read
-        Matrix4f xformA = new Matrix4f();
-        Matrix4f.createTranslation(x, y, 0, xformA);
-        Matrix4f tmp = new Matrix4f();
+    	AffineTransform xformA = AffineTransform.createTranslation(x, y);
+    	AffineTransform tmp = new AffineTransform();
         boolean inv = true;
         if(inv = at.invert(tmp))
         {
-        	Matrix4f.multiply(tmp, xformA, xformA);
+        	xformA.concatenate(tmp);
         }
         pathA.transform(xformA);
         

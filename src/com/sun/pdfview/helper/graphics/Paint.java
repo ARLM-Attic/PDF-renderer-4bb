@@ -19,9 +19,9 @@
  */
 package com.sun.pdfview.helper.graphics;
 
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.ColorSpace;
 
-import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Graphics;
 
@@ -53,7 +53,7 @@ public abstract class Paint
 	{
 		return new Paint()
 		{
-			public PaintGenerator createGenerator(Matrix4f xform)
+			public PaintGenerator createGenerator(AffineTransform xform)
 			{
 				return new PaintGenerator()
 				{
@@ -91,10 +91,10 @@ public abstract class Paint
 	
 	/**
 	 * Create a PaintGenerator, this is similar to a PaintContext but the Generator will simply produce a Bitmap that will be drawn with.
-	 * @param xform The Matrix4f from user space into device space.
+	 * @param xform The AffineTransform from user space into device space.
 	 * @return The created PaintGenerator.
 	 */
-	public abstract PaintGenerator createGenerator(Matrix4f xform);
+	public abstract PaintGenerator createGenerator(AffineTransform xform);
 	
 	/**
 	 * Returns the type of this Paint's transparency.

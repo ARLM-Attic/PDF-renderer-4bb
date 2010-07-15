@@ -25,11 +25,10 @@ package com.sun.pdfview.pattern;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import net.rim.device.api.math.Matrix4f;
-
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParseException;
+import com.sun.pdfview.helper.AffineTransform;
 
 /**
  * The abstract superclass of all PDF Pattern types
@@ -40,7 +39,7 @@ public abstract class PDFPattern
     private int type;
     
     /** the matrix to transform from pattern space to PDF space */
-    private Matrix4f xform;
+    private AffineTransform xform;
     
     /** Creates a new instance of PDFPattern */
     protected PDFPattern(int type) 
@@ -65,10 +64,10 @@ public abstract class PDFPattern
          
         // read the pattern transform matrix
         PDFObject matrix = patternObj.getDictRef("Matrix");
-        Matrix4f xform = null;
+        AffineTransform xform = null;
         if (matrix == null)
         {
-            xform = new Matrix4f();
+            xform = new AffineTransform();
         }
         else
         {
@@ -78,7 +77,7 @@ public abstract class PDFPattern
                 elts[i] = ((PDFObject)matrix.getAt(i)).getFloatValue();
             }
             
-            xform = new Matrix4f(elts);
+            xform = new AffineTransform(elts);
         }
         
         switch (type)
@@ -113,7 +112,7 @@ public abstract class PDFPattern
     /**
      * Get the transform associated with this pattern
      */
-    public Matrix4f getTransform()
+    public AffineTransform getTransform()
     {
         return xform;
     }
@@ -121,7 +120,7 @@ public abstract class PDFPattern
     /**
      * Set the transform associated with this pattern
      */
-    protected void setTransform(Matrix4f xform)
+    protected void setTransform(AffineTransform xform)
     {
         this.xform = xform;
     }

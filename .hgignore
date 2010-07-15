@@ -10,3 +10,13 @@ syntax: glob
 bin
 deliverables
 doc
+Little CMS License.txt
+# old java files for color managment
+CMM.java
+ICC_Converter.java
+ICC_Pipeline.java
+ICC_Profile_old.java
+ICC_Stage.java
+MAT3.java
+TagHandler.java
+VEC3.java

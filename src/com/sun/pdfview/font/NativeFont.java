@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
-import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.FontFamily;
 import net.rim.device.api.ui.FontManager;
@@ -48,6 +47,7 @@ import com.sun.pdfview.font.ttf.NameTable;
 import com.sun.pdfview.font.ttf.PostTable;
 import com.sun.pdfview.font.ttf.TrueTypeFont;
 import com.sun.pdfview.font.ttf.TrueTypeTable;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.graphics.Geometry;
 
@@ -230,9 +230,7 @@ public class NativeFont extends OutlineFont
         float advance = (float)hmtxTable.getAdvance(glyphID) / (float)unitsPerEm;
         
         float widthfactor = width / advance;
-        Matrix4f scale = new Matrix4f();
-        Matrix4f.createScale(widthfactor, -1, 1, scale);
-        gp.transform(scale);
+        gp.transform(AffineTransform.createScale(widthfactor, -1));
         
         return gp;
     }

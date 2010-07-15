@@ -25,6 +25,7 @@
 package com.sun.pdfview;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -89,7 +90,7 @@ public class PDFFile
     /**
      * whether the file is printable or not (trailer -> Encrypt -> P & 0x4)
      */
-    private boolean printable = true;
+    private boolean printable = true; //This can probably get removed but someone might be able to make an app to print from their BlackBerry.
     /**
      * whether the file is saveable or not (trailer -> Encrypt -> P & 0x10)
      */
@@ -106,19 +107,22 @@ public class PDFFile
      */
     public static void appClosing()
     {
+    	ResourceManager.singltonStorageCleanup();
 //#ifndef NATIVE_SOFTREFERENCE
     	//Little hack to clean up references to this library. This won't work if multiple apps access this library at the same time. Luckily the SoftReferences that this
     	//would clean up will be recreated if they are removed.
     	new SoftReference(new String[]{"CLEANUP_REFRENCES_CALLBACK", "PSW:00221133"});
 //#endif
+    	//TODO: If a native SoftReference is created then how should references be cleaned up?
     }
     
+    //TODO: Add support for InputStream but make sure that if it is something like a input stream from a HTTP request that the file can be read in sections and doesn't need full, instant loads.
+    
     /**
-     * get a PDFFile from a .pdf file.  The file must me a random access file
-     * at the moment.  It should really be a file mapping from the nio package.
+     * Get a PDFFile from a .pdf file.
      * <p>
      * Use the getPage(...) methods to get a page from the PDF file.
-     * @param buf the RandomAccessFile containing the PDF.
+     * @param buf the ByteBuffer containing the PDF.
      * @throws IOException if there's a problem reading from the buffer
      * @throws PDFParseException if the document appears to be malformed, or
      *  its features are unsupported. If the file is encrypted in a manner that
@@ -134,11 +138,10 @@ public class PDFFile
     }
 
     /**
-     * get a PDFFile from a .pdf file.  The file must me a random access file
-     * at the moment.  It should really be a file mapping from the nio package.
+     * Get a PDFFile from a .pdf file.
      * <p>
      * Use the getPage(...) methods to get a page from the PDF file.
-     * @param buf the RandomAccessFile containing the PDF.
+     * @param buf the ByteBuffer containing the PDF.
      * @param password the user or owner password
      * @throws IOException if there's a problem reading from the buffer
      * @throws PDFParseException if the document appears to be malformed, or
@@ -286,7 +289,7 @@ public class PDFFile
         buf.position(loc);
         
         // read the object and cache the reference
-        obj= readObject(ref.getID(), ref.getGeneration(), decrypter);
+        obj = readObject(ref.getID(), ref.getGeneration(), decrypter);
         if (obj == null)
         {
             obj = PDFObject.nullObj;
@@ -417,7 +420,7 @@ public class PDFFile
             else if (c == '[')
             {
                 // it's an array
-            	obj= readArray(objNum, objGen, decrypter);
+            	obj = readArray(objNum, objGen, decrypter);
             }
             else if (c == '/')
             {
@@ -432,7 +435,7 @@ public class PDFFile
             else if ((c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.')
             {
                 // it's a number
-                obj = readNumber((char) c);
+                obj = readNumber((char)c);
                 if (!numscan)
                 {
                     // It could be the start of a reference.
@@ -442,10 +445,10 @@ public class PDFFile
                     // from dereference, which already is using a mark
                     int startPos = buf.position();
 
-                    PDFObject testnum= readObject(-1, -1, true, decrypter);
+                    PDFObject testnum = readObject(-1, -1, true, decrypter);
                     if (testnum != null && testnum.getType() == PDFObject.NUMBER)
                     {
-                    	PDFObject testR= readObject(-1, -1, true, decrypter);
+                    	PDFObject testR = readObject(-1, -1, true, decrypter);
                         if (testR != null && testR.getType() == PDFObject.KEYWORD && testR.getStringValue().equals("R"))
                         {
                             // yup.  it's a reference.
@@ -961,11 +964,13 @@ public class PDFFile
     }
     
     /**
-     * read a number.  The initial digit or . or - is passed in as the
+     * read a number. The initial digit or . or - is passed in as the
      * argument.
      */
     private PDFObject readNumber(char start) throws IOException
     {
+    	//TODO: Can this be changed to use floats instead of doubles? It's much faster :)
+    	
         // we've read the first digit (it's passed in as the argument)
         boolean neg = start == '-';
         boolean sawdot = start == '.';
@@ -1141,7 +1146,7 @@ public class PDFFile
             while (true)
             {
                 // read until the word "trailer"
-            	PDFObject obj=readObject(-1, -1, IdentityDecrypter.getInstance());
+            	PDFObject obj = readObject(-1, -1, IdentityDecrypter.getInstance());
                 if (obj.getType() == PDFObject.KEYWORD && obj.getStringValue().equals("trailer"))
                 {
                     break;
@@ -1168,7 +1173,7 @@ public class PDFFile
                 // extend the objIdx table, if necessary
                 if (refstart + reflen >= objIdx.length)
                 {
-                    PDFXref nobjIdx[] = new PDFXref[refstart + reflen];
+                    PDFXref[] nobjIdx = new PDFXref[refstart + reflen];
                     System.arraycopy(objIdx, 0, nobjIdx, 0, objIdx.length);
                     objIdx = nobjIdx;
                 }
@@ -1527,7 +1532,7 @@ public class PDFFile
         Integer key = new Integer(pagenum);
         Hashtable resources = null;
         PDFObject pageObj = null;
-        boolean needread = false;
+        //boolean needread = false;
         
         PDFPage page = cache.getPage(key);
         PDFParser parser = cache.getPageParser(key);
@@ -1598,7 +1603,7 @@ public class PDFFile
             throw new IOException("No page contents!");
         }
         
-        PDFObject contents[] = contentsObj.getArray();
+        PDFObject[] contents = contentsObj.getArray();
         
         // see if we have only one stream (the easy case)
         if (contents.length == 1)
@@ -1608,24 +1613,25 @@ public class PDFFile
         
         // first get the total length of all the streams
         int len = 0;
-        for (int i = 0; i < contents.length; i++)
+        int c;
+        byte[][] streams = new byte[c = contents.length][];
+        for (int i = 0; i < c; i++)
         {
-            byte[] data = contents[i].getStream();
-            if (data == null)
+        	streams[i] = contents[i].getStream();
+            if (streams[i] == null)
             {
                 throw new PDFParseException("No stream on content " + i + ": " + contents[i]);
             }
-            len += data.length;
+            len += streams[i].length;
         }
         
         // now assemble them all into one object
         byte[] stream = new byte[len];
         len = 0;
-        for (int i = 0; i < contents.length; i++)
+        for (int i = 0; i < c; i++)
         {
-            byte data[] = contents[i].getStream();
-            System.arraycopy(data, 0, stream, len, data.length);
-            len += data.length;
+            System.arraycopy(streams[i], 0, stream, len, streams[i].length);
+            len += streams[i].length;
         }
         
         return stream;
@@ -1678,7 +1684,7 @@ public class PDFFile
      * @param resources a HashMap that will be filled with any resource
      *                  definitions encountered on the search for the page
      */
-    private PDFObject findPage(PDFObject pagedict, int start, int getPage,  Hashtable resources) throws IOException
+    private PDFObject findPage(PDFObject pagedict, int start, int getPage, Hashtable resources) throws IOException
     {
         PDFObject rsrcObj = pagedict.getDictRef("Resources");
         if (rsrcObj != null)
@@ -1698,7 +1704,8 @@ public class PDFFile
         if (kidsObj != null)
         {
             PDFObject[] kids = kidsObj.getArray();
-            for (int i = 0; i < kids.length; i++)
+            int len = kids.length;
+            for (int i = 0; i < len; i++)
             {
                 int count = 1;
                 // BUG: some PDFs (T1Format.pdf) don't have the Type tag.

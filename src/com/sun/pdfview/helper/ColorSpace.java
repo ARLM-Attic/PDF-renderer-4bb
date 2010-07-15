@@ -167,7 +167,7 @@ public abstract class ColorSpace
 	 */
 	public int getNumComponents()
 	{
-		return numComponents;  
+		return numComponents;
 	}
 	
 	/**

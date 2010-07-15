@@ -25,20 +25,17 @@ package com.sun.pdfview.pattern;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import net.rim.device.api.math.Matrix4f;
-import net.rim.device.api.math.Vector3f;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.XYRect;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParser;
 import com.sun.pdfview.PDFRenderer;
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.PDFGraphics;
-import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.Composite;
@@ -143,8 +140,8 @@ public class PatternType1 extends PDFPattern
         
         // undo the page's transform to user space
         /*
-        Matrix4f xform = new Matrix4f(PDFUtil.affine2TransformMatrix(new float[]{1, 0, 0, -1, 0, getYStep()}));
-        				//new Matrix4f(PDFUtil.affine2TransformMatrix(new float[]{1, 0, 0, -1, 0, getBBox().getHeight()}));
+        AffineTransform xform = new AffineTransform(1, 0, 0, -1, 0, getYStep());
+            //new AffineTransform(1, 0, 0, -1, 0, getBBox().getHeight());
         page.addXform(xform);
         */
         
@@ -158,15 +155,15 @@ public class PatternType1 extends PDFPattern
         // get actual image
         Paint paint = new Paint()
         {
-            public PaintGenerator createGenerator(Matrix4f xform) 
+            public PaintGenerator createGenerator(AffineTransform xform) 
             {
                 ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
                 
                 //Maybe to reduce memory usage, don't create a new Geometry object and instead create a helper function that will transform the Box and directly return the bounds.
                 XYRectFloat devBBox = new Geometry(getBBox()).createTransformedShape(xform).getBounds2D();
                 
-                Vector3f steps = new Vector3f(getXStep(), getYStep(), 0);
-                xform.transformNormal(steps);
+                XYPointFloat steps = new XYPointFloat(getXStep(), getYStep());
+                xform.transformNormal(steps, steps);
                 
                 int width = (int)Math.ceil(devBBox.width);
                 int height = (int)Math.ceil(devBBox.height);
@@ -253,7 +250,7 @@ public class PatternType1 extends PDFPattern
         public XYRectFloat fill(PDFRenderer state, PDFGraphics g, Geometry s)
         {
         	// first transform s into device space
-            Matrix4f at = g.getTransform();
+        	AffineTransform at = g.getTransform();
             Geometry xformed = s.createTransformedShape(at);
             
             // push the graphics state so we can restore it
@@ -265,7 +262,7 @@ public class PatternType1 extends PDFPattern
             state.transform(pattern.getTransform());
             
             // now figure out where the shape should be
-            Matrix4f mat = state.getTransform();
+            AffineTransform mat = state.getTransform();
             if(!mat.invert(at))
             {
             	// oh well (?)

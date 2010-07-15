@@ -22,8 +22,7 @@
  */
 package com.sun.pdfview;
 
-import net.rim.device.api.math.Matrix4f;
-
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
@@ -163,7 +162,7 @@ public class PDFShapeCmd extends PDFCmd
         float starty = 0;
         float[] coords = new float[6];
         
-        Geometry.Enumeration pi = path.getPathIterator(new Matrix4f());
+        Geometry.Enumeration pi = path.getPathEnumerator(new AffineTransform());
         while (!pi.isDone())
         {
             if (count >= mypoints.length)

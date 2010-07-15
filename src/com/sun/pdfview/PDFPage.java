@@ -27,11 +27,11 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.XYDimension;
 
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
@@ -297,25 +297,28 @@ public class PDFPage
      * @param clip the desired clip rectangle (in PDF space) or null to use
      *             the page's bounding box
      */
-    public Matrix4f getInitialTransform(int width, int height, XYRectFloat clip)
+    public AffineTransform getInitialTransform(int width, int height, XYRectFloat clip)
     {
+    	AffineTransform at;
     	final float[] initalMat = new float[]{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
         switch (getRotation())
         {
             case 0:
-            	PDFUtil.affine2TransformMatrix(new float[]{1, 0, 0, -1, 0, height}, initalMat);
+            	at = new AffineTransform(1, 0, 0, -1, 0, height);
                 break;
             case 90:
-            	PDFUtil.affine2TransformMatrix(new float[]{0, 1, 1, 0, 0, 0}, initalMat);
+            	at = new AffineTransform(0, 1, 1, 0, 0, 0);
                 break;
             case 180:
-            	PDFUtil.affine2TransformMatrix(new float[]{-1, 0, 0, 1, width, 0}, initalMat);
+            	at = new AffineTransform(-1, 0, 0, 1, width, 0);
                 break;
             case 270:
-            	PDFUtil.affine2TransformMatrix(new float[]{0, -1, -1, 0, width, height}, initalMat);
+            	at = new AffineTransform(0, -1, -1, 0, width, height);
                 break;
+            default:
+            	at = new AffineTransform();
+            	break;
         }
-        Matrix4f at = new Matrix4f(initalMat);
         
         if (clip == null)
         {
@@ -331,11 +334,11 @@ public class PDFPage
         // now scale the image to be the size of the clip
         float scaleX = width / clip.width;
         float scaleY = height / clip.height;
-        at.scale(scaleX, scaleY, 1);
+        at.scale(scaleX, scaleY);
         
         // create a transform that moves the top left corner of the clip region
         // (minX, minY) to (0,0) in the image
-        at.translate(-clip.x, -clip.y, 0);
+        at.translate(-clip.x, -clip.y);
         
         return at;
     }
@@ -418,7 +421,7 @@ public class PDFPage
      * @param extra a transform to perform before adding the commands.
      * If null, no extra transform will be added.
      */
-    public void addCommands(PDFPage page, Matrix4f extra)
+    public void addCommands(PDFPage page, AffineTransform extra)
     {
         synchronized(commands)
         {
@@ -524,11 +527,11 @@ public class PDFPage
     }
     
     /** concatenate a transform to the graphics state */
-    public void addXform(Matrix4f at)
+    public void addXform(AffineTransform at)
     {
         //PDFXformCmd xc = lastXformCmd();
-    	//Matrix4f.multiply(at, xc.at, xc.at);
-        addCommand(new PDFXformCmd(new Matrix4f(at)));
+    	//xc.at.concatenate(at);
+        addCommand(new PDFXformCmd(new AffineTransform(at)));
     }
     
     /**
@@ -818,9 +821,9 @@ class PDFPopCmd extends PDFCmd
  */
 class PDFXformCmd extends PDFCmd
 {
-    Matrix4f at;
+	AffineTransform at;
     
-    public PDFXformCmd(Matrix4f at)
+    public PDFXformCmd(AffineTransform at)
     {
         if (at == null)
         {

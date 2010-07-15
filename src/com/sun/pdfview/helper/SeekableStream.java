@@ -78,7 +78,7 @@ public class SeekableStream extends InputStream implements Seekable
 		{
 			throw new IndexOutOfBoundsException("off");
 		}
-		if((off + len) >= b.length)
+		if((off + len) > b.length)
 		{
 			throw new IndexOutOfBoundsException("len");
 		}
@@ -93,6 +93,7 @@ public class SeekableStream extends InputStream implements Seekable
 		}
 		len = Math.min(data.length - pos, len);
 		System.arraycopy(data, pos, b, off, len);
+		pos += len;
 		return len;
 	}
 	

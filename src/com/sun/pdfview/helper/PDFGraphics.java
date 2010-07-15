@@ -19,12 +19,14 @@
  */
 package com.sun.pdfview.helper;
 
+import java.util.Vector;
+
+import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Composite;
 import com.sun.pdfview.helper.graphics.Geometry;
 import com.sun.pdfview.helper.graphics.Paint;
 
-import net.rim.device.api.math.Matrix4f;
 import net.rim.device.api.system.Bitmap;
 
 /**
@@ -64,25 +66,124 @@ public abstract class PDFGraphics
 	/** Alpha interpolation hint value -- ALPHA_INTERPOLATION_DEFAULT.*/
 	public static final int VALUE_ALPHA_INTERPOLATION_DEFAULT = VALUE_ALPHA_INTERPOLATION_SPEED;
 	
+	private class GraphicsObject
+	{
+		public PDFGraphics graphics;
+		private SoftReference ref;
+		
+		public GraphicsObject(PDFGraphics graphics, Object drawingObject)
+		{
+			if(graphics == null || drawingObject == null)
+			{
+				throw new NullPointerException();
+			}
+			this.graphics = graphics;
+			this.ref = new SoftReference(drawingObject);
+		}
+		
+		public boolean equals(Object obj)
+		{
+			Object reference = ref.get();
+			if(reference != null)
+			{
+				if(obj != null)
+				{
+					return reference == obj; //This way it compares pointers and an exact match can be made.
+				}
+			}
+			return false;
+		}
+		
+		public boolean isValid()
+		{
+			return ref.get() != null;
+		}
+	}
+	
+	private static final long GFX_OBJS_ID = 0x8A3FAFC98105BCAAL;
+	
 	/**
 	 * Create a new PDFGraphics device.
 	 * @param drawingDevice The graphics device to draw with.
 	 * @return The PDFGraphics that will draw to that graphics device or null if that device is not supported.
 	 */
-	public static PDFGraphics createGraphics(Object drawingDevice)
+	public synchronized static PDFGraphics createGraphics(Object drawingDevice)
 	{
-		System.err.println("Graphics creation is not supported yet.");
-		return null;
+		PDFGraphics graphics = null;
+		
+		Vector graphicsObjects;
+		Object obj;
+		if((obj = ResourceManager.singletonStorageGet(GFX_OBJS_ID)) != null)
+		{
+			graphicsObjects = (Vector)obj;
+			
+			//First try to find an already created graphics object
+			int c = graphicsObjects.size();
+			Vector remove = null;
+			for(int i = 0; i < c; i++)
+			{
+				GraphicsObject gfx = (GraphicsObject)graphicsObjects.elementAt(i);
+				if(graphics == null && gfx.equals(drawingDevice))
+				{
+					//Found it
+					graphics = gfx.graphics;
+				}
+				else if(!gfx.isValid())
+				{
+					if(remove == null)
+					{
+						remove = new Vector();
+					}
+					remove.addElement(gfx);
+				}
+			}
+			if(remove != null)
+			{
+				//Remove any invalid graphics objects
+				c = remove.size();
+				for(int i = 0; i < c; i++)
+				{
+					graphicsObjects.removeElement(remove.elementAt(i));
+				}
+			}
+		}
+		else
+		{
+			graphicsObjects = new Vector();
+			ResourceManager.singletonStorageSet(GFX_OBJS_ID, graphicsObjects);
+		}
+		
+		if(graphics == null)
+		{
+			//Couldn't find a precreated graphics object, so try making one
+			String drawingSystemName = "com.sun.pdfview.helper.graphics.drawing." + drawingDevice.getClass().getName() + "Graphics.GraphicsImpl";
+			try
+			{
+				Class drawingSystem = Class.forName(drawingSystemName);
+				PDFGraphics system = (PDFGraphics)drawingSystem.newInstance();
+				system.setDrawingDevice(drawingDevice);
+				graphicsObjects.addElement(system.new GraphicsObject(system, drawingDevice));
+				graphics = system;
+			}
+			catch (Exception e)
+			{
+				//Couldn't find or create graphics system.
+				System.err.println("Graphics creation is not supported yet for: " + drawingDevice.getClass() + ".");
+			}
+		}
+		
+		return graphics;
 		
 		//TYPES: Bitmap, RIM Graphics, J2ME Graphics
 		//TODO: Testing needs to be done to determine what types the drawing objects will return and how to create the new drawing item. Should be dynamic so if someone creates their own drawing device it can still work.
+		//Remember: http://supportforums.blackberry.com/t5/Java-Development/Rotate-and-scale-bitmaps/ta-p/492524 and Advanced Graphics stuff
 	}
 	
 	/**
 	 * Returns a copy of the current <code>Transform</code> in the <code>PDFGraphics</code> context.
-	 * @return The current <code>Matrix4f</code> in the <code>PDFGraphics</code> context.
+	 * @return The current <code>AffineTransform</code> in the <code>PDFGraphics</code> context.
 	 */
-	public abstract Matrix4f getTransform();
+	public abstract AffineTransform getTransform();
 	
 	/**
 	 * Gets the current clipping area.
@@ -154,29 +255,29 @@ public abstract class PDFGraphics
 	protected abstract void setClip(Geometry s, boolean direct);
 	
 	/**
-	 * Composes an Matrix4f object with the Transform in this PDFGraphics according to the rule last-specified-first-applied.
-	 * @param Tx The Matrix4f object to be composed with the current Transform.
+	 * Composes an AffineTransform object with the Transform in this PDFGraphics according to the rule last-specified-first-applied.
+	 * @param Tx The AffineTransform object to be composed with the current Transform.
 	 */
-	public void transform(Matrix4f Tx)
+	public void transform(AffineTransform Tx)
 	{
 		setTransform(Tx, false);
 	}
 	
 	/**
 	 * Overwrites the Transform in the PDFGraphics context.
-	 * @param Tx The Matrix4f that was retrieved from the getTransform method.
+	 * @param Tx The AffineTransform that was retrieved from the getTransform method.
 	 */
-	public void setTransform(Matrix4f Tx)
+	public void setTransform(AffineTransform Tx)
 	{
 		setTransform(Tx, true);
 	}
 	
 	/**
 	 * Sets the Transform in the PDFGraphics context.
-	 * @param Tx The Matrix4f to set to the device's matrix.
+	 * @param Tx The AffineTransform to set to the device's matrix.
 	 * @param direct true if the matrix will replace the device's matrix, false if it should be combined with the previous matrix.
 	 */
-	public abstract void setTransform(Matrix4f Tx, boolean direct);
+	public abstract void setTransform(AffineTransform Tx, boolean direct);
 	
 	/**
 	 * Translates the origin of the PDFGraphics context to the point (x, y) in the current coordinate system.
@@ -212,5 +313,11 @@ public abstract class PDFGraphics
 	 * @param xform The transformation from image space into user space.
 	 * @return true if the Image is fully loaded and completely rendered; false if the Image is still being loaded.
 	 */
-	public abstract boolean drawImage(Bitmap img, Matrix4f xform);
+	public abstract boolean drawImage(Bitmap img, AffineTransform xform);
+	
+	/**
+	 * Sets the drawing device that everything will get drawn to.
+	 * @param device The device to draw with.
+	 */
+	protected abstract void setDrawingDevice(Object device);
 }

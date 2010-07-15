@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import com.sun.pdfview.ResourceManager;
+
 import net.rim.device.api.io.LineReader;
 
 /**
@@ -96,7 +98,7 @@ public class AdobeGlyphList
                 String uni;
                 Vector unicodes = new Vector();
                 
-                InputStream istr = getClass().getResourceAsStream("/com/sun/pdfview/font/ttf/resource/glyphlist.txt");
+                InputStream istr = ResourceManager.getResource("font.ttf.resource").getStream("glyphlist.txt");
                 
                 LineReader reader = new LineReader(istr);
                 String line = "";

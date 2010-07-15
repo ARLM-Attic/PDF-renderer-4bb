@@ -19,14 +19,14 @@
  */
 package com.sun.pdfview.helper.graphics;
 
+import java.util.NoSuchElementException;
+
+import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
 
-import net.rim.device.api.math.Matrix4f;
-
 /**
- * Represents one of more geometric paths.
- * @author Vincent Simonetti
+ * Represents one of more geometric paths. Built off java.awt.geom.GeneralPath.
  */
 public class Geometry
 {
@@ -40,19 +40,65 @@ public class Geometry
 	public static final int WIND_NON_ZERO = 1;
 	
 	/**
+     * The buffers size
+     */
+    private static final int BUFFER_SIZE = 10;
+    
+    /**
+     * The buffers capacity
+     */
+    private static final int BUFFER_CAPACITY = 10;
+
+    /**
+     * The point's types buffer
+     */
+    byte[] types;
+    
+    /**
+     * The points buffer
+     */
+    float[] points;
+    
+    /**
+     * The point's type buffer size
+     */
+    int typeSize;
+    
+    /**
+     * The points buffer size
+     */
+    int pointSize;
+    
+    /**
+     * The path rule 
+     */
+    int rule;
+
+    /**
+     * The space amount in points buffer for different segmenet's types
+     */
+    static final int[] pointShift = {
+            2,  // MOVETO
+            2,  // LINETO
+            4,  // QUADTO
+            6,  // CUBICTO
+            0}; // CLOSE
+	
+	/**
 	 * Enumeration through the elements of the path.
 	 */
 	public static class Enumeration
 	{
 		private Geometry g;
-		private Matrix4f mat;
-		private int index;
+		private AffineTransform mat;
+		private int cordIndex, typeIndex;
 		
-		private Enumeration(Geometry g, Matrix4f mat)
+		private Enumeration(Geometry g, AffineTransform mat)
 		{
 			this.g = g;
 			this.mat = mat;
-			this.index = 0;
+			this.cordIndex = 0;
+			this.typeIndex = 0;
 		}
 		
 		/**
@@ -90,8 +136,7 @@ public class Geometry
 		 */
 		public boolean isDone()
 		{
-			//TODO
-			return true;
+			return typeIndex >= g.typeSize;
 		}
 		
 		/**
@@ -99,7 +144,7 @@ public class Geometry
 		 */
 		public void next()
 		{
-			//TODO
+			typeIndex++;
 		}
 		
 		/**
@@ -109,12 +154,19 @@ public class Geometry
 		 */
 		public int currentSegment(float[] coords)
 		{
-			if(coords == null)
+			if (isDone())
 			{
-				return -1;
+				throw new NoSuchElementException("Iterator out of bounds");
 			}
-			//TODO
-			return -1;
+			int type = g.types[typeIndex];
+			int count = Geometry.pointShift[type];
+			System.arraycopy(g.points, cordIndex, coords, 0, count);
+			if (mat != null)
+			{
+				mat.transform(coords, 0, coords, 0, count / 2);
+			}
+			cordIndex += count;
+			return type;
 		}
 		
 		/**
@@ -132,7 +184,9 @@ public class Geometry
 	 */
 	public Geometry()
 	{
-		//TODO
+		setWindingRule(WIND_NON_ZERO);
+        types = new byte[BUFFER_SIZE];
+        points = new float[BUFFER_SIZE * 2];
 	}
 	
 	/**
@@ -141,7 +195,8 @@ public class Geometry
 	 */
 	public Geometry(Geometry geom)
 	{
-		//TODO
+		this();
+		append(geom, false);
 	}
 	
 	/**
@@ -157,16 +212,39 @@ public class Geometry
 		lineTo(bbox.x, bbox.Y2());
 		closePath();
 	}
-
+	
 	/**
-	 * Returns a Enumeration object that iterates along the boundary of this Geometry and provides access to the geometry of the outline of this Geometry.
-	 * @param at An Matrix4f.
+     * Checks points and types buffer size to add pointCount points. If necessary realloc buffers to enlarge size.   
+     * @param pointCount - the point count to be added in buffer
+     */
+    void checkBuf(int pointCount, boolean checkMove)
+    {
+        if (checkMove && typeSize == 0)
+        {
+            throw new IllegalStateException("First segment should be SEG_MOVETO type");
+        }
+        if (typeSize == types.length)
+        {
+            byte[] tmp = new byte[typeSize + BUFFER_CAPACITY];
+            System.arraycopy(types, 0, tmp, 0, typeSize);
+            types = tmp;
+        }
+        if (pointSize + pointCount > points.length)
+        {
+            float[] tmp = new float[pointSize + Math.max(BUFFER_CAPACITY * 2, pointCount)];
+            System.arraycopy(points, 0, tmp, 0, pointSize);
+            points = tmp;
+        }
+    }
+	
+	/**
+	 * Returns a Enumeration object that enumerates along the boundary of this Geometry and provides access to the geometry of the outline of this Geometry.
+	 * @param at An AffineTransform.
 	 * @return a new Enumeration that iterates along the boundary of this Shape and provides access to the geometry of this Geometry's outline.
 	 */
-	public Enumeration getPathIterator(Matrix4f at)
+	public Enumeration getPathEnumerator(AffineTransform at)
 	{
-		//TODO
-		return null;
+		return new Enumeration(this, at);
 	}
 	
 	/**
@@ -175,8 +253,39 @@ public class Geometry
 	 */
 	public XYRectFloat getBounds2D()
 	{
-		//TODO
-		return null;
+		float rx1, ry1, rx2, ry2;
+        if (pointSize == 0)
+        {
+            rx1 = ry1 = rx2 = ry2 = 0.0f;
+        }
+        else
+        {
+            int i = pointSize - 1;
+            ry1 = ry2 = points[i--];
+            rx1 = rx2 = points[i--];
+            while (i > 0)
+            {
+                float y = points[i--];
+                float x = points[i--];
+                if (x < rx1)
+                {
+                    rx1 = x;
+                }
+                else if (x > rx2)
+                {
+                	rx2 = x;
+                }
+                if (y < ry1)
+                {
+                    ry1 = y;
+                }
+                else if (y > ry2)
+                {
+                	ry2 = y;
+                }
+            }
+        }
+        return new XYRectFloat(rx1, ry1, rx2 - rx1, ry2 - ry1);
 	}
 	
 	/**
@@ -185,8 +294,7 @@ public class Geometry
 	 */
 	public int getWindingRule()
 	{
-		//TODO
-		return -1;
+		return this.rule;
 	}
 	
 	/**
@@ -196,7 +304,11 @@ public class Geometry
 	 */
 	public void setWindingRule(int rule)
 	{
-		//TODO
+		if (rule != WIND_EVEN_ODD && rule != WIND_NON_ZERO)
+		{
+			throw new IllegalArgumentException("Invalid winding rule value");
+		}
+		this.rule = rule;
 	}
 	
 	/**
@@ -205,17 +317,33 @@ public class Geometry
 	 */
 	public XYPointFloat getCurrentPoint()
 	{
-		//TODO
-		return null;
+		if (typeSize == 0)
+		{
+            return null;
+        }
+        int j = pointSize - 2;
+        if (types[typeSize - 1] == Enumeration.SEG_CLOSE)
+        {
+            for (int i = typeSize - 2; i > 0; i--)
+            {
+                int type = types[i];
+                if (type == Enumeration.SEG_MOVETO)
+                {
+                    break;
+                }
+                j -= pointShift[type];
+            }
+        }
+        return new XYPointFloat(points[j], points[j + 1]);
 	}
 	
 	/**
-	 * Transforms the geometry of this path using the specified Matrix4f.
-	 * @param at The Matrix4f used to transform the area.
+	 * Transforms the geometry of this path using the specified AffineTransform.
+	 * @param at The AffineTransform used to transform the area.
 	 */
-	public void transform(Matrix4f at)
+	public void transform(AffineTransform at)
 	{
-		//TODO
+		at.transform(points, 0, points, 0, pointSize / 2);
 	}
 	
 	/**
@@ -225,7 +353,41 @@ public class Geometry
 	 */
 	public void append(Geometry g, boolean connect)
 	{
-		//TODO
+		Enumeration path = g.getPathEnumerator(null);
+		while (!path.isDone())
+		{
+            float[] coords = new float[6];
+            switch (path.currentSegment(coords))
+            {
+	            case Enumeration.SEG_MOVETO:
+	                if (!connect || typeSize == 0)
+	                {
+	                    moveTo(coords[0], coords[1]);
+	                    break;
+	                }
+	                if (types[typeSize - 1] != Enumeration.SEG_CLOSE &&
+	                    points[pointSize - 2] == coords[0] &&
+	                    points[pointSize - 1] == coords[1])
+	                {
+	                    break;
+	                }
+	            // NO BREAK;
+	            case Enumeration.SEG_LINETO:
+	                lineTo(coords[0], coords[1]);
+	                break;
+	            case Enumeration.SEG_QUADTO:
+	                quadTo(coords[0], coords[1], coords[2], coords[3]);
+	                break;
+	            case Enumeration.SEG_CUBICTO:
+	                curveTo(coords[0], coords[1], coords[2], coords[3], coords[4], coords[5]);
+	                break;
+	            case Enumeration.SEG_CLOSE:
+	                closePath();
+	                break;
+            }
+            path.next();
+            connect = false;
+        }
 	}
 	
 	/**
@@ -233,7 +395,18 @@ public class Geometry
 	 */
 	public void moveTo(float x, float y)
 	{
-		//TODO
+		if (typeSize > 0 && types[typeSize - 1] == Enumeration.SEG_MOVETO)
+		{
+            points[pointSize - 2] = x;
+            points[pointSize - 1] = y;
+        }
+		else
+		{
+            checkBuf(2, false);
+            types[typeSize++] = Enumeration.SEG_MOVETO;
+            points[pointSize++] = x;
+            points[pointSize++] = y;
+        }
 	}
 	
 	/**
@@ -242,7 +415,12 @@ public class Geometry
 	 */
 	public void quadTo(float x1, float y1, float x2, float y2)
 	{
-		//TODO
+		checkBuf(4, true);
+        types[typeSize++] = Enumeration.SEG_QUADTO;
+        points[pointSize++] = x1;
+        points[pointSize++] = y1;
+        points[pointSize++] = x2;
+        points[pointSize++] = y2;
 	}
 	
 	/**
@@ -250,7 +428,10 @@ public class Geometry
 	 */
 	public void lineTo(float x, float y)
 	{
-		//TODO
+		checkBuf(2, true);
+        types[typeSize++] = Enumeration.SEG_LINETO;
+        points[pointSize++] = x;
+        points[pointSize++] = y;
 	}
 	
 	/**
@@ -259,7 +440,14 @@ public class Geometry
 	 */
 	public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3)
 	{
-		//TODO
+		checkBuf(6, true);
+        types[typeSize++] = Enumeration.SEG_CUBICTO;
+        points[pointSize++] = x1;
+        points[pointSize++] = y1;
+        points[pointSize++] = x2;
+        points[pointSize++] = y2;
+        points[pointSize++] = x3;
+        points[pointSize++] = y3;
 	}
 	
 	/**
@@ -267,17 +455,25 @@ public class Geometry
 	 */
 	public void closePath()
 	{
-		//TODO
+		if (typeSize == 0 || types[typeSize - 1] != Enumeration.SEG_CLOSE)
+		{
+            checkBuf(0, true);
+            types[typeSize++] = Enumeration.SEG_CLOSE;
+        }
 	}
 	
 	/**
 	 * Returns a new transformed Geometry.
-	 * @param at The Matrix4f used to transform a new Geometry.
-	 * @return A new Geometry, transformed with the specified Matrix4f.
+	 * @param at The AffineTransform used to transform a new Geometry.
+	 * @return A new Geometry, transformed with the specified AffineTransform.
 	 */
-	public Geometry createTransformedShape(Matrix4f at)
+	public Geometry createTransformedShape(AffineTransform at)
 	{
-		//TODO
-		return null;
+		Geometry geo = new Geometry(this);
+        if (at != null)
+        {
+        	geo.transform(at);
+        }
+        return geo;
 	}
 }
