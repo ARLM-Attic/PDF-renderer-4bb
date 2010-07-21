@@ -23,12 +23,8 @@ package com.sun.pdfview.helper.graphics.color;
 //TODO: Finish and add documentation
 //http://www.docjar.com/html/api/java/awt/color/ICC_ColorSpace.java.html
 
-import net.rim.device.api.system.UnsupportedOperationException;
-
 import com.sun.pdfview.helper.ColorSpace;
 
-import littlecms.internal.cmsxform;
-import littlecms.internal.cmspcs;
 import littlecms.internal.lcms2;
 
 /**
@@ -236,32 +232,39 @@ public class ICC_ColorSpace extends ColorSpace
 		public static short[] convertColors(ICC_Profile[] profiles, int[] intents, short[] src, Object[] converterCache, int cacheIndex)
 		{
 			//Get/Setup converter (basically the cmsHTRANSFORM)
-			lcms2.cmsHTRANSFORM converter;
-			if(converterCache != null && converterCache.length > 0 && converterCache[cacheIndex] instanceof lcms2.cmsHTRANSFORM)
+			lcms2.cmsHTRANSFORM converter = null;
+			int inputCount = 0;
+			int outputCount = 0;
+			if(converterCache != null && converterCache.length > 0 && converterCache[cacheIndex] instanceof Object[])
 			{
-				converter = (lcms2.cmsHTRANSFORM)converterCache[cacheIndex]; //Hopefully there the intent and profiles used to create this are the same as those in use now
+				Object[] cache = (Object[])converterCache[cacheIndex];
+				if(cache.length >= 3 && cache[0] instanceof lcms2.cmsHTRANSFORM && cache[1] instanceof Integer && cache[2] instanceof Integer)
+				{
+					converter = (lcms2.cmsHTRANSFORM)cache[0]; //Hopefully there the intent and profiles used to create this are the same as those in use now
+					inputCount = ((Integer)cache[1]).intValue();
+					outputCount = ((Integer)cache[2]).intValue();
+				}
 			}
-			else
+			if(converter == null)
 			{
 				converter = setupConverter(profiles, intents);
+				inputCount = profiles[0].getNumComponents();
+				outputCount = profiles[profiles.length - 1].getNumComponents();
 				if(converterCache != null && converterCache.length > 0)
 				{
 					//Cache so it can be used for later use
-					converterCache[cacheIndex] = converter;
+					converterCache[cacheIndex] = new Object[]{converter, new Integer(inputCount), new Integer(outputCount)};
 				}
 			}
 			
-			//Don't want to do this but there is no other way to get channel counts using public APIs.
-			lcms2_internal._cmsTRANSFORM inT = (lcms2_internal._cmsTRANSFORM)converter;
-			
-			if(src.length < lcms2.T_CHANNELS(inT.InputFormat))
+			if(src.length < inputCount)
 			{
 				throw new IllegalStateException("Converter input profile does not have enough channels to convert properly.");
 			}
 			
-			short[] dst = new short[lcms2.T_CHANNELS(inT.OutputFormat)];
+			short[] dst = new short[outputCount];
 			
-			cmsxform.cmsDoTransform(converter, src, dst, 1);
+			lcms2.cmsDoTransform(converter, src, dst, 1);
 			
 			return dst;
 		}
@@ -287,9 +290,9 @@ public class ICC_ColorSpace extends ColorSpace
 			    }
 			}
 			
-			return cmsxform.cmsCreateExtendedTransform(profiles, new boolean[nProfiles], intents, new double[nProfiles], null, 0, 
-					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(cmspcs.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[0], ICC_Profile.icHdrColorSpace))), 
-					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(cmspcs.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[nProfiles - 1], ICC_Profile.icHdrColorSpace))), 
+			return lcms2.cmsCreateExtendedTransform(profiles, new boolean[nProfiles], intents, new double[nProfiles], null, 0, 
+					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[0], ICC_Profile.icHdrColorSpace))), 
+					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[nProfiles - 1], ICC_Profile.icHdrColorSpace))), 
 					lcms2.cmsFLAGS_FORCE_CLUT | lcms2.cmsFLAGS_CLUT_PRE_LINEARIZATION);
 		}
 	}

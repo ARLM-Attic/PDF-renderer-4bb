@@ -1,4 +1,6 @@
 TODO:
+Remove projects from Eclipse (DON'T REFACTOR/MOVE) and put in one folder for PDFRenderer so that both projects can be submitted to CodePlex.
+
 implement the "Graphics" implemintation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names

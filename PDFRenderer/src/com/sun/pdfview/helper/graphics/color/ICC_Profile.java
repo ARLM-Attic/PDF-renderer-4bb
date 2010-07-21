@@ -27,7 +27,6 @@ import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.helper.ColorSpace;
 
 import littlecms.internal.lcms2;
-import littlecms.internal.cmsio0;
 
 /**
  * Partial implementation of java.awt.color.ICC_Profile
@@ -189,7 +188,7 @@ public class ICC_Profile
 	
 	private ICC_Profile(byte[] data)
 	{
-		this.profile = cmsio0.cmsOpenProfileFromMem(data, data.length);
+		this.profile = lcms2.cmsOpenProfileFromMem(data, data.length);
 		
 		if(this.profile == null)
 		{
@@ -511,7 +510,7 @@ public class ICC_Profile
 		int tagSize = 0;
 		try
 		{
-			tagSize = cmsio0.cmsReadRawTag(this.profile, tagSignature, null, 0);
+			tagSize = lcms2.cmsReadRawTag(this.profile, tagSignature, null, 0);
 		}
 		catch (Exception e)
 		{
@@ -524,7 +523,7 @@ public class ICC_Profile
 		}
 		
 		byte[] data = new byte[tagSize];
-		cmsio0.cmsReadRawTag(this.profile, tagSignature, data, tagSize);
+		lcms2.cmsReadRawTag(this.profile, tagSignature, data, tagSize);
 		return data;
 	}
 	
