@@ -233,41 +233,42 @@ public class ICC_ColorSpace extends ColorSpace
 		{
 			//Get/Setup converter (basically the cmsHTRANSFORM)
 			lcms2.cmsHTRANSFORM converter = null;
-			int inputCount = 0;
-			int outputCount = 0;
+			int inputLength = lcms2.cmsMAXCHANNELS; //For safety use the max possible channels.
+			int outputLength = lcms2.cmsMAXCHANNELS;
 			if(converterCache != null && converterCache.length > 0 && converterCache[cacheIndex] instanceof Object[])
 			{
 				Object[] cache = (Object[])converterCache[cacheIndex];
-				if(cache.length >= 3 && cache[0] instanceof lcms2.cmsHTRANSFORM && cache[1] instanceof Integer && cache[2] instanceof Integer)
+				if(cache.length >= 3 && cache[0] instanceof Integer && cache[1] instanceof Integer && cache[2] instanceof lcms2.cmsHTRANSFORM)
 				{
-					converter = (lcms2.cmsHTRANSFORM)cache[0]; //Hopefully there the intent and profiles used to create this are the same as those in use now
-					inputCount = ((Integer)cache[1]).intValue();
-					outputCount = ((Integer)cache[2]).intValue();
+					inputLength = ((Integer)cache[0]).intValue();
+					outputLength = ((Integer)cache[1]).intValue();
+					converter = (lcms2.cmsHTRANSFORM)cache[2]; //Hopefully there the intent and profiles used to create this are the same as those in use now
 				}
 			}
 			if(converter == null)
 			{
 				converter = setupConverter(profiles, intents);
-				inputCount = profiles[0].getNumComponents();
-				outputCount = profiles[profiles.length - 1].getNumComponents();
+				inputLength = profiles[0].getNumComponents();
+				outputLength = profiles[profiles.length - 1].getNumComponents();
 				if(converterCache != null && converterCache.length > 0)
 				{
 					//Cache so it can be used for later use
-					converterCache[cacheIndex] = new Object[]{converter, new Integer(inputCount), new Integer(outputCount)};
+					converterCache[cacheIndex] = new Object[]{new Integer(inputLength), new Integer(outputLength), converter};
 				}
 			}
 			
-			if(src.length < inputCount)
+			if(src.length < inputLength)
 			{
 				throw new IllegalStateException("Converter input profile does not have enough channels to convert properly.");
 			}
 			
-			short[] dst = new short[outputCount];
+			short[] dst = new short[outputLength];
 			
 			lcms2.cmsDoTransform(converter, src, dst, 1);
 			
 			return dst;
 		}
+
 		
 		private static lcms2.cmsHTRANSFORM setupConverter(ICC_Profile[] profiles, int[] intents)
 		{
