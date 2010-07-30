@@ -279,21 +279,23 @@ public class ICC_ColorSpace extends ColorSpace
 				throw new IllegalArgumentException("Wrong number of profiles. 1..255 expected, " + nProfiles + " found.");
 			}
 			
-			byte[][] profileHeaders = new byte[nProfiles][];
+			lcms2.cmsHPROFILE[] iccProfiles = new lcms2.cmsHPROFILE[nProfiles];
 			
 			for (int i = 0; i < nProfiles; i++)
 			{
+				lcms2.cmsHPROFILE profile = iccProfiles[i] = profiles[i].profile;
+				
 				//Cache the headers for use in other parts of the setup
-				int deviceClass = ICC_Profile.getIntFromByteArray(profileHeaders[i] = profiles[i].getData(ICC_Profile.icSigHead), ICC_Profile.icHdrDeviceClass);
+				int deviceClass = lcms2.cmsGetDeviceClass(profile);
 				if (deviceClass == ICC_Profile.icSigNamedColorClass || deviceClass == ICC_Profile.icSigLinkClass)
 				{
 					return null; // Unsupported named color and device link profiles
 			    }
 			}
 			
-			return lcms2.cmsCreateExtendedTransform(profiles, new boolean[nProfiles], intents, new double[nProfiles], null, 0, 
-					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[0], ICC_Profile.icHdrColorSpace))), 
-					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(ICC_Profile.getIntFromByteArray(profileHeaders[nProfiles - 1], ICC_Profile.icHdrColorSpace))), 
+			return lcms2.cmsCreateExtendedTransform(null, nProfiles, iccProfiles, new boolean[nProfiles], intents, new double[nProfiles], null, 0, 
+					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(lcms2.cmsGetColorSpace(iccProfiles[0]))), 
+					(2 << lcms2.BYTES_SHIFT_VALUE) | lcms2.CHANNELS_SH(lcms2.cmsChannelsOf(lcms2.cmsGetColorSpace(iccProfiles[nProfiles - 1]))), 
 					lcms2.cmsFLAGS_FORCE_CLUT | lcms2.cmsFLAGS_CLUT_PRE_LINEARIZATION);
 		}
 	}
