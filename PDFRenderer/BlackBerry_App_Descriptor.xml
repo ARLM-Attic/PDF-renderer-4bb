@@ -10,7 +10,7 @@
   <Packaging OutputFileName="PDFRenderer" OutputFolder="deliverables" PreBuildStep="" PostBuildStep="" CleanStep="" GenerateALXFile="true">
     <AlxFiles>
       <string>../PDFRendererResources/deliverables/Standard/PDFRendererResources.alx</string>
-      <string>../../lcms2_4bb/deliverables/Standard/lcms2_4bb.alx</string>
+      <string>../lcms2_4bb/deliverables/Standard/lcms2_4bb.alx</string>
     </AlxFiles>
   </Packaging>
   <HiddenProperties>

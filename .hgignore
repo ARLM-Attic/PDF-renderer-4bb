@@ -11,6 +11,8 @@ bin
 deliverables
 doc
 Little CMS License.txt
+copy.bat
+
 # old java files for color managment
 CMM.java
 ICC_Converter.java

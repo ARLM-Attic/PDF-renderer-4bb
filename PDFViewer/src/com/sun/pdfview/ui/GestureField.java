@@ -30,7 +30,7 @@ import net.rim.device.api.util.MathUtilities;
 
 //Based off: http://dwilson.org/blog/2009/4/19/implementing-pinch-zoom-on-the-iphone/
 
-//XXX Be sure to update RebuildLib when rotation is finished
+//TODO Update to support Pinch-Zoom Gesture (will require some work because it seems to be the cheap, scale-only type Pinch-zoom that all built-in smartphone systems do).
 
 /**
  * Gesture field, various gestures and system events will are processed and handled in this field.
