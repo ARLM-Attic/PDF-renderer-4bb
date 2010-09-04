@@ -44,8 +44,8 @@ import java.util.Enumeration;
 public class PDFDecrypterFactory
 {
 	/** The name of the standard Identity CryptFilter */
-    public static final String CF_IDENTITY = "Identity";
-
+    public static String CF_IDENTITY = "Identity";
+    
     /** Default key length for versions where key length is optional */
     private static final int DEFAULT_KEY_LENGTH = 40;
     

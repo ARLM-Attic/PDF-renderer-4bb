@@ -102,24 +102,24 @@ public class StandardDecrypter implements PDFDecrypter
     /**
      * The specification of the RC4 cipher for JCE interactions
      */
-    private static final String CIPHER_RC4 = "RC4";
+    private static String CIPHER_RC4 = "RC4";
     /*
     /**
      * The key type for RC4 keys
      * /
-    private static final String KEY_RC4 = "RC4";
+    private static String KEY_RC4 = "RC4";
     */
 
     /**
      * The specification of the AES cipher for JCE interactions. As per the
      * spec, cipher-block chanining (CBC) mode and PKCS5 padding are used
      */
-    private static final String CIPHER_AES = "AES/CBC/PKCS5Padding";
+    private static String CIPHER_AES = "AES/CBC/PKCS5Padding";
     /*
     /**
      * The key type for AES keys
      * /
-    private static final String KEY_AES = "AES";
+    private static String KEY_AES = "AES";
     */
 
     /**

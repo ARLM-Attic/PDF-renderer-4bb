@@ -1,5 +1,6 @@
 TODO:
 implement the "Graphics" implemintation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
+	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
 
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
 See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
@@ -23,3 +24,4 @@ USE_LCMS_LIBRARY (Use an external LCMS library instead of the built in library, 
 NOTES:
 -Way more helper classes then desired, of possible cut down on them, intergrate functionality, cross fingers and hope something similar comes out natively...
 -ICC color space is going to drive me up a wall, why do standards tell you everything but what you NEED to know? UPDATE: Little CMS Engine has saved me, for a bit.
+-Strings follow the guidelines listed in "http://docs.blackberry.com/en/developers/deliverables/3299/JDE_4.5_Fundamentals_Guide.pdf" which state not to use static final for Strings because then Strings need to be loaded multiple times and multiple instances of the same String exist.

@@ -171,7 +171,7 @@ public final class ResourceManager
 	
 	private static class ResourcesDefaultImpl implements Resources
 	{
-		private static final String ORG_PATH = "/com/sun/pdfview/";
+		private static String ORG_PATH = "/com/sun/pdfview/";
 		
 		private String path;
 		private int index;

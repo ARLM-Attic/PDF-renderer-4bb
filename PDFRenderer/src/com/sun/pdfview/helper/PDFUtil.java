@@ -302,7 +302,7 @@ public class PDFUtil
 		return c <= 0x200b || c == 0x2028 || c == 0x2029 || c == 0x3000;
 	}
 	
-	public static final String ERROR_DATA_PATH = "file:///store/appdata/tmp/";
+	public static String ERROR_DATA_PATH = "file:///store/appdata/tmp/";
 	
 	/**
      * Ensure the specified path exists (do not create file).
