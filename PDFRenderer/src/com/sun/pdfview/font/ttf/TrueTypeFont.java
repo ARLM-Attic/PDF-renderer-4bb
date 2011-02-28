@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: TrueTypeFont.java
  * Version: 1.6
@@ -24,16 +26,22 @@ package com.sun.pdfview.font.ttf;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import net.rim.device.api.ui.FontFamily;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.ui.Font;
-import net.rim.device.api.ui.FontFamily;
 import net.rim.device.api.ui.FontManager;
+//#endif
 import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.helper.PDFUtil;
@@ -170,7 +178,11 @@ public class TrueTypeFont
     public short getSearchRange()
     {
         double pow2 = Math.floor (MathUtilities.log(getNumTables()) / MathUtilities.log(2));
+//#ifndef BlackBerrySDK4.5.0
         double maxPower = MathUtilities.pow(2, pow2);
+//#else
+        double maxPower = littlecms.internal.helper.Utility.pow(2, pow2);
+//#endif
         
         return (short)(16 * maxPower);
     }
@@ -181,7 +193,11 @@ public class TrueTypeFont
     public short getEntrySelector()
     {
         double pow2 = Math.floor (MathUtilities.log(getNumTables()) / MathUtilities.log(2));
+//#ifndef BlackBerrySDK4.5.0
         double maxPower = MathUtilities.pow(2, pow2);
+//#else
+        double maxPower = littlecms.internal.helper.Utility.pow(2, pow2);
+//#endif
         
         return (short)(MathUtilities.log(maxPower) / MathUtilities.log(2));
     }
@@ -192,7 +208,11 @@ public class TrueTypeFont
     public short getRangeShift()
     {
         double pow2 = Math.floor(MathUtilities.log(getNumTables()) / MathUtilities.log(2));
+//#ifndef BlackBerrySDK4.5.0
         double maxPower = MathUtilities.pow(2, pow2);
+//#else
+        double maxPower = littlecms.internal.helper.Utility.pow(2, pow2);
+//#endif
 
         return (short)((maxPower * 16) - getSearchRange());
     }
@@ -464,6 +484,7 @@ public class TrueTypeFont
         return buf.toString ();
     }
     
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
     /**
      * @param args the command line arguments
      */
@@ -513,4 +534,5 @@ public class TrueTypeFont
             e.printStackTrace();
         }
     }
+//#endif
 }

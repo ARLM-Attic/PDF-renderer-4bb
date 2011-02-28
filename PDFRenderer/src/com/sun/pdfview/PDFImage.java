@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PDFImage.java
  * Version: 1.9
@@ -30,15 +32,14 @@ import java.util.Hashtable;
 
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.function.FunctionType0;
 import com.sun.pdfview.helper.ColorSpace;
-import com.sun.pdfview.helper.XYPointFloat;
-import com.sun.pdfview.helper.graphics.Paint;
-import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
 
 /**
  * Encapsulates a PDF Image
@@ -663,7 +664,11 @@ public class PDFImage
         for (int i = 0; i < len; i++)
         {
             int val = pixels[i] & 0xff;
+//#ifndef BlackBerrySDK4.5.0
             int pow = ((int)MathUtilities.pow(2, getBitsPerComponent())) - 1;
+//#else
+            int pow = ((int)littlecms.internal.helper.Utility.pow(2, getBitsPerComponent())) - 1;
+//#endif
             float ymin = decodeArray[i * 2];
             float ymax = decodeArray[(i * 2) + 1];
             

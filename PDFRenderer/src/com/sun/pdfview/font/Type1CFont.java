@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: Type1CFont.java
  * Version: 1.3
@@ -25,7 +27,9 @@ package com.sun.pdfview.font;
 import java.io.IOException;
 import java.util.Random;
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.helper.AffineTransform;
@@ -265,7 +269,11 @@ public class Type1CFont extends OutlineFont
                 break;
             }
         }
+//#ifdef BlackBerrySDK4.5.0
+        fnum = (neg ? -1 : 1) * f * (float)littlecms.internal.helper.Utility.pow(10, eval * exp);
+//#else
         fnum = (neg ? -1 : 1) * f * (float)MathUtilities.pow(10, eval * exp);
+//#endif
     }
     
     /**

@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: ResourceManager.java
  * Version: 1.0
@@ -23,7 +25,9 @@ import java.io.InputStream;
 import java.util.Vector;
 
 import net.rim.device.api.system.RuntimeStore;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.LongVector;
+//#endif
 
 /**
  * Resource manager for PDF Renderer.
@@ -102,11 +106,29 @@ public final class ResourceManager
 		Object obj;
 		if((obj = store.get(SINGLETON_STORAGE_ID)) != null)
 		{
+//#ifndef BlackBerrySDK4.5.0
 			LongVector v = (LongVector)obj;
 			if(v.contains(uid))
 			{
 				return store.get(uid);
 			}
+//#else
+			long[] v = (long[])obj;
+			int len = v.length;
+			boolean hasIndex = false;
+			for(int i = 1; i < len; i++)
+			{
+				if(v[i] == uid)
+				{
+					hasIndex = true;
+					break;
+				}
+			}
+			if(hasIndex)
+			{
+				return store.get(uid);
+			}
+//#endif
 		}
 		return null;
 	}
@@ -121,9 +143,14 @@ public final class ResourceManager
 	{
 		RuntimeStore store = RuntimeStore.getRuntimeStore();
 		Object objS;
+//#ifndef BlackBerrySDK4.5.0
 		LongVector v;
+//#else
+		long[] v;
+//#endif
 		if((objS = store.get(SINGLETON_STORAGE_ID)) != null) //Singleton list exists
 		{
+//#ifndef BlackBerrySDK4.5.0
 			v = (LongVector)objS;
 			if(v.contains(uid))
 			{
@@ -139,13 +166,68 @@ public final class ResourceManager
 				}
 				return objS; //Return previous object
 			}
+			else if(obj != null) //Does not exist in Singleton list exists, new
+			{
+				store.put(uid, obj);
+				v.addElement(uid);
+				return null;
+			}
+//#else
+			v = (long[])objS;
+			int len = v.length;
+			int index = -1;
+			for(int i = 1; i < len; i++)
+			{
+				if(v[i] == uid)
+				{
+					index = i;
+					break;
+				}
+			}
+			if(index >= 1)
+			{
+				objS = store.get(uid); //Get previous value
+				if(obj != null)
+				{
+					store.replace(uid, obj); //Replace the current object
+				}
+				else
+				{
+					store.remove(uid); //Remove the object
+					System.arraycopy(v, index + 1, v, index, (int)((--v[0]) - index));
+				}
+				return objS; //Return previous object
+			}
+			else if(obj != null) //Does not exist in Singleton list exists, new
+			{
+				store.put(uid, obj);
+				if(v[0] >= v.length)
+				{
+					long[] t = new long[v.length * 2];
+					System.arraycopy(v, 0, t, 0, v.length);
+					v = t;
+					store.replace(SINGLETON_STORAGE_ID, v);
+				}
+				v[(int)(v[0]++)] = uid;
+				return null;
+			}
+//#endif
 		}
 		if(obj != null) //If the function hasn't returned yet and the object is not null then the Singleton list doesn't exist yet
 		{
+//#ifndef BlackBerrySDK4.5.0
 			v = new LongVector(); //Create the list and add the object
+//#else
+			v = new long[1 + 4];
+			v[0] = 1;
+//#endif
 			store.put(SINGLETON_STORAGE_ID, v);
 			store.put(uid, obj); //Will throw an exception if already there
+//#ifndef BlackBerrySDK4.5.0
 			v.addElement(uid);
+//#else
+			v[(int)(v[0]++)] = uid;
+//#endif
 		}
 		return null;
 	}
@@ -159,6 +241,7 @@ public final class ResourceManager
 		Object obj;
 		if((obj = store.get(SINGLETON_STORAGE_ID)) != null)
 		{
+//#ifndef BlackBerrySDK4.5.0
 			LongVector v = (LongVector)obj;
 			store.remove(SINGLETON_STORAGE_ID);
 			int len = v.size();
@@ -166,6 +249,15 @@ public final class ResourceManager
 			{
 				store.remove(v.elementAt(i));
 			}
+//#else
+			long[] v = (long[])obj;
+			store.remove(SINGLETON_STORAGE_ID);
+			int len = v.length;
+			for(int i = 1; i < len; i++)
+			{
+				store.remove(v[i]);
+			}
+//#endif
 		}
 	}
 	

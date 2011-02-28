@@ -12,7 +12,9 @@ package com.sun.pdfview;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Manager;
+//#ifndef BlackBerrySDK4.1.0 | BlackBerrySDK4.2.0 | BlackBerrySDK4.2.1 | BlackBerrySDK4.3.0 | BlackBerrySDK4.5.0
 import net.rim.device.api.ui.decor.Border;
+//#endif
 
 /**
  * VerticalButtonFieldSet aligns a group of buttons vertically
@@ -132,7 +134,7 @@ public class HorizontalButtonFieldSet extends Manager
     {
         int width = 0;
         
-//#ifdef VER_4.1.0 | VER_4.2.0 | VER_4.2.1 | VER_4.3.0 | VER_4.5.0
+//#ifdef BlackBerrySDK4.1.0 | BlackBerrySDK4.2.0 | BlackBerrySDK4.2.1 | BlackBerrySDK4.3.0 | BlackBerrySDK4.5.0
         width = field.getWidth() - field.getContentWidth() - field.getPaddingLeft() - field.getPaddingRight();
 //#else
         Border border = field.getBorder();

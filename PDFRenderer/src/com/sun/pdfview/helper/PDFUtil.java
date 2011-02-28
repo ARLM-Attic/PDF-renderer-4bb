@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PDFUtil.java
  * Version: 1.0
@@ -23,10 +25,18 @@
 package com.sun.pdfview.helper;
 
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
+//#else
+import com.sun.pdfview.helper.nio.Buffer;
+import com.sun.pdfview.helper.nio.ByteBuffer;
+import com.sun.pdfview.helper.nio.ShortBuffer;
+import com.sun.pdfview.helper.nio.BufferOverflowException;
+import com.sun.pdfview.helper.nio.BufferUnderflowException;
+//#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.NoSuchElementException;
@@ -37,7 +47,10 @@ import com.sun.pdfview.helper.graphics.Geometry;
 import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.util.CharacterUtilities;
+import net.rim.device.api.util.MathUtilities;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.LongVector;
+//#endif
 
 /**
  * Simple utilities to support performing operations that are not standard on BlackBerry.
@@ -58,6 +71,66 @@ public class PDFUtil
 		buf = null;
 	}
 	*/
+	
+//#ifdef BlackBerrySDK4.5.0
+	//acos is from J4ME
+	public static double acos(double x)
+	{
+		// Special case.
+		if (Double.isNaN(x) || Math.abs(x) > 1.0)
+		{
+			return Double.NaN;
+		}
+		
+		// Calculate the arc cosine.
+		double aSquared = x * x;
+		double arcCosine = littlecms.internal.helper.Utility.atan2(Math.sqrt(1 - aSquared), x);
+		return arcCosine;
+	}
+	
+	public static long round(double a)
+	{
+		if(a == 0)
+		{
+			return 0;
+		}
+		else if(Double.isNaN(a))
+		{
+			return 0;
+		}
+		else if(Double.isInfinite(a))
+		{
+			if(a == Double.NEGATIVE_INFINITY)
+			{
+				return Long.MIN_VALUE;
+			}
+			else
+			{
+				return Long.MAX_VALUE;
+			}
+		}
+		else if(a <= Long.MIN_VALUE)
+		{
+			return Long.MIN_VALUE;
+		}
+		else if(a >= Long.MAX_VALUE)
+		{
+			return Long.MAX_VALUE;
+		}
+		else
+		{
+			if(a < 0)
+			{
+				a -= 0.5;
+			}
+			else
+			{
+				a += 0.5;
+			}
+			return (long)Math.floor(a);
+		}
+	}
+//#endif
 	
 	/**
 	 * Copies all of the mappings from the specified map to this map.

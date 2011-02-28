@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: NativeFont.java
  * Version: 1.4
@@ -25,14 +27,15 @@ package com.sun.pdfview.font;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.FontFamily;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import net.rim.device.api.ui.FontManager;
+//#endif
 import net.rim.device.api.ui.Ui;
 
 import com.sun.pdfview.PDFObject;
@@ -58,6 +61,8 @@ import com.sun.pdfview.helper.graphics.Geometry;
  */
 public class NativeFont extends OutlineFont 
 {
+	//TODO: Redo this, it won't work for BlackBerry
+	
 	/** Control characters to filter out of the underlying font */
     protected static final char[] controlChars = {0x9, 0xa, 0xd};
     
@@ -348,6 +353,8 @@ public class NativeFont extends OutlineFont
             ex.printStackTrace ();
         }
         
+        //TODO: Ignore this for all lower OSs (for now), use it later
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
         ByteArrayInputStream bais = new ByteArrayInputStream(fontdata);
         if(FontManager.getInstance().load(bais, getBaseFont(), FontManager.APPLICATION_FONT) == FontManager.SUCCESS)
         {
@@ -360,6 +367,7 @@ public class NativeFont extends OutlineFont
 			}
         }
         bais.close ();
+//#endif
     }
     
     /**

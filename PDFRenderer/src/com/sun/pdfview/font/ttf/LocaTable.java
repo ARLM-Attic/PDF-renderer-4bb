@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: LocaTable.java
  * Version: 1.3
@@ -22,7 +24,11 @@
  */
 package com.sun.pdfview.font.ttf;
 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 
 /**
  * Model the TrueType Loca table

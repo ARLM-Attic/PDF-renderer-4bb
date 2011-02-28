@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: CIDFontType2.java
  * Version: 1.5
@@ -23,7 +25,11 @@
 package com.sun.pdfview.font;
 
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 import java.util.Hashtable;
 
 import com.sun.pdfview.PDFObject;

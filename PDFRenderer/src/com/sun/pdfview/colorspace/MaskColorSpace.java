@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: MaskColorSpace.java
  * Version: 1.3
@@ -22,7 +24,9 @@
  */
 package com.sun.pdfview.colorspace;
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.helper.ColorSpace;
 import com.sun.pdfview.helper.PDFUtil;
@@ -55,7 +59,11 @@ public class MaskColorSpace extends ColorSpace
         
         float[] mask = new float[1];
         
+//#ifdef BlackBerrySDK4.5.0
+        if (PDFUtil.round(x) > 0 || PDFUtil.round(y) > 0 || PDFUtil.round(z) > 0)
+//#else
         if (MathUtilities.round(x) > 0 || MathUtilities.round(y) > 0 || MathUtilities.round(z) > 0)
+//#endif
         {
             mask[0] = 1;
         }
@@ -75,7 +83,11 @@ public class MaskColorSpace extends ColorSpace
         
         float[] mask = new float[1];
         
+//#ifdef BlackBerrySDK4.5.0
+        if (PDFUtil.round(r) > 0 || PDFUtil.round(g) > 0 || PDFUtil.round(b) > 0)
+//#else
         if (MathUtilities.round(r) > 0 || MathUtilities.round(g) > 0 || MathUtilities.round(b) > 0)
+//#endif
         {
             mask[0] = 1;
         }

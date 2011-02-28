@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: ShaderType2.java
  * Version: 1.2
@@ -26,7 +28,9 @@ import java.io.IOException;
 
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
@@ -393,7 +397,11 @@ public class ShaderType2 extends PDFShader
          */
         private float getXPrime(float x, float y, float x0, float y0, float x1, float y1)
         {
+//#ifdef BlackBerrySDK4.5.0
+        	double tp = (((x1 - x0) * (x - x0)) + ((y1 - y0) * (y - y0))) / (littlecms.internal.helper.Utility.pow(x1 - x0, 2) + littlecms.internal.helper.Utility.pow(y1 - y0, 2));
+//#else
             double tp = (((x1 - x0) * (x - x0)) + ((y1 - y0) * (y - y0))) / (MathUtilities.pow(x1 - x0, 2) + MathUtilities.pow(y1 - y0, 2));
+//#endif
             
             return (float)tp;
         }

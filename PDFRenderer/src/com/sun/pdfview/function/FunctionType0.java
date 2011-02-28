@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: FunctionType0.java
  * Version: 1.3
@@ -23,9 +25,15 @@
 package com.sun.pdfview.function;
 
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
@@ -175,7 +183,11 @@ public class FunctionType0 extends PDFFunction
         for (int i = 0; i < len; i++)
         {
             // decode -- interpolate(r<i>, 0, 2^bps - 1, decode<2i>, decode<2i + 1>)
-            outputs[i + outputOffset] = interpolate(outputs[i + outputOffset], 0, (float)MathUtilities.pow(2, getBitsPerSample()) - 1, getDecode(2 * i), getDecode((2 * i) + 1));
+//#ifndef BlackBerrySDK4.5.0
+        	outputs[i + outputOffset] = interpolate(outputs[i + outputOffset], 0, (float)MathUtilities.pow(2, getBitsPerSample()) - 1, getDecode(2 * i), getDecode((2 * i) + 1));
+//#else
+        	outputs[i + outputOffset] = interpolate(outputs[i + outputOffset], 0, (float)littlecms.internal.helper.Utility.pow(2, getBitsPerSample()) - 1, getDecode(2 * i), getDecode((2 * i) + 1));
+//#endif
         }
     }
     

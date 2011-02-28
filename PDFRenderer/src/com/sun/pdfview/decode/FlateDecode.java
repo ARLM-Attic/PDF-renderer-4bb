@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: FlateDecode.java
  * Version: 1.4
@@ -25,7 +27,11 @@ package com.sun.pdfview.decode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 
 import net.rim.device.api.compress.ZLibInputStream;
 

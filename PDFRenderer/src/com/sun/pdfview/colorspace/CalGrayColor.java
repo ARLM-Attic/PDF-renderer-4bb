@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: CalGrayColor.java
  * Version: 1.2
@@ -26,7 +28,9 @@ import com.sun.pdfview.helper.ColorSpace;
 
 import java.io.IOException;
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 
@@ -103,7 +107,11 @@ public class CalGrayColor extends ColorSpace
     {
 		if (comp.length == 1)
 		{
+//#ifdef BlackBerrySDK4.5.0
+			float mul = (float)littlecms.internal.helper.Utility.pow(comp[0], gamma);
+//#else
 		    float mul = (float)MathUtilities.pow(comp[0], gamma);
+//#endif
 		    float[] xyz = {
 				white[0] * mul,
 				0,

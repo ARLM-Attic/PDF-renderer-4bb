@@ -1,7 +1,5 @@
 //#preprocessor
 
-//#ifndef NATIVE_CHARSET_ENCODER
-
 /*
  * File: CharsetEncoder.java
  * Version: 1.0
@@ -24,10 +22,18 @@
  */
 package com.sun.pdfview.helper;
 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
+//#else
+import com.sun.pdfview.helper.nio.Buffer;
+import com.sun.pdfview.helper.nio.ByteBuffer;
+import com.sun.pdfview.helper.nio.ShortBuffer;
+import com.sun.pdfview.helper.nio.BufferOverflowException;
+import com.sun.pdfview.helper.nio.BufferUnderflowException;
+//#endif
 
 
 import net.rim.device.api.math.Fixed32;
@@ -672,5 +678,3 @@ public abstract class CharsetEncoder
 		return this.unmapAction;
 	}
 }
-
-//#endif

@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: CMapFormat4.java
  * Version: 1.3
@@ -22,7 +24,11 @@
  */
 package com.sun.pdfview.font.ttf;
 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -412,7 +418,11 @@ public class CMapFormat4 extends CMap
     public short getSearchRange()
     {
         double pow = Math.floor(MathUtilities.log(getSegmentCount()) / MathUtilities.log(2));
+//#ifndef BlackBerrySDK4.5.0
         double pow2 = MathUtilities.pow(2, pow);
+//#else
+        double pow2 = littlecms.internal.helper.Utility.pow(2, pow);
+//#endif
         
         return (short) (2 * pow2);
     }
@@ -466,7 +476,10 @@ public class CMapFormat4 extends CMap
         return buf.toString();
     }
     
-    class Segment implements Comparable
+    class Segment
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
+    	implements Comparable
+//#endif
     {
         /** the end code (highest code in this segment) */
         int endCode;

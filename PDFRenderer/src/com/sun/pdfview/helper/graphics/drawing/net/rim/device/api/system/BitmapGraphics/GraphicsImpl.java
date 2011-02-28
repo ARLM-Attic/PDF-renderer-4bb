@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: GraphicsImpl.java
  * Version: 1.0
@@ -47,7 +49,11 @@ public class GraphicsImpl extends PDFGraphics
 		}
 		this.destination = (Bitmap)device;
 		
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+		this.g = new Graphics(this.destination);
+//#else
 		this.g = Graphics.create(this.destination);
+//#endif
 		
 		this.gDest = (com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl)PDFGraphics.createGraphics(this.g);
 	}

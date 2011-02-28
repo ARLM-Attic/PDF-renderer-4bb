@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: DefaultMutableTreeNode.java
  * Version: 1.0
@@ -199,7 +201,12 @@ public class DefaultMutableTreeNode
 	
 	private void loadChild(int parentID, TreeField tree, DefaultMutableTreeNode child)
 	{
-		parentID = tree.addChildNode(parentID, child, false);
+		parentID = tree.addChildNode(parentID, child
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+				, false);
+//#else
+				);
+//#endif
 		if(child.children != null)
 		{
 			int count = child.children.size();

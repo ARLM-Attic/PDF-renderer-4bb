@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: CmapTable.java
  * Version: 1.3
@@ -22,7 +24,11 @@
  */
 package com.sun.pdfview.font.ttf;
 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -240,7 +246,10 @@ public class CmapTable extends TrueTypeTable
         return buf.toString();
     }
     
-    class CmapSubtable implements Comparable
+    class CmapSubtable
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
+    	implements Comparable
+//#endif
     {
         /**
          * The platformID for this subtable

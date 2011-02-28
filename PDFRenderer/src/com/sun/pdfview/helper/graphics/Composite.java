@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: Composite.java
  * Version: 1.0
@@ -20,7 +22,11 @@
 package com.sun.pdfview.helper.graphics;
 
 import net.rim.device.api.ui.Graphics;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#else
+import com.sun.pdfview.helper.PDFUtil;
+//#endif
 
 /**
  * Defines how raster data should be composited.
@@ -49,7 +55,11 @@ public abstract class Composite
 		{
 			throw new IllegalArgumentException("alpha must be between 0f and 1f");
 		}
+//#ifdef BlackBerrySDK4.5.0
+		return getInstance(type, Math.min(Math.max((float)PDFUtil.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it out.
+//#else
 		return getInstance(type, Math.min(Math.max(MathUtilities.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it out.
+//#endif
 	}
 	
 	/**
@@ -115,7 +125,11 @@ public abstract class Composite
 		
 		public void composite(TranslatedBitmap src, TranslatedBitmap dstIn, TranslatedBitmap dstOut)
 		{
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+			Graphics dstOutG = new Graphics(dstOut.getBitmap());
+//#else
 			Graphics dstOutG = Graphics.create(dstOut.getBitmap());
+//#endif
 			if(dstOut.getX() != 0 || dstOut.getY() != 0)
 			{
 				dstOutG.translate(dstOut.getX(), dstOut.getY());

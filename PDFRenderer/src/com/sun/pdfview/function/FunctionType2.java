@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: FunctionType2.java
  * Version: 1.2
@@ -24,7 +26,9 @@ package com.sun.pdfview.function;
 
 import java.io.IOException;
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
@@ -106,7 +110,11 @@ public class FunctionType2 extends PDFFunction
         int len = getNumOutputs();
         for (int i = 0; i < len; i++)
         {
-            outputs[i + outputOffset] = getC0(i) + (float)(MathUtilities.pow(input, getN()) * (getC1(i) - getC0(i)));
+//#ifndef BlackBerrySDK4.5.0
+        	outputs[i + outputOffset] = getC0(i) + (float)(MathUtilities.pow(input, getN()) * (getC1(i) - getC0(i)));
+//#else
+        	outputs[i + outputOffset] = getC0(i) + (float)(littlecms.internal.helper.Utility.pow(input, getN()) * (getC1(i) - getC0(i)));
+//#endif
         }
     }
     

@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: FunctionType4.java
  * Version: 1.3
@@ -23,10 +25,17 @@
 package com.sun.pdfview.function;
 
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 import java.util.*;
 
 import net.rim.device.api.util.MathUtilities;
+//#ifdef BlackBerrySDK4.5.0
+import com.sun.pdfview.helper.PDFUtil;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
@@ -144,7 +153,11 @@ public class FunctionType4 extends PDFFunction
                     }
                     else
                     {
-                        pushDouble(Math.toDegrees(MathUtilities.atan(num / den)));
+//#ifndef BlackBerrySDK4.5.0
+                    	pushDouble(Math.toDegrees(MathUtilities.atan(num / den)));
+//#else
+                    	pushDouble(Math.toDegrees(littlecms.internal.helper.Utility.atan(num / den)));
+//#endif
                     }
                 }
             });
@@ -248,7 +261,11 @@ public class FunctionType4 extends PDFFunction
                 {
                     double exponent = popDouble();
                     double base = popDouble();
+//#ifndef BlackBerrySDK4.5.0
                     pushDouble(MathUtilities.pow(exponent, base));
+//#else
+                    pushDouble(littlecms.internal.helper.Utility.pow(exponent, base));
+//#endif
                 }
             });
             operationSet.addElement(new Operation("floor")
@@ -385,7 +402,11 @@ public class FunctionType4 extends PDFFunction
                  */
                 void eval()
                 {
-                    pushLong(MathUtilities.round(popDouble()));
+//#ifndef BlackBerrySDK4.5.0
+                	pushLong(MathUtilities.round(popDouble()));
+//#else
+                	pushLong(PDFUtil.round(popDouble()));
+//#endif
                 }
             });
             operationSet.addElement(new Operation("sin")

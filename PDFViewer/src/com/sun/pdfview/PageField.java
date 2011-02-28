@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PageField.java
  * Version: 1.0
@@ -27,7 +29,9 @@ import net.rim.device.api.system.PNGEncodedImage;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0
 import net.rim.device.api.ui.TouchEvent;
+//#endif
 import net.rim.device.api.ui.XYRect;
 
 /**
@@ -161,6 +165,7 @@ public class PageField extends Field
 		setExtent(Math.min(width, getPreferredWidth()), Math.min(height, getPreferredHeight()));
 	}
 	
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 	protected boolean touchEvent(TouchEvent message)
 	{
 		switch(message.getEvent())
@@ -174,6 +179,9 @@ public class PageField extends Field
 		}
 		return super.touchEvent(message);
 	}
+//#endif
+	
+	//TODO: Add support for non-touchscreen devices
 	
 	protected void paint(Graphics graphics)
 	{

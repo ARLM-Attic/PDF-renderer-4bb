@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: Paint.java
  * Version: 1.0
@@ -65,7 +67,11 @@ public abstract class Paint
 					public TranslatedBitmap getBitmap(int x, int y, int w, int h)
 					{
 						Bitmap bmp = new Bitmap(w, h);
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+						Graphics g = new Graphics(bmp);
+//#else
 						Graphics g = Graphics.create(bmp);
+//#endif
 						g.setBackgroundColor(color);
 						g.clear();
 						return new TranslatedBitmap(bmp, x, y);

@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: CalRGBColor.java
  * Version: 1.2
@@ -26,7 +28,9 @@ import com.sun.pdfview.helper.ColorSpace;
 
 import java.io.IOException;
 
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#endif
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.function.FunctionType0;
@@ -147,9 +151,15 @@ public class CalRGBColor extends ColorSpace
     	{
             // compute r', g' and b' by raising the given values to the
             // correct gamma
+//#ifdef BlackBerrySDK4.5.0
+    		float a = (float)littlecms.internal.helper.Utility.pow(comp[0], gamma[0]);
+		    float b = (float)littlecms.internal.helper.Utility.pow(comp[1], gamma[1]);
+		    float c = (float)littlecms.internal.helper.Utility.pow(comp[2], gamma[2]);
+//#else
 		    float a = (float)MathUtilities.pow(comp[0], gamma[0]);
 		    float b = (float)MathUtilities.pow(comp[1], gamma[1]);
 		    float c = (float)MathUtilities.pow(comp[2], gamma[2]);
+//#endif
 		    
             // now multiply by the matrix to get X, Y and Z values
             float[] xyz = new float[] {
@@ -209,7 +219,11 @@ public class CalRGBColor extends ColorSpace
               }
               else
               {
+//#ifdef BlackBerrySDK4.5.0
+            	  rgb[i] = (float) ((littlecms.internal.helper.Utility.pow(rgb[i], 1.0 / 2.4) * 1.055) - 0.055);
+//#else
                   rgb[i] = (float) ((MathUtilities.pow(rgb[i], 1.0 / 2.4) * 1.055) - 0.055);
+//#endif
               }
           }
           

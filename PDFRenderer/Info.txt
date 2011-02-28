@@ -1,10 +1,16 @@
 TODO:
+--PDFViewer
+-com.sun.pdfview.HorizontalButtonFieldSet.java (replace file with LGPL compatable license)
+
 implement the "Graphics" implemintation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
+	If in OS 5.0 support then use OpenGL, take a look at GLUT|ES to see how fonts are drawn.
 
 Cleanup StandardDecrypter so it's code is more efficient and handles errors properly, also update the documentation and parameter names
 See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
 Update TODOs in various classes
+
+Modify PDFViewer so that it supports Torch (Trackpad) and other 4.5/4.6/4.7 handsets (also check to make sure that if a CLICK event is used that it is not used on non-SurePress screens like the Torch)
 
 Go through and make sure licenses and authors are noted and given credit to and update documentation so that it portains to BlackBerry PDF Renderer.
 Add resources for internationalization.
@@ -16,7 +22,6 @@ Figure out how to add support for text selection
 PREPROCESSORS:
 USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold, maybe a special class that can switch between them.)
 NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore the built-in implementation).
-NATIVE_CHARSET_ENCODER (If CharsetEncoder ever gets added natively this will ignore the built-in implementation).
 USE_LCMS_LIBRARY (Use an external LCMS library instead of the built in library, this is perferred because it is more up-to-date and is less error prone [trying to hack together a color converter that has to be able to load ICC profiles is not a light task]), the only real manual operation that needs to be done besides setting this DEFINE is to link the library as a dependency into the project.) UPDATE-This is not really valid right now since the library has been changed to just using the library.
 //TODO: add more preprocessors
 

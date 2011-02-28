@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: BasicStroke.java
  * Version: 1.0
@@ -22,8 +24,11 @@
  */
 package com.sun.pdfview.helper.graphics;
 
-import net.rim.device.api.util.Arrays;
+//#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.MathUtilities;
+//#else
+import com.sun.pdfview.helper.PDFUtil;
+//#endif
 
 /**
  * Partial implementation of java.awt.BasicStroke.
@@ -706,7 +711,11 @@ public class BasicStroke
         float y3 = y0 + y30;
         
         float cos = x10 * x20 + y10 * y20;
+//#ifdef BlackBerrySDK4.5.0
+        float a = (float)PDFUtil.acos(cos / (w2 * w2));
+//#else
         float a = (float)MathUtilities.acos(cos / (w2 * w2));
+//#endif
         if (cos >= 0.0)
         {
         	float k = 4f / 3f * (float)Math.tan(a / 4f);

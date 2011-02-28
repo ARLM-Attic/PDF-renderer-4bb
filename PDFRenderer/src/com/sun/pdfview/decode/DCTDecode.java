@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: DCTDecode.java
  * Version: 1.2
@@ -23,7 +25,11 @@
 package com.sun.pdfview.decode;
 
 import java.io.IOException;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.EncodedImage;
@@ -110,7 +116,11 @@ public class DCTDecode
         {
         	bimg.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
         }
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
         Graphics bg = Graphics.create(bimg);
+//#else
+        Graphics bg = new Graphics(bimg);
+//#endif
         
         // draw the image onto it
         bg.drawImage(0, 0, width, height, img, 0, 0, 0);

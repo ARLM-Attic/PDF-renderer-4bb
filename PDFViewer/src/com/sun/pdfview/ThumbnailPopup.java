@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: ThumbnailPopup.java
  * Version: 1.0
@@ -153,7 +155,15 @@ public class ThumbnailPopup extends PopupScreen implements ScrollChangeListener,
 			{
 				fields[i] = new PageField(null, THUMB_DEFAULT_WIDTH, THUMB_HEIGHT, this.tracker);
 			}
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0
 			this.getDelegate().addAll(fields);
+//#else
+			Manager man = this.getDelegate();
+			for(int i = 0; i < c; i++)
+			{
+				man.add(fields[i]);
+			}
+//#endif
 		}
 	}
 	
