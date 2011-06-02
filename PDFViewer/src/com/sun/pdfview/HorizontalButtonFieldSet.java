@@ -5,8 +5,10 @@
  * Version: 1.0
  * Initial Creation: May 29, 2010 7:11:32 PM
  *
+ * -Originally had the following text:
  * Research In Motion Limited proprietary and confidential
  * Copyright Research In Motion Limited, 2009-2009
+ * -But according to http://supportforums.blackberry.com/t5/Java-Development/Legal-Issues-Using-Implement-advanced-buttons-fields-and/td-p/605170, it has been removed and is free to use.
  */
 package com.sun.pdfview;
 

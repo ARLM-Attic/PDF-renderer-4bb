@@ -68,7 +68,7 @@ public class StandardDecrypter implements PDFDecrypter
      * Extra salt to add to AES-based decryption keys, as per PDF Reference 1.7
      */
     private static final byte[] AESV2_SALT = {'s', 'A', 'l', 'T'};
-
+    
     /**
      * Describes an encryption algorithm to be used, declaring not only the
      * cipher type, but also key generation techniques
@@ -99,7 +99,7 @@ public class StandardDecrypter implements PDFDecrypter
             0x2E, 0x2E, 0x00, (byte)0xB6, (byte)0xD0, 0x68, 0x3E, (byte)0x80,
             0x2F, 0x0C, (byte)0xA9, (byte)0xFE, 0x64, 0x53, 0x69, 0x7A
     };
-
+    
     /**
      * The specification of the RC4 cipher for JCE interactions
      */
@@ -110,7 +110,7 @@ public class StandardDecrypter implements PDFDecrypter
      * /
     private static String KEY_RC4 = "RC4";
     */
-
+    
     /**
      * The specification of the AES cipher for JCE interactions. As per the
      * spec, cipher-block chanining (CBC) mode and PKCS5 padding are used
@@ -122,18 +122,18 @@ public class StandardDecrypter implements PDFDecrypter
      * /
     private static String KEY_AES = "AES";
     */
-
+    
     /**
      * Whether the owner password was specified
      */
     private boolean ownerAuthorised = false;
-
+    
     /**
      * The general encryption key; may be mutated to form individual
      * stream/string encryption keys
      */
     private byte[] generalKeyBytes;
-
+    
     /**
      * The encryption algorithm being employed
      */
