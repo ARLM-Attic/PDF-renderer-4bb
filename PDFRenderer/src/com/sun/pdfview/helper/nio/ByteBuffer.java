@@ -302,7 +302,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new BufferOverflowException();
 			}
-			return putShort(this.position += 2, value);
+			return putShort(2 - (this.position += 2), value);
 		}
 		
 		public ByteBuffer putShort(int index, short value)
@@ -311,8 +311,8 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new IndexOutOfBoundsException();
 			}
-			this.unCheckedPut(index + 1, (byte)(value >> 8));
-			this.unCheckedPut(index, (byte)value);
+			this.unCheckedPut(index, (byte)(value >> 8));
+			this.unCheckedPut(index + 1, (byte)value);
 			return this;
 		}
 		
@@ -322,7 +322,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new BufferOverflowException();
 			}
-			return putInt(this.position += 4, value);
+			return putInt(4 - (this.position += 4), value);
 		}
 		
 		public ByteBuffer putInt(int index, int value)
@@ -331,10 +331,10 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new IndexOutOfBoundsException();
 			}
-			this.unCheckedPut(index + 3, (byte)(value >> 24));
-			this.unCheckedPut(index + 2, (byte)(value >> 16));
-			this.unCheckedPut(index + 1, (byte)(value >> 8));
-			this.unCheckedPut(index, (byte)value);
+			this.unCheckedPut(index, (byte)(value >> 24));
+			this.unCheckedPut(index + 1, (byte)(value >> 16));
+			this.unCheckedPut(index + 2, (byte)(value >> 8));
+			this.unCheckedPut(index + 3, (byte)value);
 			return this;
 		}
 		
@@ -367,7 +367,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new BufferUnderflowException();
 			}
-			return this.getShort(this.position += 2);
+			return this.getShort(2 - (this.position += 2));
 		}
 		
 		public short getShort(int index)
@@ -376,7 +376,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new IndexOutOfBoundsException();
 			}
-			return (short)(((this.unCheckedGet(index + 1) & 0xFF) << 8) | (this.unCheckedGet(index) & 0xFF));
+			return (short)(((this.unCheckedGet(index) & 0xFF) << 8) | (this.unCheckedGet(index + 1) & 0xFF));
 		}
 		
 		public int getInt()
@@ -385,7 +385,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new BufferUnderflowException();
 			}
-			return this.getInt(this.position += 4);
+			return this.getInt(4 - (this.position += 4));
 		}
 		
 		public int getInt(int index)
@@ -394,7 +394,7 @@ public abstract class ByteBuffer extends Buffer
 			{
 				throw new IndexOutOfBoundsException();
 			}
-			return (((this.unCheckedGet(index + 3) & 0xFF) << 24) | ((this.unCheckedGet(index + 2) & 0xFF) << 16) | ((this.unCheckedGet(index + 1) & 0xFF) << 8) | (this.unCheckedGet(index) & 0xFF));
+			return (((this.unCheckedGet(index) & 0xFF) << 24) | ((this.unCheckedGet(index + 1) & 0xFF) << 16) | ((this.unCheckedGet(index + 2) & 0xFF) << 8) | (this.unCheckedGet(index + 3) & 0xFF));
 		}
 		
 		public ByteBuffer slice()

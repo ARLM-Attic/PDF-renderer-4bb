@@ -56,7 +56,7 @@ public class GlyfTable extends TrueTypeTable
         MaxpTable maxp = (MaxpTable)ttf.getTable("maxp");
         int numGlyphs = maxp.getNumGlyphs();
         
-        glyphs = new Object[numGlyphs]; 
+        glyphs = new Object[numGlyphs];
     }
     
     /**

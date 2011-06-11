@@ -58,7 +58,7 @@ import net.rim.device.api.util.LongVector;
  */
 public class PDFUtil
 {
-	/* BUFFER_BIG_ENDIAN == false
+	/* BUFFER_BIG_ENDIAN == true
 	private static boolean BUFFER_BIG_ENDIAN;
 	
 	static
@@ -403,7 +403,7 @@ public class PDFUtil
     		throw new BufferUnderflowException();
     	}
     	long result = ByteBuffer_loadLong(buffer, position);
-    	position = newPosition;
+    	buffer.position(newPosition);
     	return result;
     }
     
@@ -432,21 +432,22 @@ public class PDFUtil
     	/*
     	if (BUFFER_BIG_ENDIAN)
     	{
+    	*/
     		for (int i = 7; i >= 0; i--)
     		{
     			buffer.put(baseOffset + i, (byte)(value & 0xFF));
     			value = value >> 8;
     		}
+    	/*
     	}
     	else
     	{
-    	*/
     		for (int i = 0; i <= 7; i++)
     		{
     			buffer.put(baseOffset + i, (byte)(value & 0xFF));
     			value = value >> 8;
     		}
-    	//}
+    	}*/
     }
     
     private static final long ByteBuffer_loadLong(ByteBuffer buffer, int index)
@@ -456,21 +457,22 @@ public class PDFUtil
     	/*
     	if (BUFFER_BIG_ENDIAN)
     	{
+    	*/
     		for (int i = 0; i < 8; i++)
     		{
     			bytes = bytes << 8;
     			bytes = bytes | (buffer.get(baseOffset + i) & 0xFF);
     		}
+    	/*
     	}
     	else
     	{
-    	*/
     		for (int i = 7; i >= 0; i--)
     		{
     			bytes = bytes << 8;
     			bytes = bytes | (buffer.get(baseOffset + i) & 0xFF);
     		}
-    	//}
+    	}*/
     	return bytes;
     }
     

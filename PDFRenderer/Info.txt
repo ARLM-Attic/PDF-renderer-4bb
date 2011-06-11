@@ -1,8 +1,6 @@
 TODO:
-Figure out what error with "scn" is.
-Figure out better method of handling header info other then storing an array of the header (maybe just a big switch statement)
-
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
+	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
 	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
 	If in OS 5.0 support then use OpenGL, take a look at GLUT|ES to see how fonts are drawn.
 

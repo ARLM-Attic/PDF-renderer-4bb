@@ -23,13 +23,10 @@ package com.sun.pdfview.helper.graphics.color;
 import java.io.IOException;
 import java.io.InputStream;
 
-import net.rim.device.api.util.Arrays;
-
 import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.helper.ColorSpace;
 
 import littlecms.internal.lcms2;
-import littlecms.internal.lcms2.cmsICCHeader;
 
 /**
  * Partial implementation of java.awt.color.ICC_Profile
@@ -182,18 +179,18 @@ public class ICC_Profile
     //private static ICC_Profile pyccProfile;
     //private static ICC_Profile linearRGBProfile;
 	
+    /*
 	/**
 	 * Cached header data
-	 */
-	private byte[] headerData;// = null;
+	 * /
+	private byte[] headerData = null;
+	*/
 	
 	lcms2.cmsHPROFILE profile;
 	
 	private ICC_Profile(byte[] data)
 	{
 		this.profile = lcms2.cmsOpenProfileFromMem(data, data.length);
-		
-		this.headerData = Arrays.copy(data, 0, cmsICCHeader.SIZE); //It wastes memory but makes up for the missing tag and the work needed to reserialize it.
 		
 		if(this.profile == null)
 		{
@@ -499,12 +496,20 @@ public class ICC_Profile
 		{
 			headerData = getData(icSigHead);
 		}
-		*/
 		
 		return  ((headerData[idx]   & 0xFF) << 24)|
 				((headerData[idx+1] & 0xFF) << 16)|
 				((headerData[idx+2] & 0xFF) << 8) |
 				((headerData[idx+3] & 0xFF));
+		*/
+		switch(idx)
+		{
+			case icHdrDeviceClass:
+				return lcms2.cmsGetDeviceClass(this.profile);
+			case icHdrColorSpace:
+				return lcms2.cmsGetColorSpace(this.profile);
+		}
+		return 0;
 	}
 	
 	/**
@@ -541,8 +546,11 @@ public class ICC_Profile
      */
     public int getRenderingIntent()
     {
+    	/*
         return getIntFromByteArray(this.getData(ICC_Profile.icSigHead), // pf header
         		ICC_Profile.icHdrRenderingIntent);
+        */
+    	return lcms2.cmsGetHeaderRenderingIntent(this.profile);
     }
 	
     /**

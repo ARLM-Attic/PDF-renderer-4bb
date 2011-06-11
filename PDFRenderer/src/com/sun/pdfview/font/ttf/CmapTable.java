@@ -88,7 +88,7 @@ public class CmapTable extends TrueTypeTable
         int k = 0;
         for(Enumeration i = subtables.elements(); i.hasMoreElements();)
         {
-        	maps[k] = (CMap)i.nextElement();
+        	maps[k++] = (CMap)i.nextElement();
         }
         
         return maps;
