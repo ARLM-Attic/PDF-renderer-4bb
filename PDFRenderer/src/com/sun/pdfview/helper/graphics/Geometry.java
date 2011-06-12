@@ -476,4 +476,101 @@ public class Geometry
         }
         return geo;
 	}
+	
+	/**
+	 * Determine if the area that contains the specified point is filled or not.
+	 * @param x The x-point to test.
+	 * @param y The y-point to test.
+	 * @return <code>true</code> if and only if the point is within the Geometry, and follows the winding-rule. <code>false</code> if otherwise.
+	 */
+	public boolean isFilled(float x, float y)
+	{
+		//From Insight Toolkit (ITK) on the Wikipedia article: http://en.wikipedia.org/wiki/Even-odd_rule
+		if(this.typeSize < 3)
+		{
+			return false;
+		}
+		int numpoints = this.typeSize;
+		int typePtr = 0;
+		int pointPtr = 0;
+		float node1x = 0;
+		float node1y = 0;
+		float node2x = 0;
+		float node2y = 0;
+		float fx = 0, fy = 0;
+		int type, count;
+		// If last point same as first, don't bother with it.
+		if(types[numpoints - 1] == Enumeration.SEG_CLOSE)
+		{
+			numpoints--;
+		}
+		boolean oddNodes = false;
+		for(int i = 0; i < numpoints; i++)
+		{
+			//Get end points
+			type = this.types[typePtr++];
+			count = Geometry.pointShift[type];
+			switch(type)
+			{
+				case Enumeration.SEG_MOVETO:
+				case Enumeration.SEG_LINETO:
+					node1x = this.points[pointPtr + 0];
+					node1y = this.points[pointPtr + 1];
+					break;
+				case Enumeration.SEG_QUADTO:
+					node1x = this.points[pointPtr + 2];
+					node1y = this.points[pointPtr + 3];
+					break;
+				case Enumeration.SEG_CUBICTO:
+					node1x = this.points[pointPtr + 4];
+					node1y = this.points[pointPtr + 5];
+					break;
+			}
+			pointPtr += count;
+			if(i == 0)
+			{
+				fx = node1x;
+				fy = node1y;
+			}
+			if(i == numpoints - 1)
+			{
+				node2x = fx;
+				node2y = fy;
+			}
+			else
+			{
+				type = this.types[typePtr++];
+				count = Geometry.pointShift[type];
+				switch(type)
+				{
+					case Enumeration.SEG_MOVETO:
+					case Enumeration.SEG_LINETO:
+						node2x = this.points[pointPtr + 0];
+						node2y = this.points[pointPtr + 1];
+						break;
+					case Enumeration.SEG_QUADTO:
+						node2x = this.points[pointPtr + 2];
+						node2y = this.points[pointPtr + 3];
+						break;
+					case Enumeration.SEG_CUBICTO:
+						node2x = this.points[pointPtr + 4];
+						node2y = this.points[pointPtr + 5];
+						break;
+				}
+				pointPtr += count;
+			}
+			//Check to see if point is within Geometry
+			if((node1y < y && node2y >= y) || (node2y < y && node1y >= y))
+			{
+				if(node1x + (y - node1y) / (node2y - node1y) * (node2x - node1x) < x)
+				{
+					if(!(this.rule == Enumeration.WIND_NON_ZERO && oddNodes))
+					{
+						oddNodes = !oddNodes; //Only want it to change if winding rule is odd-even or is first time with non-zero
+					}
+				}
+			}
+		}
+		return oddNodes;
+	}
 }

@@ -4,6 +4,7 @@ implement the "Graphics" implementation of PDFGraphics (one idea is to store all
 	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
 	If in OS 5.0 support then use OpenGL, take a look at GLUT|ES to see how fonts are drawn.
 
+Try to get Geometry.isFilled to properly handle bézier curves properly
 Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing
 See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
 Update TODOs in various classes
