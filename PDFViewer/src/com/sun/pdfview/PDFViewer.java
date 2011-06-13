@@ -24,8 +24,11 @@ package com.sun.pdfview;
 import java.io.InputStream;
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import java.nio.ByteBuffer;
+import net.rim.device.api.io.URI;
+import net.rim.device.api.ui.picker.FilePicker;
 //#else
 import com.sun.pdfview.helper.nio.ByteBuffer;
+//TODO: Come up with compatible FilePicker
 //#endif
 
 import javax.microedition.io.Connector;
@@ -34,7 +37,6 @@ import javax.microedition.io.file.FileConnection;
 import com.sun.pdfview.decrypt.PDFAuthenticationFailureException;
 
 import net.rim.device.api.io.IOUtilities;
-import net.rim.device.api.io.URI;
 import net.rim.device.api.math.Fixed32;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.system.EncodedImage;
@@ -56,7 +58,6 @@ import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
-import net.rim.device.api.ui.picker.FilePicker;
 
 /**
  * A demo PDF Viewer application.

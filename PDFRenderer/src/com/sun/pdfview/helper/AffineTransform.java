@@ -55,7 +55,7 @@ public class AffineTransform
     public static final int TYPE_MASK_SCALE = TYPE_UNIFORM_SCALE | TYPE_GENERAL_SCALE;
     /** This constant is a bit mask for any of the rotation flag bits.*/
     public static final int TYPE_MASK_ROTATION = TYPE_QUADRANT_ROTATION | TYPE_GENERAL_ROTATION;
-
+    
     /**
      * The <code>TYPE_UNKNOWN</code> is an initial type value
      */
@@ -75,7 +75,7 @@ public class AffineTransform
     float m11;
     float m02;
     float m12;
-
+    
     /**
      * The transformation <code>type</code> 
      */
@@ -241,8 +241,8 @@ public class AffineTransform
     }
 	
 	/**
-	 *  Concatenates an AffineTransform Tx to this AffineTransform Cx in the most commonly useful way to provide a new user space that is mapped to the former user space 
-	 *  by Tx.
+	 * Concatenates an AffineTransform Tx to this AffineTransform Cx in the most commonly useful way to provide a new user space that is mapped to the former user space 
+	 * by Tx.
 	 * @param Tx The AffineTransform object to be concatenated with this AffineTransform object.
 	 */
 	public void concatenate(AffineTransform Tx)

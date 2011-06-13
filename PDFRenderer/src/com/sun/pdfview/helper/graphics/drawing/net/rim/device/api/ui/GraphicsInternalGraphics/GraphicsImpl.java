@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: GraphicsImpl.java
  * Version: 1.0
@@ -115,11 +117,12 @@ public class GraphicsImpl extends PDFGraphics
 	
 	public void draw(Geometry s)
 	{
+		//Draw uses Stroke
 		Geometry sg = stroke.createStrokedGeometry(s);
 		Geometry.Enumeration en = sg.getPathEnumerator(this.trans);
 		float[] coords = new float[6];
-		float sx = 0;
-		float sy = 0;
+		//float sx = 0;
+		//float sy = 0;
 		while(!en.isDone())
 		{
 			switch(en.currentSegment(coords))
@@ -186,14 +189,25 @@ public class GraphicsImpl extends PDFGraphics
 	
 	public boolean drawImage(Bitmap img, AffineTransform xform)
 	{
-		//TODO
+		if(img != null)
+		{
+			//Create "final" transform
+			xform = new AffineTransform(this.trans);
+			xform.concatenate(xform);
+			//TODO: Transform image
+			if(this.clip != null)
+			{
+				//TODO: Clip image
+			}
+			//TODO: Composite the image
+		}
 		return true;
 	}
 	
 	public void fill(Geometry s)
 	{
-		Geometry sg = stroke.createStrokedGeometry(s);
-		Geometry.Enumeration en = sg.getPathEnumerator(this.trans);
+		//Fill doesn't seem to use Stroke
+		Geometry.Enumeration en = s.getPathEnumerator(this.trans);
 		float[] coords = new float[6];
 		while(!en.isDone())
 		{
@@ -226,13 +240,13 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			this.clip = null;
 		}
-		else if(direct)
+		else if(direct || this.clip == null)
 		{
 			this.clip = s;
 		}
 		else
 		{
-			//TODO
+			this.clip.append(s, false);
 		}
 	}
 	
@@ -284,7 +298,6 @@ public class GraphicsImpl extends PDFGraphics
 					default:
 						return;
 				}
-				//TODO
 				this.interp = hintValue;
 				break;
 			case PDFGraphics.KEY_ALPHA_INTERPOLATION:
@@ -304,11 +317,11 @@ public class GraphicsImpl extends PDFGraphics
 	
 	public void setStroke(BasicStroke s)
 	{
-		this.stroke = s;
-		if(this.stroke == null)
+		if(s == null)
 		{
-			this.stroke = new BasicStroke();
+			throw new NullPointerException();
 		}
+		this.stroke = s;
 	}
 	
 	public void setTransform(AffineTransform Tx, boolean direct)

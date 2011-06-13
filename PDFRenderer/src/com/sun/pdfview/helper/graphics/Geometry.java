@@ -564,7 +564,7 @@ public class Geometry
 			{
 				if(node1x + (y - node1y) / (node2y - node1y) * (node2x - node1x) < x)
 				{
-					if(!(this.rule == Enumeration.WIND_NON_ZERO && oddNodes))
+					if(!(this.rule == WIND_NON_ZERO && oddNodes))
 					{
 						oddNodes = !oddNodes; //Only want it to change if winding rule is odd-even or is first time with non-zero
 					}

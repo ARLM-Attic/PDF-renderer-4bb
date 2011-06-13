@@ -2,7 +2,7 @@
 
 /*
  * File: GestureField.java
- * Version: 1.0
+ * Version: 1.1
  * Initial Creation: Jun 15, 2010 11:13:54 PM
  *
  * This library is free software; you can redistribute it and/or
@@ -24,14 +24,17 @@ package com.sun.pdfview.ui;
 import net.rim.device.api.math.Fixed32;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
+//#endif
 import net.rim.device.api.ui.XYPoint;
 import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.MathUtilities;
 
 //Based off: http://dwilson.org/blog/2009/4/19/implementing-pinch-zoom-on-the-iphone/
 
+//TODO Update to support non-touchscreen interactions
 //TODO Update to support Pinch-Zoom Gesture (will require some work because it seems to be the cheap, scale-only type Pinch-zoom that all built-in smartphone systems do).
 
 /**
@@ -48,25 +51,45 @@ public abstract class GestureField extends Field
 		 * Click and pause at a specific point on the touch screen for more than 500 milliseconds. A new consecutive EVENT_CLICK_REPEAT event is generated every 500 
 		 * milliseconds until the user moves or removes touch from the touch screen.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int EVENT_CLICK_REPEAT = TouchGesture.CLICK_REPEAT;
+//#else
+		public static final int EVENT_CLICK_REPEAT = 0x3507;
+//#endif
 		/**
 		 * Two consecutive quick touch and release gesture on the touch screen. EVENT_DOUBLE_TAP events are independent of {@link Gesture#EVENT_TAP} event, i.e. 
 		 * applications will receive a EVENT_DOUBLE_TAP event after a {@link Gesture#EVENT_TAP}.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int EVENT_DOUBLE_TAP = TouchGesture.DOUBLE_TAP;
+//#else
+		public static final int EVENT_DOUBLE_TAP = 0x3;
+//#endif
 		/**
 		 * Touch and pause at a specific point on the touch screen for more than the user-defined number of milliseconds (configurable setting found in Screen/Keyboard 
 		 * Options). A new consecutive HOVER event is generated at this interval in milliseconds until the user moves or removes touch from the touch screen.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int EVENT_HOVER = TouchGesture.HOVER;
+//#else
+		public static final int EVENT_HOVER = 0x0;
+//#endif
 		/**
 		 * Quick motion gesture across the touch screen.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int EVENT_SWIPE = TouchGesture.SWIPE;
+//#else
+		public static final int EVENT_SWIPE = 0x3504;
+//#endif
 		/**
 		 * Quick touch and release gesture on the touch screen.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int EVENT_TAP = TouchGesture.TAP;
+//#else
+		public static final int EVENT_TAP = 0x2;
+//#endif
 		/**
 		 * A pinch event where two fingers are used to change the size, position, or rotation of something on screen.
 		 */
@@ -135,22 +158,38 @@ public abstract class GestureField extends Field
 		 * Gesture direction that is equivalent to 180 degrees +/- 45 degrees relative to the device's current upward direction. Can be bitwise ORed with other 
 		 * cardinal directions.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int SWIPE_EAST = TouchGesture.SWIPE_EAST;
+//#else
+		public static final int SWIPE_EAST = 0x4;
+//#endif
 		/**
 		 * Gesture direction that is equivalent to 90 degrees +/- 45 degrees relative to the device's current upward direction. Can be bitwise ORed with other 
 		 * cardinal directions.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int SWIPE_NORTH = TouchGesture.SWIPE_NORTH;
+//#else
+		public static final int SWIPE_NORTH = 0x1;
+//#endif
 		/**
 		 * Gesture direction that is equivalent to 270 degrees +/- 45 degrees relative to the device's current upward direction. Can be bitwise ORed with other 
 		 * cardinal directions.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int SWIPE_SOUTH = TouchGesture.SWIPE_SOUTH;
+//#else
+		public static final int SWIPE_SOUTH = 0x2;
+//#endif
 		/**
 		 * Gesture direction that is equivalent to 180 degrees +/- 45 degrees relative to the device's current upward direction. Can be bitwise ORed with other 
 		 * cardinal directions.
 		 */
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		public static final int SWIPE_WEST = TouchGesture.SWIPE_WEST;
+//#else
+		public static final int SWIPE_WEST = 0x8;
+//#endif
 		
 		private int type, value1, value2, value3, value4, value5;
 		
@@ -169,6 +208,7 @@ public abstract class GestureField extends Field
 			}
 		}
 		
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		private Gesture(TouchGesture gesture)
 		{
 			this.type = gesture.getEvent();
@@ -190,6 +230,7 @@ public abstract class GestureField extends Field
 					break;
 			}
 		}
+//#endif
 		
 		/**
 		 * Get what type of gesture this Gesture is.
@@ -372,10 +413,12 @@ public abstract class GestureField extends Field
 						ges = new Gesture(inType, argI);
 					}
 				}
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 				else if(args instanceof TouchGesture)
 				{
 					ges = new Gesture((TouchGesture)args);
 				}
+//#endif
 				else
 				{
 					//What happened
@@ -398,7 +441,12 @@ public abstract class GestureField extends Field
 				handled = interactionCanceled();
 				break;
 			case INTERACTION_CLICK:
-				handled = interactionClick(inType == TouchEvent.CLICK);
+				handled = interactionClick(inType == 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+					TouchEvent.CLICK);
+//#else
+					0x3505);
+//#endif
 				break;
 		}
 		if(handled)
@@ -408,6 +456,7 @@ public abstract class GestureField extends Field
 		return handled;
 	}
 	
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 	/**
 	 * Touch Event handles all gesture functions, if you are using any gesture functions then you should <strong>not</strong> return without invoking this function.
 	 * @see Field#touchEvent(TouchEvent)
@@ -573,6 +622,58 @@ public abstract class GestureField extends Field
 		}
 		return super.touchEvent(message);
 	}
+//#endif
+	
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+	//Taken from BBX/LCMS
+	public static double pow(double base, double power)
+	{
+		return MathUtilities.exp(power * MathUtilities.log(base));
+	}
+	
+	public static long round(double a)
+	{
+		if(a == 0)
+		{
+			return 0;
+		}
+		else if(Double.isNaN(a))
+		{
+			return 0;
+		}
+		else if(Double.isInfinite(a))
+		{
+			if(a == Double.NEGATIVE_INFINITY)
+			{
+				return Long.MIN_VALUE;
+			}
+			else
+			{
+				return Long.MAX_VALUE;
+			}
+		}
+		else if(a <= Long.MIN_VALUE)
+		{
+			return Long.MIN_VALUE;
+		}
+		else if(a >= Long.MAX_VALUE)
+		{
+			return Long.MAX_VALUE;
+		}
+		else
+		{
+			if(a < 0)
+			{
+				a -= 0.5;
+			}
+			else
+			{
+				a += 0.5;
+			}
+			return (long)Math.floor(a);
+		}
+	}
+//#endif
 	
 	private static void compactContacts(XYPoint[] starts, XYPoint[] contacts)
 	{
@@ -620,9 +721,15 @@ public abstract class GestureField extends Field
 		double mat2 = mat[2] * FP_2_DOUBLE;
 		double mat3 = mat[3] * FP_2_DOUBLE;
 		double mat5 = mat[5] * FP_2_DOUBLE;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 		double D = MathUtilities.pow(aNe, 2) - (mat3 * mat1);
 		return new XYPoint((int)MathUtilities.round((((mat2 * aNe) - (mat5 * mat3) / D)) * Fixed32.ONE), 
 				(int)MathUtilities.round((((aNe * mat5) - (mat1 * mat2) / D)) * Fixed32.ONE));
+//#else
+		double D = pow(aNe, 2) - (mat3 * mat1);
+		return new XYPoint((int)round((((mat2 * aNe) - (mat5 * mat3) / D)) * Fixed32.ONE), 
+				(int)round((((aNe * mat5) - (mat1 * mat2) / D)) * Fixed32.ONE));
+//#endif
 		/* Original C# source
 		 * double inverseCos = 1.0 - mat.M11;
 		 * double D = (inverseCos * inverseCos) - (mat.M12 * mat.M21);
