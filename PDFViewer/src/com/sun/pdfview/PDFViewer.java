@@ -28,7 +28,7 @@ import net.rim.device.api.io.URI;
 import net.rim.device.api.ui.picker.FilePicker;
 //#else
 import com.sun.pdfview.helper.nio.ByteBuffer;
-//TODO: Come up with compatible FilePicker
+import com.sun.pdfview.ui.FilePicker;
 //#endif
 
 import javax.microedition.io.Connector;
@@ -212,14 +212,22 @@ public class PDFViewer extends UiApplication
 			
 			//create a PDFFile from the data
 			PDFFile nFile = null;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 			URI uri = null;
+//#else
+			String uri = null;
+//#endif
 			boolean error = false;
 			
 			FileConnection file = null;
 			InputStream in = null;
 			try
 			{
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 				uri = URI.create(selected); //Never going to give an error but needs to be in try/catch anyway.
+//#else
+				uri = selected;
+//#endif
 				lastDir = uri.toString();
 				lastDir = lastDir.substring(0, lastDir.length() - getFileName(uri).length());
 				
@@ -328,11 +336,18 @@ public class PDFViewer extends UiApplication
 			}
 		}
 		
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 		private String getFileName(URI uri)
 		{
 			String path = uri.getPath();
 			return path.substring(path.lastIndexOf('/') + 1);
 		}
+//#else
+		private String getFileName(String uri)
+		{
+			return uri.substring(uri.lastIndexOf('/') + 1);
+		}
+//#endif
 		
 		protected void makeMenu(Menu menu, int instance)
 		{

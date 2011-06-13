@@ -87,7 +87,7 @@ public class PatternSpace extends PDFColorSpace
      */
     public PDFPaint getPaint(float[] components)
     {
-        throw new IllegalArgumentException("Pattern spaces require a pattern name!");
+        throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME));
     }
     
     /**

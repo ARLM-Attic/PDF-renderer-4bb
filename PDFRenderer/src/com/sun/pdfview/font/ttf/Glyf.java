@@ -89,7 +89,7 @@ public class Glyf
         }
         else
         {
-            throw new IllegalArgumentException("Unknown glyf type: " + numContours);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_UNK_GLYF) + numContours);
         }
         
         g.setNumContours(numContours);

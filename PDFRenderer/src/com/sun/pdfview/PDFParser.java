@@ -41,7 +41,6 @@ import javax.microedition.io.file.FileConnection;
 
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.colorspace.PatternSpace;
-import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.font.PDFFont;
 import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFUtil;
@@ -49,6 +48,8 @@ import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.Geometry;
 import com.sun.pdfview.pattern.PDFShader;
+import com.sun.pdfview.ResourceManager;
+import com.sun.pdfview.i18n.ResourcesResource;
 
 /**
  * PDFParser is the class that parses a PDF content stream and
@@ -274,7 +275,7 @@ public class PDFParser extends BaseWatchable
                     c = stream[loc++];  // eat a following return
                 }
             }
-            debug("Read comment: " + comment.toString(), -1);
+            debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_READ_COMMENT) + comment.toString(), -1);
         }
         
         if (c == '[')
@@ -335,7 +336,7 @@ public class PDFParser extends BaseWatchable
             System.out.println("Encountered character: " + c + " (" + (char) c + ")");
             tok.type = Tok.UNK;
         }
-        debug("Read token: " + tok, -1);
+        debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_READ_TOKEN) + tok, -1);
         return tok;
     }
     
@@ -601,7 +602,7 @@ public class PDFParser extends BaseWatchable
         cmds = (PDFPage)pageRef.get();
         if (cmds == null)
         {
-            System.out.println("Page gone.  Stopping");
+            System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_ITERATE_PAGE_GONE));
             return Watchable.STOPPED;
         }
         
@@ -1067,11 +1068,11 @@ public class PDFParser extends BaseWatchable
             {
                 if (catchexceptions)
                 {
-                    debug("**** WARNING: Unknown command: " + cmd + " **************************", 10);
+                    debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_ITERATE_UNK_CMD_DBG) + cmd + " **************************", 10);
                 }
                 else
                 {
-                    throw new PDFParseException("Unknown command: " + cmd);
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_ITERATE_UNK_CMD) + cmd);
                 }
             }
             if (stack.size() != 0)
@@ -1180,7 +1181,7 @@ public class PDFParser extends BaseWatchable
         		file.create();
         	}
         	OutputStream ostr = file.openOutputStream();
-            System.out.println("Write: " + file.getPath());
+            System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_WRITE) + file.getPath());
             ostr.write(ary);
             ostr.close();
             file.close();
@@ -1241,7 +1242,7 @@ public class PDFParser extends BaseWatchable
         }
         else
         {
-            throw new PDFParseException("Unknown XObject subtype: " + type);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_UNK_XOBJECT) + type);
         }
     }
     
@@ -1324,7 +1325,7 @@ public class PDFParser extends BaseWatchable
         
         if (pattern == null)
         {
-            throw new PDFParseException("Unknown pattern : " + patternName);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_UNK_PATTERN) + patternName);
         }
         
         if (stack.size() > 0)
@@ -1374,7 +1375,7 @@ public class PDFParser extends BaseWatchable
             }
             if (tok.type != Tok.BRKE)
             {
-                throw new PDFParseException("Inline dict should have ended with '>>'");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_PARSEOBJ_DICT_BAD_ENDING));
             }
             return hm;
         }
@@ -1389,7 +1390,7 @@ public class PDFParser extends BaseWatchable
             }
             if (tok.type != Tok.ARYE)
             {
-                throw new PDFParseException("Expected ']'");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_PARSEOBJ_EXPECTED_BRACKET));
             }
             Object[] arry = new Object[ary.size()];
             ary.copyInto(arry);
@@ -1399,7 +1400,7 @@ public class PDFParser extends BaseWatchable
         {
             return t;
         }
-        debug("**** WARNING! parseObject unknown token! (t.type=" + t.type + ") *************************", 4);
+        debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_PARSEOBJ_UNK_TOKEN) + t.type + ") *************************", 4);
         return null;
     }
     
@@ -1421,7 +1422,7 @@ public class PDFParser extends BaseWatchable
             }
             // it should be a name;
             String name = t.name;
-            debug("ParseInlineImage, token: " + name, 1000);
+            debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_IMAGE_TOKEN) + name, 1000);
             if (name.equals("BPC"))
             {
                 name = "BitsPerComponent";
@@ -1619,7 +1620,7 @@ public class PDFParser extends BaseWatchable
         }
         else
         {
-            throw new PDFParseException("Expected a number here.");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_NUMBER));
         }
     }
 
@@ -1656,7 +1657,7 @@ public class PDFParser extends BaseWatchable
         }
         else
         {
-            throw new PDFParseException("Expected a number here.");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_NUMBER));
         }
     }
     
@@ -1674,7 +1675,7 @@ public class PDFParser extends BaseWatchable
         Object obj = stack.pop();
         if (!(obj instanceof Object[]))
         {
-            throw new PDFParseException("Expected an [array] here.");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_ARRAY));
         }
         Object[] source = (Object[]) obj;
         int len;
@@ -1687,7 +1688,7 @@ public class PDFParser extends BaseWatchable
             }
             else
             {
-                throw new PDFParseException("This array doesn't consist only of floats.");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_NO_ARRAY_FLOAT));
             }
         }
         return ary;
@@ -1704,7 +1705,7 @@ public class PDFParser extends BaseWatchable
         Object obj = stack.pop();
         if (!(obj instanceof String))
         {
-            throw new PDFParseException("Expected string here: " + obj.toString());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_STRING) + obj.toString());
         }
         else
         {
@@ -1723,7 +1724,7 @@ public class PDFParser extends BaseWatchable
         Object obj = stack.pop();
         if (!(obj instanceof PDFObject))
         {
-            throw new PDFParseException("Expected a reference here: " + obj.toString());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_REFERENCE) + obj.toString());
         }
         return (PDFObject) obj;
     }
@@ -1739,7 +1740,7 @@ public class PDFParser extends BaseWatchable
         Object obj = stack.pop();
         if (!(obj instanceof Object[]))
         {
-            throw new PDFParseException("Expected an [array] here: " + obj.toString());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_EXPECTED_ARRAY_FMT) + obj.toString());
         }
         return (Object[]) obj;
     }

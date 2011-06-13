@@ -150,7 +150,7 @@ public class PDFStringUtil
         catch (UnsupportedEncodingException e)
         {
             // UTF-16BE should always be available
-            throw new RuntimeException("No UTF-16BE charset!");
+            throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.STRING_UTIL_NO_UTF16BE));
         }
     }
     

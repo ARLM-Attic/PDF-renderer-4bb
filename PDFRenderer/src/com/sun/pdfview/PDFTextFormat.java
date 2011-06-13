@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.Vector;
 
 import com.sun.pdfview.helper.AffineTransform;
-import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYPointFloat;
 
 import com.sun.pdfview.font.PDFFont;
@@ -348,7 +347,7 @@ public class PDFTextFormat
             }
             else
             {
-                throw new PDFParseException("Bad element in TJ array");
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.TEXT_FORMAT_BAD_TJ));
             }
         }
     }

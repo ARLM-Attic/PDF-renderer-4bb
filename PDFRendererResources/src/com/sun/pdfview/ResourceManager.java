@@ -38,6 +38,8 @@ public final class ResourceManager
 	private static final long SINGLETON_STORAGE_ID = 0x67C95E44C4049000L;
 	private static final long RESOURCE_CACHE_ID = 0x2F3B9A41ADBB0DC2L;
 	
+	public static String LOCALIZATION = "i18n";
+	
 	//There are some "extras" that are coded but not used, thus they can be removed if the developer desires. They are there in case anyone wants to make their own extensions.
 	
 	/**
@@ -64,7 +66,7 @@ public final class ResourceManager
 		for(int i = 0; i < c; i++)
 		{
 			Resources res = (Resources)resourceCache.elementAt(i);
-			if(res.getName().equals(name))
+			if(res.getName().equals(name.replace('.', '/')))
 			{
 				//Found it
 				return res;
@@ -267,6 +269,8 @@ public final class ResourceManager
 		
 		private String path;
 		private int index;
+		private boolean ending;
+		private net.rim.device.api.i18n.ResourceBundle resources;
 		
 		public ResourcesDefaultImpl(String relPath, boolean abs)
 		{
@@ -275,14 +279,19 @@ public final class ResourceManager
 			if((!relPath.endsWith(".")) || (!relPath.endsWith("/")))
 			{
 				this.path += "/";
-				this.index++;
+				this.ending = true;
 			}
 			this.path = this.path.replace('.', '/');
 		}
 		
 		public String getName()
 		{
-			return this.path.substring(this.index);
+			String name = this.path.substring(this.index);
+			if(ending)
+			{
+				name = name.substring(0, name.length() - 1);
+			}
+			return name;
 		}
 		
 		public InputStream getStream(String name)
@@ -290,13 +299,36 @@ public final class ResourceManager
 			return getClass().getResourceAsStream(path + name);
 		}
 		
+		private boolean setupResources()
+		{
+			if(this.resources == null)
+			{
+				String name = path + "Resources";
+				if(name.startsWith("/"))
+				{
+					name = name.substring(1);
+				}
+				name = name.replace('/', '.');
+				this.resources = net.rim.device.api.i18n.ResourceBundle.getBundle(name);
+			}
+			return this.resources != null;
+		}
+		
 		public String getString(long ID)
 		{
+			if(setupResources())
+			{
+				return this.resources.getString((int)ID);
+			}
 			throw new UnsupportedOperationException();
 		}
 		
 		public String[] getStringArray(long ID)
 		{
+			if(setupResources())
+			{
+				return this.resources.getStringArray((int)ID);
+			}
 			throw new UnsupportedOperationException();
 		}
 	}

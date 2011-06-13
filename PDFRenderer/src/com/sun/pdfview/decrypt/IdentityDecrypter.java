@@ -48,7 +48,7 @@ public class IdentityDecrypter implements PDFDecrypter
     {
         if (cryptFilterName != null)
         {
-            throw new PDFParseException("This Encryption version does not support Crypt filters");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_IDENTITY_NO_FILTER));
         }
         
         return streamBuf;

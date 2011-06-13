@@ -119,7 +119,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         this.g = g;
         this.imageinfo = new ImageInfo(imgbounds.width, imgbounds.height, clip, bgColor);
         g.translate(imgbounds.x, imgbounds.y);
-//        System.out.println("Translating by " + imgbounds.x + "," + imgbounds.y);
+        //System.out.println("Translating by " + imgbounds.x + "," + imgbounds.y);
     }
     
     /**
@@ -303,7 +303,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         g.setComposite(Composite.getInstance(Composite.SRC_OVER));
         if (!g.drawImage(bi, at))
         {
-            System.out.println("Image not completed!");
+            System.out.println(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_IMAGE_NOT_COMPLETE));
         }
         
         // get the total transform that was executed
@@ -544,7 +544,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
             bi = (Bitmap)imageRef.get();
             if (bi == null)
             {
-                System.out.println("Image went away.  Stopping");
+                System.out.println(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_IMAGE_WENT_AWAY));
                 return Watchable.STOPPED;
             }
             
@@ -570,7 +570,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         if (cmd == null)
         {
             // uh oh.  Synchronization problem!
-            throw new PDFParseException("Command not found!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_CMD_NOT_FOUND));
         }
         
         // execute the command
