@@ -1,4 +1,10 @@
 TODO:
+Finish FilePicker
+-Make sure scrollable "list" works and is drawn correctly (make custom Field that acts like a list row, it's selectable and clickable)
+-Remove context menu
+-Implement file systemS
+-Implement menu
+-Test
 Make sure that 4MB PDF reads fully (find NullPointerException)
 
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).

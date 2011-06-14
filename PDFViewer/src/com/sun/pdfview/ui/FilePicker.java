@@ -22,14 +22,24 @@
  */
 package com.sun.pdfview.ui;
 
+import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Vector;
 
+import javax.microedition.io.file.FileConnection;
+import javax.microedition.io.file.FileSystemRegistry;
+
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 /**
- * Really basic file picker, based on 5.0 version of FilePicker.
+ * Imitation of 5.0 FilePicker.
  */
 public abstract class FilePicker
 {
@@ -142,18 +152,135 @@ public abstract class FilePicker
 			return fpui.selectedFile;
 		}
 		
-		private static class FilePickerUI extends PopupScreen
+		private static class FilePickerUI extends PopupScreen implements FieldChangeListener
 		{
 			private FilePickerImpl fp;
 			public String selectedFile;
+			private VerticalFieldManager list;
+			private FileConnection file;
 			
 			public FilePickerUI(FilePickerImpl fp)
 			{
-				super(new VerticalFieldManager());
+				super(new VerticalFieldManager(), PopupScreen.DEFAULT_MENU | PopupScreen.DEFAULT_CLOSE | PopupScreen.USE_ALL_HEIGHT | PopupScreen.USE_ALL_WIDTH);
 				this.fp = fp;
+				
+				setupUI();
 			}
 			
-			//TODO
+			public void close()
+			{
+				if(file != null && file.isOpen())
+				{
+					try
+					{
+						file.close();
+					}
+					catch (IOException e)
+					{
+					}
+				}
+				super.close();
+			}
+			
+			private void setupUI()
+			{
+				//Title
+				add(new LabelField("Select"));
+				
+				if(this.fp.rootPath == null)
+				{
+					add(new LabelField("Explore"));
+				}
+				else
+				{
+					//Memory and path
+					HorizontalFieldManager horz = new HorizontalFieldManager();
+					
+					//XXX Add memory icon
+					
+					String path = file.getURL();
+					int pathIndex = path.indexOf('/', 1);
+					add(new LabelField('/' + friendlyName(path.substring(1, pathIndex)) + path.substring(pathIndex), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
+					
+					add(horz);
+				}
+				add(new SeparatorField());
+				
+				add(list = new VerticalFieldManager(VerticalFieldManager.USE_ALL_WIDTH));
+				populateList();
+			}
+			
+			private void populateList()
+			{
+				HorizontalFieldManager horz;
+				LabelField lab;
+				int len;
+				int index = 0;
+				list.deleteAll();
+				if(this.fp.rootPath == null)
+				{
+					String[] roots = getRoots();
+					len = roots.length;
+					for(int i = 0; i < len; i++)
+					{
+						//In keeping with the original manner the FilePicker works
+						if(roots[i].equals("system"))
+						{
+							//Skip "system"
+							continue;
+						}
+						
+						horz = new HorizontalFieldManager();
+						
+						//XXX Icon
+						
+						horz.add(new LabelField(friendlyName(roots[i]), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
+						
+						list.add(horz);
+					}
+				}
+				else
+				{
+					//TODO
+				}
+			}
+			
+			private String friendlyName(String name)
+			{
+				if(name.equals("SDCard"))
+				{
+					return "Media Card";
+				}
+				else if(name.equals("store"))
+				{
+					return "Device Memory";
+				}
+				return name;
+			}
+			
+			private String[] getRoots()
+			{
+				Enumeration en = FileSystemRegistry.listRoots();
+				Vector v = new Vector();
+				while(en.hasMoreElements())
+				{
+					v.addElement(en.nextElement());
+				}
+				String[] str = new String[v.size()];
+				v.copyInto(str);
+				int l = v.size();
+				for(int i = 0; i < l; i++)
+				{
+					str[i] = str[i].substring(0, str[i].length() - 1);
+				}
+				return str;
+			}
+			
+			public void fieldChanged(Field field, int context)
+			{
+				System.out.println("Stuff");
+				// TODO Auto-generated method stub
+			}
 		}
 	}
 }
