@@ -38,6 +38,8 @@ import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Composite;
 import com.sun.pdfview.helper.graphics.Geometry;
 
+import com.sun.pdfview.i18n.ResourcesResource;
+
 /**
  * This class turns a set of PDF Commands from a PDF page into an image.  It
  * encapsulates the state of drawing in terms of stroke, fill, transform,
@@ -303,7 +305,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         g.setComposite(Composite.getInstance(Composite.SRC_OVER));
         if (!g.drawImage(bi, at))
         {
-            System.out.println(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_IMAGE_NOT_COMPLETE));
+            System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.RENDERER_IMAGE_NOT_COMPLETE));
         }
         
         // get the total transform that was executed
@@ -544,7 +546,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
             bi = (Bitmap)imageRef.get();
             if (bi == null)
             {
-                System.out.println(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_IMAGE_WENT_AWAY));
+                System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.RENDERER_IMAGE_WENT_AWAY));
                 return Watchable.STOPPED;
             }
             
@@ -570,7 +572,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         if (cmd == null)
         {
             // uh oh.  Synchronization problem!
-            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.RENDERER_CMD_NOT_FOUND));
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.RENDERER_CMD_NOT_FOUND));
         }
         
         // execute the command

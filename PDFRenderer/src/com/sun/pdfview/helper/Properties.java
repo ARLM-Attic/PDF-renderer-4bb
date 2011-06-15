@@ -108,7 +108,7 @@ public class Properties extends Hashtable
 				}
 				else if (count <= 4)
 				{
-					throw new IllegalArgumentException("Invalid Unicode sequence: illegal character");
+					throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_PROPERTIES_INV_UNI_CHAR));
 				}
 				mode = NONE;
 				buf[offset++] = (char) unicode;
@@ -248,7 +248,7 @@ public class Properties extends Hashtable
 		}
 		if (mode == UNICODE && count <= 4)
 		{
-			throw new IllegalArgumentException("Invalid Unicode sequence: expected format \\uxxxx");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_PROPERTIES_INV_UNI_FORMAT));
 		}
 		if (keyLength == -1 && offset > 0)
 		{
@@ -261,7 +261,7 @@ public class Properties extends Hashtable
 			String value = temp.substring(keyLength);
 			if (mode == SLASH)
 			{
-				value += "\u0000";
+				value += '\u0000';
 			}
 			put(key, value);
 		}

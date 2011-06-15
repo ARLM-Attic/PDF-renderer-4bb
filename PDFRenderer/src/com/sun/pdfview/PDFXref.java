@@ -22,8 +22,6 @@
  */
 package com.sun.pdfview;
 
-import java.lang.ref.WeakReference;
-
 import com.sun.pdfview.helper.SoftReference;
 
 /**

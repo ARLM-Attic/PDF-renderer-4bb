@@ -117,7 +117,7 @@ public abstract class PDFShader
         PDFObject typeObj = shaderObj.getDictRef("ShadingType");
         if (typeObj == null)
         {
-            throw new PDFParseException("No shader type defined!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_SHADER_NO_TYPE));
         }
         int type = typeObj.getIntValue();
         
@@ -135,14 +135,14 @@ public abstract class PDFShader
             case COONS_PATCH_MESH_SHADING:
             case TENSOR_PRODUCTS_MESH_SHADING:
             default:    
-                throw new PDFParseException("Unsupported shader type: " + type);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_SHADER_UNSUPPORTED_TYPE) + type);
         }
         
         // read the color space (required)
         PDFObject csObj = shaderObj.getDictRef("ColorSpace");
         if (csObj == null)
         {
-            throw new PDFParseException("No colorspace defined!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_SHADER_NO_COLORSPACE));
         }
         PDFColorSpace cs = PDFColorSpace.getColorSpace(csObj, resources);
         shader.setColorSpace(cs);

@@ -109,7 +109,7 @@ public class PDFImage
         PDFObject widthObj = obj.getDictRef("Width");
         if (widthObj == null)
         {
-            throw new PDFParseException("Unable to read image width: " + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_WIDTH) + obj);
         }
         image.setWidth(widthObj.getIntValue());
         
@@ -117,7 +117,7 @@ public class PDFImage
         PDFObject heightObj = obj.getDictRef("Height");
         if (heightObj == null)
         {
-            throw new PDFParseException("Unable to get image height: " + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_HEIGHT) + obj);
         }
         image.setHeight(heightObj.getIntValue());
         
@@ -156,7 +156,7 @@ public class PDFImage
             PDFObject bpcObj = obj.getDictRef("BitsPerComponent");
             if (bpcObj == null)
             {
-                throw new PDFParseException("Unable to get bits per component: " + obj);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_BPC) + obj);
             }
             image.setBitsPerComponent(bpcObj.getIntValue());
             
@@ -164,7 +164,7 @@ public class PDFImage
             PDFObject csObj = obj.getDictRef("ColorSpace");
             if (csObj == null)
             {
-                throw new PDFParseException("No ColorSpace for image: " + obj);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_COLORSPACE) + obj);
             }
             
             PDFColorSpace cs = PDFColorSpace.getColorSpace(csObj, resources);
@@ -253,8 +253,8 @@ public class PDFImage
                 bi = parseData(imageObj.getStream());
                 imageObj.setCache(bi);
             }
-//            if(bi != null)
-//            	ImageIO.write(bi, "png", new File("/tmp/test/" + System.identityHashCode(this) + ".png"));
+            //if(bi != null)
+            //	ImageIO.write(bi, "png", new File("/tmp/test/" + System.identityHashCode(this) + ".png"));
             return bi;
         }
         catch (IOException ioe)
@@ -706,7 +706,7 @@ public class PDFImage
             {
                 if (cs.getMinValue(i) != 0.0f || cs.getMaxValue(i) != 1.0f)
                 {
-                	throw new IllegalArgumentException("ColorSpace does not support unnormalized values.");
+                	throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_COLORSPACE_NOMALIZED_ONLY));
                 }
             }
 			

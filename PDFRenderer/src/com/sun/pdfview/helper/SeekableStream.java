@@ -25,6 +25,9 @@ import java.io.InputStream;
 
 import net.rim.device.api.io.Seekable;
 
+import com.sun.pdfview.ResourceManager;
+import com.sun.pdfview.i18n.ResourcesResource;
+
 /**
  * Basic seekable input stream.
  */
@@ -42,7 +45,7 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		return data.length - pos;
 	}
@@ -56,7 +59,7 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		if(n < 0)
 		{
@@ -69,7 +72,7 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		if(pos == data.length)
 		{
@@ -87,7 +90,7 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		if(b == null)
 		{
@@ -120,7 +123,7 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		return this.pos;
 	}
@@ -129,11 +132,11 @@ public class SeekableStream extends InputStream implements Seekable
 	{
 		if(data == null)
 		{
-			throw new IOException("Stream closed");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_STREAM_CLOSED));
 		}
 		if(position < 0 && position >= data.length)
 		{
-			throw new IOException("Position is outside bounds of data.");
+			throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_SEEKSTREAM_POS_OUTOFBOUNDS));
 		}
 		this.pos = (int)position;
 	}

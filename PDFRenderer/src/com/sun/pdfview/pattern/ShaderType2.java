@@ -105,7 +105,7 @@ public class ShaderType2 extends PDFShader
         PDFObject functionObj = shaderObj.getDictRef("Function");
         if (functionObj == null)
         {
-            throw new PDFParseException("No function defined for shader!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_SHADERTYPE2_NO_SHADER_FUNCTION));
         }
         PDFObject[] functionArray = functionObj.getArray();
         int len;

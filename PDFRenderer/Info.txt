@@ -2,7 +2,7 @@ TODO:
 Finish FilePicker
 -Make sure scrollable "list" works and is drawn correctly (make custom Field that acts like a list row, it's selectable and clickable)
 -Remove context menu
--Implement file systemS
+-Make sure that back button is handled correctly
 -Implement menu
 -Test
 Make sure that 4MB PDF reads fully (find NullPointerException)
@@ -14,24 +14,6 @@ implement the "Graphics" implementation of PDFGraphics (one idea is to store all
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---PDFPage
---PDFObject
---PDFImage
---PDFFile
---PDFDestination
---HexDump
---pattern.ShaderType2
---pattern.PDFShader
---pattern.PDFPattern
---helper.UnmappableCharacterException
---helper.SeekableStream
---helper.Properties
---helper.PDFUtil
---helper.PDFGraphics
---helper.MalformedInputException
---helper.DefaultMutableTreeNode
---helper.ColorSpace
---helper.CharsetEncoder
 --helper.graphics.Geometry
 --helper.graphics.Composite
 --helper.graphics.BasicStroke
@@ -66,8 +48,9 @@ Finish localization
 --colorspace.PDFColorSpace
 --action.PDFAction
 --action.GoToAction
--All "add code" needs to be implemented or rewritten so it uses formatting (add new function to Resources for formatting String resource)
+-All "add code" (with resources) needs to be implemented or rewritten so it uses formatting (add new function to Resources for formatting String resource)
 Try to get Geometry.isFilled to properly handle bézier curves properly
+Use preprocessor to remove "debug" code
 Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing
 See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
 Update TODOs in various classes

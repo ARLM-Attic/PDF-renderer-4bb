@@ -60,7 +60,7 @@ public class UnmappableCharacterException extends CharacterCodingException
 	 */
 	public String getMessage()
 	{
-		return "The unmappable character length is " + this.inputLength + ".";
+		return com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_UNMAPPABLE_CHAR_EXP_CHAR_LEN) + this.inputLength + '.';
 	}
 }
 

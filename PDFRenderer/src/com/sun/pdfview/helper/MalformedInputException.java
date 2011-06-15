@@ -60,7 +60,7 @@ public class MalformedInputException extends CharacterCodingException
 	 */
 	public String getMessage()
 	{
-		return "Malformed input length is " + this.inputLength + ".";
+		return com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_MALFORMED_INPUT_EXP_IN_LEN) + this.inputLength + '.';
 	}
 }
 

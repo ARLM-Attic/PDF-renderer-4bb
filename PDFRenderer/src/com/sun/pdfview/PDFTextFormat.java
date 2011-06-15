@@ -347,7 +347,7 @@ public class PDFTextFormat
             }
             else
             {
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.TEXT_FORMAT_BAD_TJ));
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.TEXT_FORMAT_BAD_TJ));
             }
         }
     }

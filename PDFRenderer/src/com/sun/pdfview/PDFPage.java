@@ -37,6 +37,8 @@ import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Geometry;
 
+import com.sun.pdfview.i18n.ResourcesResource;
+
 /**
  * A PDFPage encapsulates the parsed commands required to render a
  * single page from a PDFFile.  The PDFPage is not itself drawable;
@@ -506,7 +508,7 @@ public class PDFPage
      */
     public synchronized void finish()
     {
-//    	System.out.println("Page finished!");
+    	//System.out.println("Page finished!");
         finished = true;
         notifyAll();
         
@@ -827,7 +829,7 @@ class PDFXformCmd extends PDFCmd
     {
         if (at == null)
         {
-            throw new RuntimeException("Null transform in PDFXformCmd");
+            throw new RuntimeException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PAGE_NULL_TRANSFORM));
         }
         this.at = at;
     }

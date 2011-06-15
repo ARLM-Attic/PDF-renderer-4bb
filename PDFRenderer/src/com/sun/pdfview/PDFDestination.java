@@ -97,7 +97,7 @@ public class PDFDestination
         // make sure we have the right kind of object
         if (obj == null || obj.getType() != PDFObject.ARRAY)
         {
-            throw new PDFParseException("Can't create destination from: " + obj);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_CANT_MAKE_DESTINATION) + obj);
         }
         
         // the array is in the form [page type args ... ]
@@ -140,7 +140,7 @@ public class PDFDestination
         }
         else 
         {
-            throw new PDFParseException("Unknown destination type: " + type);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_UNK_DESTINATION) + type);
         }
         
         // now fill in the arguments based on the type

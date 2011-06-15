@@ -52,6 +52,8 @@ import com.sun.pdfview.helper.XYRectFloat;
 import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.EmptyEnumeration;
 
+import com.sun.pdfview.i18n.ResourcesResource;
+
 /**
  * An encapsulation of a .pdf file.  The methods of this class
  * can parse the contents of a PDF file, but those methods are
@@ -71,7 +73,7 @@ public class PDFFile
     private int minorVersion = 1;
     /** the end of line character */
     /** the comment text to begin the file to determine it's version */
-    private final static String VERSION_COMMENT = "%PDF-";
+    private static String VERSION_COMMENT = "%PDF-";
     /**
      * A ByteBuffer containing the file data
      */
@@ -591,7 +593,7 @@ public class PDFFile
             // make sure first item is a NAME
             if (name.getType() != PDFObject.NAME)
             {
-                throw new PDFParseException("First item in dictionary must be a /Name.  (Was " + name + ")");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DIC_ELE_NAME_MISSING) + name + ')');
             }
             PDFObject value= readObject(objNum, objGen, decrypter);
             if (value != null)
@@ -602,7 +604,7 @@ public class PDFFile
         //	System.out.println("End of dictionary at location "+raf.getFilePointer());
         if (!nextItemIs(">>"))
         {
-            throw new PDFParseException("End of dictionary wasn't '>>'");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DIC_BAD_END));
         }
         //	System.out.println("Dictionary closed at location "+raf.getFilePointer());
         return new PDFObject(this, PDFObject.DICTIONARY, hm);
@@ -685,7 +687,7 @@ public class PDFFile
         }
         if (buf.get() != '>')
         {
-            throw new PDFParseException("Bad character in Hex String");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_BAD_HEX));
         }
         String unicodeString = unicode(sb.toString());
         return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, unicodeString));
@@ -920,7 +922,7 @@ public class PDFFile
         }
         if (buf.get() != ']')
         {
-            throw new PDFParseException("Array should end with ']'");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_ARRAY_BAD_END));
         }
         PDFObject[] objlist = new PDFObject[ary.size()];
         /*
@@ -958,7 +960,7 @@ public class PDFFile
                 }
                 else
                 {
-                    throw new PDFParseException("Bad #hex in /Name");
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_BAD_HEX_NAME));
                 }
             }
             sb.append((char) c);
@@ -987,7 +989,7 @@ public class PDFFile
             {
                 if (sawdot)
                 {
-                    throw new PDFParseException("Can't have two '.' in a number");
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DOUBLE_DECI));
                 }
                 sawdot = true;
                 dotmult = 0.1;
@@ -1054,7 +1056,7 @@ public class PDFFile
         PDFObject endkey= readObject(objNum, objGen, decrypter);
         if (endkey.getType() != PDFObject.KEYWORD)
         {
-            throw new PDFParseException("Expected 'stream' or 'endobj'");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_KEYWORD));
         }
         if (obj.getType() == PDFObject.DICTIONARY && endkey.getStringValue().equals("stream"))
         {
@@ -1098,7 +1100,7 @@ public class PDFFile
         }
         if (length < 0)
         {
-            throw new PDFParseException("Unknown length for stream");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_UNK_LEN));
         }
         
         // slice the data
@@ -1113,7 +1115,7 @@ public class PDFFile
         if (!nextItemIs("endstream"))
         {
             System.out.println("read " + length + " chars from " + start + " to " + ending);
-            throw new PDFParseException("Stream ended inappropriately");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EOS));
         }
         
         return streamBuf;
@@ -1143,7 +1145,7 @@ public class PDFFile
             // make sure we are looking at an xref table
             if (!nextItemIs("xref"))
             {
-                throw new PDFParseException("Expected 'xref' at start of table");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF));
             }
             
             // read a bunch of linked tabled
@@ -1159,7 +1161,7 @@ public class PDFFile
                 // read the starting position of the reference
                 if (obj.getType() != PDFObject.NUMBER)
                 {
-                    throw new PDFParseException("Expected number for first xref entry");
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_FIRST));
                 }
                 int refstart = obj.getIntValue();
                 
@@ -1167,7 +1169,7 @@ public class PDFFile
                 obj = readObject(-1, -1, IdentityDecrypter.getInstance());
                 if (obj.getType() != PDFObject.NUMBER)
                 {
-                    throw new PDFParseException("Expected number for length of xref table");
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_LEN));
                 }
                 int reflen = obj.getIntValue();
                 
@@ -1211,7 +1213,7 @@ public class PDFFile
             PDFObject trailerdict = readObject(-1, -1, IdentityDecrypter.getInstance());
             if (trailerdict.getType() != PDFObject.DICTIONARY)
             {
-                throw new IOException("Expected dictionary after \"trailer\"");
+                throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_DICT));
             }
             
             // read the root object location
@@ -1242,7 +1244,7 @@ public class PDFFile
                 {
                     if (!info.isIndirect())
                     {
-                        throw new PDFParseException("Info in trailer must be an indirect reference");
+                        throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_TRAILER_INDIRECT));
                     }
                     info.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
                 }
@@ -1269,7 +1271,7 @@ public class PDFFile
         // make sure we found a root
         if (root == null)
         {
-            throw new PDFParseException("No /Root key found in trailer dictionary");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NO_ROOT));
         }
         
         // check what permissions are relevant
@@ -1340,7 +1342,7 @@ public class PDFFile
         
         if (scanPos < 0)
         {
-            throw new IOException("This may not be a PDF File");
+            throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_MAY_NOT_PDF));
         }
         
         buf.position(scanPos);
@@ -1604,7 +1606,7 @@ public class PDFFile
         PDFObject contentsObj = pageObj.getDictRef("Contents");
         if (contentsObj == null)
         {
-            throw new IOException("No page contents!");
+            throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NO_CONTENTS));
         }
         
         PDFObject[] contents = contentsObj.getArray();
@@ -1624,7 +1626,7 @@ public class PDFFile
         	streams[i] = contents[i].getStream();
             if (streams[i] == null)
             {
-                throw new PDFParseException("No stream on content " + i + ": " + contents[i]);
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NO_STREAM) + i + ": " + contents[i]);
             }
             len += streams[i].length;
         }
@@ -1779,12 +1781,12 @@ public class PDFFile
             }
             else
             {
-                throw new PDFParseException("Rectangle definition didn't have 4 elements");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_INVALID_ARRAY));
             }
         }
         else
         {
-            throw new PDFParseException("Rectangle definition not an array");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_NO_ARRAY));
         }
     }
 

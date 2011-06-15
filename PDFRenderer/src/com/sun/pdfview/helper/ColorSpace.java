@@ -74,9 +74,9 @@ public abstract class ColorSpace
 	{
 		if (idx < 0 || idx > numComponents - 1)
 		{
-			throw new IllegalArgumentException("Invalid component index: " + idx);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + idx);
 		}
-		return "Unnamed color component #" + idx;
+		return com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_UNNAMED_COLOR_COMP) + idx;
 	}
 	
 	/**
@@ -121,7 +121,7 @@ public abstract class ColorSpace
 	{
 		if (component < 0 || component > numComponents - 1)
 		{
-			throw new IllegalArgumentException("Invalid component index: " + component);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + component);
 		}
 		return 0;
 	}
@@ -136,7 +136,7 @@ public abstract class ColorSpace
 	{
 		if (component < 0 || component > numComponents - 1)
 		{
-			throw new IllegalArgumentException("Invalid component index: " + component);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + component);
 		}
 		return 1;
 	}
@@ -199,6 +199,6 @@ public abstract class ColorSpace
 				return cs_Gray;
 		}
 		// Unknown argument passed
-		throw new IllegalArgumentException("Not a predefined colorspace");
+		throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_UNDEFINED_COLORSPACE));
 	}
 }

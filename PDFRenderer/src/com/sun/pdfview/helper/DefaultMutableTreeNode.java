@@ -57,7 +57,7 @@ public class DefaultMutableTreeNode
 	{
 		if(child == null || isNodeAncestor(child))
 		{
-			throw new IllegalArgumentException("child is null or is an ancestor to this node.");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_TREE_NODE_CHILD_NULL_ANCESTOR));
 		}
 		
 		if (child.getParent() instanceof DefaultMutableTreeNode)
@@ -119,7 +119,7 @@ public class DefaultMutableTreeNode
 		int index = -1;
 		if (child == null || children == null || (index = children.indexOf(child)) == -1)
 		{
-			throw new IllegalArgumentException("child is null or not a child of this node.");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_TREE_NODE_CHILD_NULL_NOT_CHILD));
 		}
 		remove(index);
 	}

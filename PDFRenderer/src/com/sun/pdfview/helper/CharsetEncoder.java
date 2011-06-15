@@ -35,6 +35,9 @@ import com.sun.pdfview.helper.nio.BufferOverflowException;
 import com.sun.pdfview.helper.nio.BufferUnderflowException;
 //#endif
 
+import com.sun.pdfview.i18n.ResourcesResource;
+import com.sun.pdfview.ResourceManager;
+
 
 import net.rim.device.api.math.Fixed32;
 
@@ -151,7 +154,7 @@ public abstract class CharsetEncoder
 		{
 			return result & CharsetEncoder.RESULT_VALUE_MASK;
 		}
-		throw new UnsupportedOperationException("The length of the erroneous input is only meaningful to a malformed-input error or an unmappble character error");
+		throw new UnsupportedOperationException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_BAD_RESULT));
 	}
 	
 	/**
@@ -194,11 +197,11 @@ public abstract class CharsetEncoder
 	{
 		if(averageBytesPerChar <= 0 || maxBytesPerChar <= 0)
 		{
-			throw new IllegalArgumentException("Bytes number for one character must be positive.");
+			throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_NEG_BYTE_NUM));
 		}
 		if(averageBytesPerChar > maxBytesPerChar)
 		{
-			throw new IllegalArgumentException("averageBytesPerChar is greater than maxBytesPerChar.");
+			throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_AVG_BYTE_GRT_MAX_BYTE));
 		}
 		//this.cs = cs;
 		this.averBytes = averageBytesPerChar;
@@ -597,7 +600,7 @@ public abstract class CharsetEncoder
 	{
 		if(newAction < CharsetEncoder.ERROR_ACTION_IGNORE || newAction > CharsetEncoder.ERROR_ACTION_REPORT)
 		{
-			throw new IllegalArgumentException("Action on malformed input error is invalid!");
+			throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_MALFORM_INVALID_ACTION));
 		}
 		this.malformAction = newAction;
 		implOnMalformedInput(newAction);
@@ -617,7 +620,7 @@ public abstract class CharsetEncoder
 	{
 		if (newAction < ERROR_ACTION_IGNORE || newAction > ERROR_ACTION_REPLACE)
 		{
-			throw new IllegalArgumentException("Action on unmappable character error is invalid!");
+			throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_UNMAP_INVALID_ACTION));
 		}
 		unmapAction = newAction;
 		implOnUnmappableCharacter(newAction);
@@ -649,7 +652,7 @@ public abstract class CharsetEncoder
 	{
 		if (null == replacement || 0 == replacement.length || maxBytes < Fixed32.toFP(replacement.length) || !isLegalReplacement(replacement))
 		{
-			throw new IllegalArgumentException("Replacement is illegal");
+			throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.HELPER_CHAR_ENC_ILLEGAL_REPLACEMENT));
 		}
 		replace = replacement;
 		implReplaceWith(replacement);

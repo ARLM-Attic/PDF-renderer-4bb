@@ -220,7 +220,7 @@ public class PDFObject
         }
         else
         {
-            throw new PDFParseException("Bad type for raw PDFObject: " + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.OBJECT_BAD_RAW_TYPE) + obj);
         }
     }
 

@@ -48,7 +48,6 @@ import com.sun.pdfview.helper.XYPointFloat;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.Geometry;
 import com.sun.pdfview.pattern.PDFShader;
-import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.i18n.ResourcesResource;
 
 /**
