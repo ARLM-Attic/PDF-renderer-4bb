@@ -29,6 +29,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
+import java.nio.ByteBuffer;
+//#else
+import com.sun.pdfview.helper.nio.ByteBuffer;
+//#endif
 
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
@@ -38,7 +43,7 @@ import net.rim.device.api.util.MathUtilities;
 
 import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
-import com.sun.pdfview.function.FunctionType0;
+import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.helper.ColorSpace;
 
 /**
@@ -83,6 +88,8 @@ public class PDFImage
     private PDFImage sMask;
     /** the decode array */
     private float[] decode;
+    private float[] decodeMins;
+    private float[] decodeCoefficients;
     /** the actual image data */
     private PDFObject imageObj;
     
@@ -249,8 +256,23 @@ public class PDFImage
         	
             if (bi == null)
             {
+            	byte[] data = null;
+                ByteBuffer jpegBytes = null;
+                final boolean jpegDecode = PDFDecoder.isLastFilter(imageObj, PDFDecoder.DCT_FILTERS);
+                if (jpegDecode)
+                {
+                    // if we're lucky, the stream will have just the DCT
+                    // filter applied to it, and we'll have a reference to
+                    // an underlying mapped file, so we'll manage to avoid
+                    // a copy of the encoded JPEG bytes
+                    jpegBytes = imageObj.getStreamBuffer(PDFDecoder.DCT_FILTERS);
+                }
+                else
+                {
+                    data = imageObj.getStream();
+                }
                 // parse the stream data into an actual image
-                bi = parseData(imageObj.getStream());
+                bi = parseData(data, jpegBytes);
                 imageObj.setCache(bi);
             }
             //if(bi != null)
@@ -272,9 +294,13 @@ public class PDFImage
      *
      * <p>NOTE: the color convolving is extremely slow on large images.
      * It would be good to see if it could be moved out into the rendering
-     * phases, where we might be able to scale the image down first.</p
+     * phases, where we might be able to scale the image down first.</p>
+     * 
+     * @param data the data when already completely filtered and uncompressed
+     * @param jpegData a byte buffer if data still requiring the DCDTecode filter
+     *  is being used
      */
-    protected Bitmap parseData(byte[] data)
+    protected Bitmap parseData(byte[] data, ByteBuffer jpegData) throws IOException
     {
 //    	String hex;
 //    	String name;
@@ -299,7 +325,7 @@ public class PDFImage
 //    		System.out.flush();
 //    	}
         
-        Bitmap bi = loadImage(data);
+        Bitmap bi = loadImage(data, jpegData);
         
         // add in the alpha data supplied by the SMask, if any
         PDFImage sMaskImage = getSMask();
@@ -463,13 +489,22 @@ public class PDFImage
      */
     protected void setDecode(float[] decode)
     {
+    	float max = (1 << getBitsPerComponent()) - 1;
         this.decode = decode;
+        this.decodeCoefficients = new float[decode.length / 2];
+        this.decodeMins = new float[decode.length / 2];
+        int len = decode.length;
+        for (int i = 0; i < len; i += 2)
+        {
+            decodeMins[i/2] = decode[i];
+            decodeCoefficients[i/2] = (decode[i + 1] - decode[i]) / max;
+        }
     }
     
     /**
      * Consolidation function to parse data that could represent a index or component based image into a Bitmap. Consolidates getColorModel(), class DecodeComponentColorModel, and part of parseData(byte[]).
      */
-    private Bitmap loadImage(byte[] data)
+    private Bitmap loadImage(byte[] data, ByteBuffer jpegData)
     {
     	Bitmap bi = null;
     	InputStream seek = null;
@@ -658,21 +693,20 @@ public class PDFImage
             normComponents = new float[normOffset + pixels.length];
         }
         
-        float[] decodeArray = getDecode();
-        
-        int len = pixels.length;
-        for (int i = 0; i < len; i++)
+        // trivial loop unroll - saves a little time
+        switch (pixels.length)
         {
-            int val = pixels[i] & 0xff;
-//#ifndef BlackBerrySDK4.5.0
-            int pow = ((int)MathUtilities.pow(2, getBitsPerComponent())) - 1;
-//#else
-            int pow = ((int)littlecms.internal.helper.Utility.pow(2, getBitsPerComponent())) - 1;
-//#endif
-            float ymin = decodeArray[i * 2];
-            float ymax = decodeArray[(i * 2) + 1];
-            
-            normComponents[normOffset + i] = FunctionType0.interpolate(val, 0, pow, ymin, ymax);
+	        case 4:
+	            normComponents[normOffset + 3] = decodeMins[3] + (float)(pixels[3] & 0xFF) * decodeCoefficients[3];
+	        case 3:
+	            normComponents[normOffset + 2] = decodeMins[2] + (float)(pixels[2] & 0xFF) * decodeCoefficients[2];
+	        case 2:
+	            normComponents[normOffset + 1] = decodeMins[1] + (float)(pixels[1] & 0xFF) * decodeCoefficients[1];
+	        case 1:
+	            normComponents[normOffset ] = decodeMins[0] + (float)(pixels[0] & 0xFF) * decodeCoefficients[0];
+	        break;
+	        default:
+	            throw new IllegalArgumentException("Someone needs to add support for more than 4 components");
         }
         
         return normComponents;

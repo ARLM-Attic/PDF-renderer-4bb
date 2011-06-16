@@ -258,6 +258,11 @@ public class StandardDecrypter implements PDFDecrypter
         return true;
     }
     
+    public boolean isEncryptionPresent(String cryptFilterName)
+    {
+        return true;
+    }
+    
     /**
      * Test that the platform (i.e., the JCE) can offer us all of the ciphers at
      * the key length we need for content decryption. This shouldn't be a

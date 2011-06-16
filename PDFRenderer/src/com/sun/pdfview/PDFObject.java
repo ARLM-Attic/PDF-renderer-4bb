@@ -2,7 +2,7 @@
 
 /*
  * File: PDFObject.java
- * Version: 1.8
+ * Version: 1.9
  * Initial Creation: May 5, 2010 9:32:16 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -32,7 +32,9 @@ import com.sun.pdfview.helper.nio.ByteBuffer;
 //#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Vector;
 
+import net.rim.device.api.util.CloneableVector;
 import net.rim.device.api.util.EmptyEnumeration;
 
 import com.sun.pdfview.decode.PDFDecoder;
@@ -105,6 +107,8 @@ public class PDFObject
     private ByteBuffer stream;
     /** a cached version of the decoded stream */
     private SoftReference decodedStream;
+    /** The filter limits used to generate the cached decoded stream */
+    private Vector decodedStreamFilterLimits = null;
     /**
      * the PDFFile from which this object came, used for
      * dereferences
@@ -301,16 +305,11 @@ public class PDFObject
         }
     }
     
-    /**
-     * get the stream from this object.  Will return null if this
-     * object isn't a STREAM.
-     * @return the stream, or null, if this isn't a STREAM.
-     */
-    public byte[] getStream() throws IOException
+    public byte[] getStream(Vector filterLimits) throws IOException
     {
         if (type == INDIRECT)
         {
-            return dereference().getStream();
+            return dereference().getStream(filterLimits);
         }
         else if (type == STREAM && stream != null)
         {
@@ -319,7 +318,7 @@ public class PDFObject
             synchronized(stream)
             {
                 // decode
-                ByteBuffer streamBuf = decodeStream();
+                ByteBuffer streamBuf = decodeStream(filterLimits);
                 // ByteBuffer streamBuf = stream;
                 
                 // First try to use the array with no copying.  This can only
@@ -349,9 +348,21 @@ public class PDFObject
         {
             return PDFStringUtil.asBytes(getStringValue());
         }
-        
-        // wrong type
-        return null;
+        else
+        {
+	        // wrong type
+	        return null;
+        }
+    }
+    
+    /**
+     * get the stream from this object.  Will return null if this
+     * object isn't a STREAM.
+     * @return the stream, or null, if this isn't a STREAM.
+     */
+    public byte[] getStream() throws IOException
+    {
+       return getStream(new Vector());
     }
     
     /**
@@ -361,15 +372,25 @@ public class PDFObject
      */
     public ByteBuffer getStreamBuffer() throws IOException
     {
+        return getStreamBuffer(new Vector());
+    }
+    
+    /**
+     * get the stream from this object as a byte buffer.  Will return null if 
+     * this object isn't a STREAM.
+     * @return the buffer, or null, if this isn't a STREAM.
+     */
+    public ByteBuffer getStreamBuffer(Vector filterLimits) throws IOException
+    {
         if (type == INDIRECT)
         {
-            return dereference().getStreamBuffer();
+            return dereference().getStreamBuffer(filterLimits);
         }
         else if (type == STREAM && stream != null)
         {
             synchronized(stream)
             {
-                ByteBuffer streamBuf = decodeStream();
+                ByteBuffer streamBuf = decodeStream(filterLimits);
                 // ByteBuffer streamBuf = stream;
                 return (ByteBuffer)ByteBuffer.wrap(streamBuf.array()).position(streamBuf.position()).limit(streamBuf.limit()); //Closest on BlackBerry to ByteBuffer.duplicate()
                 
@@ -391,12 +412,12 @@ public class PDFObject
     /**
      * Get the decoded stream value
      */
-    private ByteBuffer decodeStream() throws IOException
+    private ByteBuffer decodeStream(Vector filterLimits) throws IOException
     {
         ByteBuffer outStream = null;
         
         // first try the cache
-        if (decodedStream != null)
+        if (decodedStream != null && PDFUtil.Vector_equals(filterLimits, decodedStreamFilterLimits))
         {
             outStream = (ByteBuffer)decodedStream.get();
         }
@@ -405,7 +426,8 @@ public class PDFObject
         if (outStream == null)
         {
             stream.rewind();
-            outStream = PDFDecoder.decodeStream(this, stream);
+            outStream = PDFDecoder.decodeStream(this, stream, filterLimits);
+            decodedStreamFilterLimits = CloneableVector.clone(filterLimits);
             decodedStream = new SoftReference(outStream);
         }
         
@@ -424,7 +446,7 @@ public class PDFObject
         }
         else if (type == NUMBER)
         {
-            return ((Double)value).intValue();
+            return ((Integer)value).intValue();
         }
         
         // wrong type
@@ -659,10 +681,11 @@ public class PDFObject
 
     public PDFDecrypter getDecrypter()
     {
-        // PDFObjects without owners are always created as part of
-        // content instructions. Such objects will never have encryption
-        // applied to them, as the stream they're contained by is the
-        // unit of encryption. So, if someone asks for the decrypter for
+    	// PDFObjects without owners are always created as part of
+        // content instructions. Such an object will never have encryption
+        // applied to it, as the stream that contains it is the
+        // unit of encryption, with no further encryption being applied
+        // within. So if someone asks for the decrypter for
         // one of these in-stream objects, no decryption should
         // ever be applied. This can be seen with inline images.
         return owner != null ? owner.getDefaultDecrypter() : IdentityDecrypter.getInstance();
@@ -719,7 +742,7 @@ public class PDFObject
             if (type == INDIRECT)
             {
                 StringBuffer str = new StringBuffer();
-                str.append("Indirect to #" + ((PDFXref) value).getID());
+                str.append("Indirect to #" + ((PDFXref) value).getObjectNumber());
                 try
                 {
                     str.append("\n" + dereference().toString());
@@ -891,7 +914,7 @@ public class PDFObject
                 PDFXref lXref = (PDFXref)value;
                 PDFXref rXref = (PDFXref)obj.value;
 
-                return ((lXref.getID() == rXref.getID()) && (lXref.getGeneration() == rXref.getGeneration()));
+                return ((lXref.getObjectNumber() == rXref.getObjectNumber()) && (lXref.getGeneration() == rXref.getGeneration()));
             }
         }
         

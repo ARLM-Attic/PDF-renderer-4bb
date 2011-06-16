@@ -206,11 +206,16 @@ public class Geometry
 	public Geometry(XYRectFloat bbox)
 	{
 		this();
-		moveTo(bbox.x, bbox.y);
-		lineTo(bbox.X2(), bbox.y);
-		lineTo(bbox.X2(), bbox.Y2());
-		lineTo(bbox.x, bbox.Y2());
+		moveTo((float)bbox.x, (float)bbox.y);
+		lineTo((float)bbox.X2(), (float)bbox.y);
+		lineTo((float)bbox.X2(), (float)bbox.Y2());
+		lineTo((float)bbox.x, (float)bbox.Y2());
 		closePath();
+	}
+	
+	public final Object clone()
+	{
+		return new Geometry(this);
 	}
 	
 	/**

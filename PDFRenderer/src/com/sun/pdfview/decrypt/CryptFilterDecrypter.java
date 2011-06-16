@@ -126,6 +126,12 @@ public class CryptFilterDecrypter implements PDFDecrypter
         }
         return false;
     }
+    
+    public boolean isEncryptionPresent(String cryptFilterName)
+    {
+        PDFDecrypter decrypter = (PDFDecrypter)decrypters.get(cryptFilterName);
+        return decrypter != null && decrypter.isEncryptionPresent(cryptFilterName);
+    }
 
     public boolean isOwnerAuthorised()
     {

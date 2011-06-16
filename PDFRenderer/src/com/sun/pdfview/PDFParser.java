@@ -2,7 +2,7 @@
 
 /*
  * File: PDFParser.java
- * Version: 1.11
+ * Version: 1.14
  * Initial Creation: May 14, 2010 10:19:40 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -417,7 +417,6 @@ public class PDFParser extends BaseWatchable
      */
     private String readString()
     {
-        int start = loc;
         int parenLevel = 0;
         StringBuffer sb = new StringBuffer();
         int len = stream.length;
@@ -439,10 +438,10 @@ public class PDFParser extends BaseWatchable
             {
                 // escape sequences
                 c = stream[loc++];
-                if (c >= '0' && c <= '9') {
+                if (c >= '0' && c < '8') {
                     int count = 0;
                     int val = 0;
-                    while (c >= '0' && c <= '9' && count < 3)
+                    while (c >= '0' && c < '8' && count < 3)
                     {
                         val = val * 8 + c - '0';
                         c = stream[loc++];
@@ -471,20 +470,6 @@ public class PDFParser extends BaseWatchable
                 {
                     c = '\f';
                 }
-                /* The character read in is the same as the character it is supposed to be so why even do a comparison?
-                else if (c == '\\')
-                {
-                    c = '\\';
-                } 
-                else if (c == '(')
-                {
-                    c = '(';
-                }
-                else if (c == ')')
-                {
-                    c = ')';
-                }
-                */
             }
             sb.append((char) c);
         }
@@ -1119,8 +1104,14 @@ public class PDFParser extends BaseWatchable
      */
     public void cleanup()
     {
-        state.textFormat.flush();
-        cmds.finish();
+    	if (state != null && state.textFormat != null)
+    	{
+    		state.textFormat.flush();
+    	}
+    	if (cmds != null)
+    	{
+    		cmds.finish();
+    	}
         
         stack = null;
         parserStates = null;
@@ -1287,10 +1278,7 @@ public class PDFParser extends BaseWatchable
                 at = new AffineTransform(elts);
             }
             PDFObject bobj = obj.getDictRef("BBox");
-            bbox = new XYRectFloat(bobj.getAt(0).getFloatValue(),
-                    bobj.getAt(1).getFloatValue(),
-                    bobj.getAt(2).getFloatValue(),
-                    bobj.getAt(3).getFloatValue());
+            bbox = PDFFile.parseNormalisedRectangle(bobj);
             formCmds = new PDFPage(bbox, 0);
             formCmds.addXform(at);
             

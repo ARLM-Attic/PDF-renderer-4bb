@@ -22,69 +22,21 @@
  */
 package com.sun.pdfview;
 
-import com.sun.pdfview.helper.SoftReference;
-
 /**
- * a cross reference representing a line in the PDF cross referencing
- * table.
- * <p>
- * There are two forms of the PDFXref, destinguished by absolutely nothing.
- * The first type of PDFXref is used as indirect references in a PDFObject.
- * In this type, the id is an index number into the object cross reference
- * table.  The id will range from 0 to the size of the cross reference
- * table.
- * <p>
- * The second form is used in the Java representation of the cross reference
- * table.  In this form, the id is the file position of the start of the
- * object in the PDF file.  See the use of both of these in the 
- * PDFFile.dereference() method, which takes a PDFXref of the first form,
- * and uses (internally) a PDFXref of the second form.
- * <p>
- * This is an unhappy state of affairs, and should be fixed.  Fortunatly,
- * the two uses have already been factored out as two different methods.
- *
- * @author Mike Wessler
+ * An indirect reference to some object in the PDFFile
  */
 public class PDFXref
 {
-	private int id;
+	private int objectNumber;
     private int generation;
-    // this field is only used in PDFFile.objIdx
-    private SoftReference reference = null;
 
     /**
      * create a new PDFXref, given a parsed id and generation.
      */
-    public PDFXref(int id, int gen)
+    public PDFXref(int objectNumber, int gen)
     {
-        this.id = id;
+        this.objectNumber = objectNumber;
         this.generation = gen;
-    }
-    
-    /**
-     * create a new PDFXref, given a sequence of bytes representing the
-     * fixed-width cross reference table line
-     */
-    public PDFXref(byte[] line)
-    {
-        if (line == null)
-        {
-            id = -1;
-            generation = -1;
-        }
-        else
-        {
-            id = Integer.parseInt(new String(line, 0, 10));
-            generation = Integer.parseInt(new String(line, 11, 5));
-        }
-    }
-    
-    /**
-     * get the character index into the file of the start of this object
-     */
-    public int getFilePos()
-    {
-        return id;
     }
     
     /**
@@ -98,31 +50,18 @@ public class PDFXref
     /**
      * get the object number of this object
      */
-    public int getID()
+    public int getObjectNumber()
     {
-        return id;
+        return objectNumber;
     }
     
-    /**
-     * Get the object this reference refers to, or null if it hasn't been
-     * set.
-     * @return the object if it exists, or null if not
-     */
-    public PDFObject getObject()
+    public boolean equals(Object obj)
     {
-        if (reference != null)
-        {
-            return (PDFObject)reference.get();
-        }
-        
-        return null;
+        return (obj instanceof PDFXref) && ((PDFXref)obj).objectNumber == objectNumber && ((PDFXref)obj).generation == generation;
     }
     
-    /**
-     * Set the object this reference refers to.
-     */
-    public void setObject(PDFObject obj)
+    public int hashCode()
     {
-        this.reference = new SoftReference(obj);
+        return objectNumber ^ (generation << 8);
     }
 }

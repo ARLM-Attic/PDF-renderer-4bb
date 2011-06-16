@@ -1,6 +1,6 @@
 /*
  * File: PDFFontDescriptor.java
- * Version: 1.4
+ * Version: 1.5
  * Initial Creation: May 16, 2010 1:57:40 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -24,6 +24,7 @@ package com.sun.pdfview.font;
 
 import java.io.IOException;
 
+import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.helper.XYRectFloat;
 
@@ -115,15 +116,7 @@ public class PDFFontDescriptor
         setStemV(obj.getDictRef("StemV").getIntValue());
         
         // font bounding box
-        PDFObject[] bboxdef = obj.getDictRef("FontBBox").getArray();
-        float[] bboxfdef = new float[4];
-        for (int i = 0; i < 4; i++)
-        {
-            bboxfdef[i] = bboxdef[i].getFloatValue();
-        }
-        setFontBBox(new XYRectFloat(bboxfdef[0], bboxfdef[1],
-                bboxfdef[2] - bboxfdef[0],
-                bboxfdef[3] - bboxfdef[1]));
+        setFontBBox(PDFFile.parseNormalisedRectangle(obj.getDictRef("FontBBox")));
         
         // optional parameters
         if (obj.getDictionary().containsKey("AvgWidth"))

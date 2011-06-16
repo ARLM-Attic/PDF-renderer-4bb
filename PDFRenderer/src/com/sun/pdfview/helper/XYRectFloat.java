@@ -28,13 +28,13 @@ public class XYRectFloat
 	//Only has what is necessary
 	
 	/** Height of rect. */
-	public float height;
+	public double height;
 	/** Width of rect. */
-	public float width;
+	public double width;
 	/** Horizontal position of top left point. */
-	public float x;
+	public double x;
 	/** Vertical position of top left point. */
-	public float y;
+	public double y;
 	
 	/**
 	 * Constructs a new XYRectFloat instance and sets all fields to 0.
@@ -51,7 +51,7 @@ public class XYRectFloat
 	 * @param width Distance in pixels to the right edge of the rectangle.
 	 * @param height Distance in pixels to the bottom edge of the rectangle.
 	 */
-	public XYRectFloat(float x, float y, float width, float height)
+	public XYRectFloat(double x, double y, double width, double height)
 	{
 		this.x = x;
 		this.y = y;
@@ -62,7 +62,7 @@ public class XYRectFloat
 	/**
 	 * Get the right edge of the rectangle.
 	 */
-	public float X2()
+	public double X2()
 	{
 		return x + width;
 	}
@@ -70,7 +70,7 @@ public class XYRectFloat
 	/**
 	 * Get the bottom edge of the rectangle.
 	 */
-	public float Y2()
+	public double Y2()
 	{
 		return y + height;
 	}

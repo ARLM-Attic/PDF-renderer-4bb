@@ -2,7 +2,7 @@
 
 /*
  * File: DCTDecode.java
- * Version: 1.2
+ * Version: 1.3
  * Initial Creation: May 12, 2010 4:54:06 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -52,9 +52,21 @@ public class DCTDecode
      * <p>
      * DCT is the format used by JPEG images, so this class simply
      * loads the DCT-format bytes as an image, then reads the bytes out
-     * of the image to create the array.  Unfortunately, their most
-     * likely use is to get turned BACK into an image, so this isn't
-     * terribly efficient... but is is general... don't hit, please.
+     * of the image to create the array.  If this were to be used
+     * against image objects we'd end up wasting a lot of work, because
+     * we'd be generating a buffered image here, writing out the bytes,
+     * and then generating a buffered image again from those bytes in the
+     * PDFImage class.
+     * <p>
+     * Luckily, the image processing has been optimised to detect
+     * DCT decodes at the end of filters, in which case it avoids
+     * running the stream through this filter, and just directly
+     * generates a BufferedImage from the DCT encoded byte stream.
+     * As such, this decode will be invoked only if there's been
+     * some very unusual employment of filters in the PDF - e.g.,
+     * DCTDecode applied to non-image data, or if DCTDecode is not at
+     * the end of a Filter dictionary entry. This is permissible but
+     * unlikely to occur in practice.
      * <p>
      * The DCT-encoded stream may have 1, 3 or 4 samples per pixel, depending
      * on the colorspace of the image.  In decoding, we look for the colorspace
@@ -131,6 +143,17 @@ public class DCTDecode
     	bimg.getARGB(data, 0, 0, 0, 0, width, height);
     	
     	byte[] output = new byte[len * ((type == Bitmap.ROWWISE_MONOCHROME) ? 1 : (type == Bitmap.ROWWISE_16BIT_COLOR ? 3 : 4))];
+    	
+    	// -Might not necessarily apply to BlackBerry
+    	// incidentally, there's a bit of an optimisation we could apply here,
+        // if we weren't pretty confident that this isn't actually going to
+        // be called, anyway. Namely, if we just use JAI to read in the data
+        // the underlying data buffer seems to typically be byte[] based,
+        // and probably already in the desired arrangement (and if not, that
+        // could be engineered by supplying our own sample model). As it is,
+        // we won't bother, since this code is most likely not going
+        // to be used.
+    	
     	switch(type)
     	{
 	    	case Bitmap.ROWWISE_16BIT_COLOR:

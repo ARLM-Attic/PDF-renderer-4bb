@@ -1,6 +1,6 @@
 /*
  * File: PatternType1.java
- * Version: 1.3
+ * Version: 1.4
  * Initial Creation: May 14, 2010 7:24:30 AM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
 
+import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFPaint;
@@ -98,11 +99,7 @@ public class PatternType1 extends PDFPattern
         paintType = patternObj.getDictRef("PaintType").getIntValue();
         tilingType = patternObj.getDictRef("TilingType").getIntValue();
         
-        PDFObject bboxObj = patternObj.getDictRef("BBox");
-        bbox = new XYRectFloat(bboxObj.getAt(0).getFloatValue(),
-                               bboxObj.getAt(1).getFloatValue(),
-                               bboxObj.getAt(2).getFloatValue(),
-                               bboxObj.getAt(3).getFloatValue());
+        bbox = PDFFile.parseNormalisedRectangle(patternObj.getDictRef("BBox"));
         
         xStep = patternObj.getDictRef("XStep").getIntValue();
         yStep = patternObj.getDictRef("YStep").getIntValue();
@@ -337,9 +334,9 @@ public class PatternType1 extends PDFPattern
             // all the data, plus alpha channel
             int[] imgData = new int[w * h /* * (numComponents + 1)*/];
             
-            // the x and y step, as ints	
-            int useXStep = (int)Math.abs(Math.ceil(xstep));
-            int useYStep = (int)Math.abs(Math.ceil(ystep));
+            // the x and y step, as ints
+            int useXStep = (int)Math.ceil(Math.abs(xstep));
+            int useYStep = (int)Math.ceil(Math.abs(ystep));
             
             // a completely transparent pixel (alpha of 0)
             int[] emptyPixel = new int[/*numComponents + */1];

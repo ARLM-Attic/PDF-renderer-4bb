@@ -1,6 +1,6 @@
 /*
  * File: Type1Font.java
- * Version: 1.5
+ * Version: 1.8
  * Initial Creation: May 16, 2010 9:39:31 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -35,6 +35,11 @@ import com.sun.pdfview.helper.graphics.Geometry;
 /**
  * A representation, with parser, of an Adobe Type 1 font.
  * @author Mike Wessler
+ *
+ * @todo
+ * The parsing of the encrypted section needs work. A fix has just gone into
+ * readArray, but it is very heuristic (as is all of readArray) and simply
+ * stops the read at any invalid input.
  */
 public class Type1Font extends OutlineFont
 {
@@ -213,7 +218,16 @@ public class Type1Font extends OutlineFont
             String s = psp.readThing();
             if (s.equals("dup"))
             {
-                int id = Integer.parseInt(psp.readThing());
+            	String thing = psp.readThing();
+                int id = 0;
+                try
+                {
+                    id = Integer.parseInt(thing);
+                }
+                catch (Exception e)
+                {
+                    break;
+                }
                 String elt = psp.readThing();
                 line = elt.getBytes();
                 if (Character.isDigit(elt.charAt(0)))
@@ -377,6 +391,10 @@ public class Type1Font extends OutlineFont
         {
             this.data = data;
             this.loc = start;
+            //System.out.println("PSParser.constructor: start: " + start + ", Length: " + data.length);
+            //System.out.print (new String(data, loc, data.length - loc));
+            //System.out.println(" - end -\n");
+
         }
         
         /**
@@ -388,10 +406,13 @@ public class Type1Font extends OutlineFont
         public String readThing()
         {
             // skip whitespace
+        	//System.out.println("PAParser: whitespace: \"");
             while (PDFFile.isWhiteSpace(data[loc]))
             {
+            	//System.out.print (new String(data, loc, 1));
                 loc++;
             }
+            //System.out.print("\": thing: ");
             // read thing
             int start = loc;
             while (!PDFFile.isWhiteSpace(data[loc]))
@@ -403,7 +424,7 @@ public class Type1Font extends OutlineFont
                 }
             }
             String s = new String(data, start, loc - start);
-            //	    System.out.println("Read: "+s);
+            //System.out.println(": Read: "+s);
             return s;
         }
         
@@ -684,10 +705,10 @@ public class Type1Font extends OutlineFont
                         return;
                     case 12:  // ext...
                         v = ((int) cs[loc++]) & 0xff;
-                        if (v == 6) // s x y a b seac
+                        if (v == 6) // s x y b a seac
                         {
-                            char b = (char) pop();
                             char a = (char) pop();
+                            char b = (char) pop();
                             float y = pop();
                             float x = pop();
                             buildAccentChar(x, y, a, b, gp);
@@ -835,8 +856,8 @@ public class Type1Font extends OutlineFont
     
     /**
      * build an accented character out of two pre-defined glyphs.
-     * @param x the x offset of the accent
-     * @param y the y offset of the accent
+     * @param x the x offset of the accent relativ to the sidebearing of the base char
+     * @param y the y offset of the accent relativ to the sidebearing of the base char
      * @param a the index of the accent glyph
      * @param b the index of the base glyph
      * @param gp the GeneralPath into which the combined glyph will be
@@ -846,20 +867,28 @@ public class Type1Font extends OutlineFont
     {
         // get the outline of the accent
     	Geometry pathA = getOutline(a, getWidth(a, null));
+    	// don't manipulate the original glyph
+        pathA = (Geometry)pathA.clone();
         
         // undo the effect of the transform applied in read 
-    	AffineTransform tmp = new AffineTransform();
+        AffineTransform tmp = new AffineTransform();
         if(at.invert(tmp))
         {
-        	tmp.translate(x, y);
             pathA.transform(tmp);
+            // Best x can't be calculated cause we don't know the left sidebearing of the base character.
+            // Leaving x=0 gives the best results.
+            // see Chapter 6 of http://partners.adobe.com/public/developer/en/font/5015.Type1_Supp.pdf 
+            // and the definition of the seac-Command in http://partners.adobe.com/public/developer/en/font/T1_SPEC.PDF
+            pathA.transform(AffineTransform.createTranslation(0, y)); //<-- goht net fürs 'ä' //XXX Bad comment formatting
         }
         else
         {
-        	pathA.transform(AffineTransform.createTranslation(x, y));
+        	pathA.transform(AffineTransform.createTranslation(0, y));
         }
         
         Geometry pathB = getOutline(b, getWidth(b, null));
+        // don't manipulate the original glyph
+        pathB = (Geometry)pathB.clone();
         
         tmp = new AffineTransform();
         if(at.invert(tmp))

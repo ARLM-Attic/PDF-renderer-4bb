@@ -48,6 +48,7 @@ import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.util.CharacterUtilities;
 import net.rim.device.api.util.MathUtilities;
+import net.rim.device.api.util.ObjectUtilities;
 //#ifndef BlackBerrySDK4.5.0
 import net.rim.device.api.util.LongVector;
 //#endif
@@ -131,6 +132,37 @@ public class PDFUtil
 		}
 	}
 //#endif
+	
+	public static int String_lastIndexOf(String str, String value)
+	{
+		int pos = -1;
+		int lpos = -1;
+		while((pos = str.indexOf(value, pos + 1)) > -1)
+		{
+			lpos = pos;
+		}
+		return lpos;
+	}
+	
+	public static boolean Vector_equals(Vector main, Vector comp)
+	{
+		if(main != comp)
+		{
+			if(main.size() != comp.size())
+			{
+				return false;
+			}
+			int len = main.size();
+			for(int i = 0; i < len; i++)
+			{
+				if(!ObjectUtilities.objEqual(main.elementAt(i), comp.elementAt(i)))
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 	
 	/**
 	 * Copies all of the mappings from the specified map to this map.
@@ -341,10 +373,10 @@ public class PDFUtil
 	 */
 	public static void union(XYRectFloat src1, XYRectFloat src2, XYRectFloat dst)
 	{
-		float x1 = Math.min(src1.x, src2.x);
-		float y1 = Math.min(src1.y, src2.y);
-		float x2 = Math.max(src1.X2(), src2.X2());
-		float y2 = Math.max(src1.Y2(), src2.Y2());
+		double x1 = Math.min(src1.x, src2.x);
+		double y1 = Math.min(src1.y, src2.y);
+		double x2 = Math.max(src1.X2(), src2.X2());
+		double y2 = Math.max(src1.Y2(), src2.Y2());
 		dst.x = x1;
 		dst.y = y1;
 		dst.width = x2 - x1;
@@ -487,11 +519,6 @@ public class PDFUtil
     	//TODO: Glyphs should be cached for speed in later operations.
     	return null;
     }
-	
-	private static boolean eq(Object a, Object b)
-	{
-		return a == null ? b == null : a.equals(b);
-	}
 	
 	/**
 	 * Returns a wrapper on the specified Vector which synchronizes all access to the Vector.
@@ -887,7 +914,7 @@ public class PDFUtil
 		
 		public boolean contains(Object obj)
 		{
-			return eq(obj, this.element);
+			return ObjectUtilities.objEqual(obj, this.element);
 		}
 		
 		public Object elementAt(int index)

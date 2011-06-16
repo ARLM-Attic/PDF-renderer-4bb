@@ -1,6 +1,6 @@
 /*
  * File: FunctionType3.java
- * Version: 1.1
+ * Version: 1.3
  * Initial Creation: May 10, 2010 5:00:30 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -26,6 +26,8 @@ import java.io.IOException;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
+import com.sun.pdfview.ResourceManager;
+import com.sun.pdfview.i18n.ResourcesResource;
 
 /**
  * 3.9.3 - A stitching function define a <i>stitching</i> of the subdomains of
@@ -74,12 +76,9 @@ import com.sun.pdfview.PDFParseException;
  */
 public class FunctionType3 extends PDFFunction
 {
-	/** 
-     * the actual samples, converted to integers.  The first index is
-     * input values (from 0 to size[m - 1] * size[m - 2] * ... * size[0]), 
-     * and the second is the output dimension within the sample (from 0 to n)
-     */
-    private int[][] samples;
+	private PDFFunction[] functions;
+    private float[] bounds;
+    private float[] encode;
     
     /** Creates a new instance of FunctionType3 */
     protected FunctionType3()
@@ -114,46 +113,64 @@ public class FunctionType3 extends PDFFunction
      */
     protected void parse(PDFObject obj) throws IOException
     {
+    	if (getNumInputs() != 1)
+    	{
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FUNCTION_FUNC3_ONLY_1_INPUT));
+        }
         // read the Functions array (required)
         PDFObject functionsObj = obj.getDictRef("Functions");
         if (functionsObj == null)
         {
-            throw new PDFParseException("Functions required for function type 3!");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FUNCTION_FUNC3_MISSING_FUNCTIONS));
         }
         PDFObject[] functionsAry = functionsObj.getArray();
+        int k;
         int len;
-        int[] size = new int[len = functionsAry.length];
-        for (int i = 0; i < len; i++)
+        functions = new PDFFunction[k = functionsAry.length];
+        for (int i = 0; i < k; i++)
         {
-            size[i] = functionsAry[i].getIntValue();
+        	functions[i] = PDFFunction.getFunction(functionsAry[i]);
+        }
+        
+        PDFObject domainObj = obj.getDictRef("Domain");
+        if (domainObj == null)
+        {
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FUNCTION_FUNC3_MISSING_DOMAIN));
         }
         
         // read the Bounds array (required)
         PDFObject boundsObj = obj.getDictRef("Bounds");
         if (boundsObj == null)
         {
-            throw new PDFParseException("Bounds required for function type 3!");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FUNCTION_FUNC3_MISSING_BOUNDS));
         }
         PDFObject[] boundsAry = boundsObj.getArray();
-        int[] size1 = new int[len = boundsAry.length];
+        if (boundsAry.length != k - 1)
+        {
+            throw new PDFParseException("Bounds array length " + boundsAry.length + " should be " + (k - 1) + " with functions array length " + functions.length);
+        }
+        bounds = new float[len = boundsAry.length];
         for (int i = 0; i < len; i++)
         {
-            size1[i] = boundsAry[i].getIntValue();
+        	bounds[i] = boundsAry[i].getFloatValue();
         }
         
         // read the encode array (required)
         PDFObject encodeObj = obj.getDictRef("Encode");
-        if (encodeObj != null)
+        if (encodeObj == null)
         {
-            throw new PDFParseException("Encode required for function type 3!");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FUNCTION_FUNC3_MISSING_ENCODE));
         }
         PDFObject[] encodeAry = encodeObj.getArray();
-        float[] encode = new float[len = encodeAry.length];
+        if (encodeAry.length != 2 * k)
+        {
+            throw new PDFParseException("There should be " + (2 * k) + " values in Encode for the given number of functions.");
+        }
+        encode = new float[len = encodeAry.length];
         for (int i = 0; i < len; i++)
         {
             encode[i] = encodeAry[i].getFloatValue();
         }
-        throw new PDFParseException("Unsupported function type 3.");
     }
     
     /**
@@ -168,41 +185,23 @@ public class FunctionType3 extends PDFFunction
      */
     protected void doFunction(float[] inputs, int inputOffset, float[] outputs, int outputOffset)
     {
-    	//TODO Does this class feel... Unimplemented?
-    	
-        // calculate the encoded values for each input
-    	int len;
-        float[] encoded = new float[len = getNumInputs()];
-//        for (int i = 0; i < len; i++)
-//        {
-//        	// encode -- interpolate(x<i>, domain<2i>, domain<2i + 1>, encode<2i>, encode<2i + 1>)
-//        	encoded[i] = interpolate(inputs[i + inputOffset], getDomain(2 * i), getDomain((2 * i) + 1), getEncode(2 * i), getEncode((2 * i) + 1));
-//        	
-//        	// clip to size of sample table -- min(max(e<i>, 0), size<i> - 1)
-//        	encoded[i] = Math.max(encoded[i], 0);
-//        	encoded[i] = Math.min(encoded[i], size[i] - 1);
-//        }
+    	// calculate the encoded values for each input
+        float input = inputs[inputOffset];
         
-        // do some magic
-        len = getNumOutputs();
-        for (int i = 0; i < len; i++)
+        int subdomain = 0;
+        int len = bounds.length;
+        while (subdomain < len && input >= bounds[subdomain])
         {
-//        	if (getOrder() == 1)
-//        	{
-//        		outputs[i + outputOffset] = multilinearInterpolate(encoded, i);
-//        	}
-//        	else
-//        	{
-//        		outputs[i + outputOffset] = multicubicInterpolate(encoded, i);
-//        	}
+            ++subdomain;
         }
         
-        // now adjust the output to be within range
-//        len = outputs.length;
-//        for (int i = 0; i < len; i++)
-//        {
-//        	// decode -- interpolate(r<i>, 0, 2^bps - 1, decode<2i>, decode<2i + 1>)
-//        	outputs[i + outputOffset] = interpolate(outputs[i + outputOffset], 0, (float)MathUtilities.pow(2, getBitsPerSample()) - 1, getDecode(2 * i), getDecode((2 * i) + 1));
-//        }
-    }
+        final float boundMin = subdomain == 0 ? getDomain(0) : bounds[subdomain - 1];
+        final float boundMax = subdomain == len ? getDomain(1) : bounds[subdomain];
+        
+        final float encodedInput = FunctionType0.interpolate(input, boundMin, boundMax, encode[subdomain * 2], encode[subdomain * 2 + 1]);
+        
+        final float[] subfuncInputArr = new float[] { encodedInput };
+        
+        functions[subdomain].calculate(subfuncInputArr, 0, outputs, outputOffset);
+   }
 }

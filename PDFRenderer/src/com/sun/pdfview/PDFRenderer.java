@@ -227,18 +227,18 @@ public class PDFRenderer extends BaseWatchable implements Runnable
             if (scale.x > 0.01)
             {
                 width = 1.0f / scale.x;
-                stroke = new BasicStroke(width,
-                        bs.getEndCap(),
-                        bs.getLineJoin(),
-                        bs.getMiterLimit(),
-                        bs.getDashArray(),
-                        bs.getDashPhase());
             }
             else
             {
                 // prevent division by a really small number
                 width = 1.0f;
             }
+            stroke = new BasicStroke(width,
+                    bs.getEndCap(),
+                    bs.getLineJoin(),
+                    bs.getMiterLimit(),
+                    bs.getDashArray(),
+                    bs.getDashPhase());
         }
         return stroke;
     }

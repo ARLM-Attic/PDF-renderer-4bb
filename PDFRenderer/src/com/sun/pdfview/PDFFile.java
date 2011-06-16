@@ -2,7 +2,7 @@
 
 /*
  * File: PDFFile.java
- * Version: 1.15
+ * Version: 1.19
  * Initial Creation: May 6, 2010 7:04:57 AM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -37,6 +37,7 @@ import java.util.Vector;
 
 import com.sun.pdfview.action.GoToAction;
 import com.sun.pdfview.action.PDFAction;
+import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByPlatformException;
 import com.sun.pdfview.decrypt.EncryptionUnsupportedByProductException;
 import com.sun.pdfview.decrypt.IdentityDecrypter;
@@ -77,12 +78,12 @@ public class PDFFile
     /**
      * A ByteBuffer containing the file data
      */
-    ByteBuffer buf;
+    ByteBuffer fileBuf;
     /**
      * the cross reference table mapping object numbers to locations
      * in the PDF file
      */
-    PDFXref[] objIdx;
+    PDFXrefEntry[] xrefEntries;
     /** the root PDFObject, as specified in the PDF file */
     PDFObject root = null;
     /** the Encrypt PDFObject, from the trailer */
@@ -107,6 +108,12 @@ public class PDFFile
      * encryption is expected, and thus the IdentityDecrypter is used.
      */
     private PDFDecrypter defaultDecrypter = IdentityDecrypter.getInstance();
+    
+    /**
+     * The file identifier, as found in a trailer/xref stream dictionary,
+     * and as used for encryption
+     */
+    private PDFObject fileIdentifier = null;
     
     /**
      * Developer should call this whenever their app closes and it uses/used any object in this library.
@@ -160,7 +167,7 @@ public class PDFFile
      */
     public PDFFile(ByteBuffer buf, PDFPassword password) throws IOException
     {
-        this.buf = buf;
+        this.fileBuf = buf;
 
         cache = new Cache();
 
@@ -267,46 +274,112 @@ public class PDFFile
      */
     public synchronized PDFObject dereference(PDFXref ref, PDFDecrypter decrypter) throws IOException
     {
-        int id = ref.getID();
+        int id = ref.getObjectNumber();
         
         // make sure the id is valid and has been read
-        if (id >= objIdx.length || objIdx[id] == null)
+        if (id >= xrefEntries.length || id < 0)
+        {
+            return PDFObject.nullObj;
+        }
+        
+        // if there is an entry, make sure that it can resolve to the
+        // requested generation number and that it's not a free entry; if
+        // so, we should return the null object
+        final PDFXrefEntry entry = xrefEntries[id];
+        if (entry == null || !entry.resolves(ref))
         {
             return PDFObject.nullObj;
         }
         
         // check to see if this is already dereferenced
-        PDFObject obj = objIdx[id].getObject();
+        PDFObject obj = entry.getObject();
         if (obj != null)
         {
             return obj;
         }
         
-        int loc = objIdx[id].getFilePos();
-        if (loc < 0)
+        switch (entry.getType())
         {
-            return PDFObject.nullObj;
+	        case PDFXrefEntry.TYPE_OBJ_IN_BODY:
+	            int loc = entry.getOffset();
+		        if (loc < 0)
+		        {
+		            return PDFObject.nullObj;
+		        }
+		        
+		        // store the current position in the buffer
+		        int startPos = fileBuf.position();
+		        
+		        // move to where this object is
+		        fileBuf.position(loc);
+		        
+		        // read the object and cache the reference
+		        obj = readObject(fileBuf, ref.getObjectNumber(), ref.getGeneration(), decrypter);
+		        if (obj == null)
+		        {
+		            obj = PDFObject.nullObj;
+		        }
+		        
+		        entry.setObject(obj);
+		        
+		        // reset to the previous position
+		        fileBuf.position(startPos);
+		        
+		        return obj;
+	        case PDFXrefEntry.TYPE_OBJ_IN_STREAM:
+	        	final PDFObject stream = dereference(entry.getStream(), getDefaultDecrypter());
+	            if (stream == null || stream.getType() != PDFObject.STREAM || !"ObjStm".equals(stream.getDictRef("Type").getStringValue()))
+	            {
+	                throw new PDFParseException(entry.getStream().getObjectNumber() + ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NOT_STREAM_BUT_REF_AS));
+	            }
+	            
+	            final ByteBuffer streamBuf = stream.getStreamBuffer();
+	            
+	            final PDFXrefEntry streamSourceEntry = xrefEntries[entry.getStream().getObjectNumber()];
+	            int[] offsets = streamSourceEntry.getObjectIndexOffsets();
+	            if (offsets == null)
+	            {
+	                offsets = new int[((PDFObject)stream.getDictionary().get("N")).getIntValue()];
+	                int first = ((PDFObject)stream.getDictionary().get("First")).getIntValue();
+	                for (int i = 0; i < offsets.length; ++i)
+	                {
+	                    // we don't need the object number
+	                    final PDFObject objNum = readObject(streamBuf, -1, -1, IdentityDecrypter.getInstance());
+	                    // add in the initial offset represented by First here
+	                    offsets[i] = first + readObject(streamBuf, -1, -1, IdentityDecrypter.getInstance()).getIntValue();
+	                }
+	                streamSourceEntry.setObjectIndexOffsets(offsets);
+	            }
+	            
+	            if (entry.getOffset() < 0 || entry.getOffset() >= offsets.length)
+	            {
+	                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_XREF_INDEX_NOT_IN_STREAM));
+	            }
+	            
+	            streamBuf.position(offsets[entry.getOffset()]);
+	            // According to the PDF spec:
+	            //  "Any strings that are inside streams such as content streams
+	            //  and compressed object streams, which themselves are
+	            //  encrypted"
+	            // So, we figure out whether the containing stream was
+	            // encrypted or not; unfortunately, we don't have this
+	            // cached anywhere. If the stream was encrypted, we make
+	            // sure we don't attempt to decrypt any strings within.
+	            obj= readObject(streamBuf, ref.getObjectNumber(), ref.getGeneration(), PDFDecoder.isEncrypted(stream) ? IdentityDecrypter.getInstance() : getDefaultDecrypter());
+	            if (obj == null)
+	            {
+	                obj = PDFObject.nullObj;
+	            }
+	            
+	            entry.setObject(obj);
+	            return obj;
+	        case PDFXrefEntry.TYPE_FREE:
+	        	// this case should in practice be covered by the
+                // call to entry.resolves() above
+                return PDFObject.nullObj;
+	        default:
+                throw new UnsupportedOperationException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_UNK_XREF_TYPE) + entry.getType());
         }
-        
-        // store the current position in the buffer
-        int startPos = buf.position();
-        
-        // move to where this object is
-        buf.position(loc);
-        
-        // read the object and cache the reference
-        obj = readObject(ref.getID(), ref.getGeneration(), decrypter);
-        if (obj == null)
-        {
-            obj = PDFObject.nullObj;
-        }
-        
-        objIdx[id].setObject(obj);
-        
-        // reset to the previous position
-        buf.position(startPos);
-        
-        return obj;
     }
     
     /**
@@ -369,6 +442,7 @@ public class PDFFile
     
     /**
      * read the next object from the file
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the object
      *  being read; negative only if the object number is unavailable (e.g., if
      *  reading from the trailer, or reading at the top level, in which
@@ -377,32 +451,33 @@ public class PDFFile
      *  being read; negative only if the objNum is unavailable
      * @param decrypter the decrypter to use
      */
-    private PDFObject readObject(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readObject(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
-    	return readObject(objNum, objGen, false, decrypter);
+    	return readObject(buf, objNum, objGen, false, decrypter);
     }
 
     /**
      * read the next object with a special catch for numbers
-     * @param numscan if true, don't bother trying to see if a number is
-     *  an object reference (used when already in the middle of testing for
-     *  an object reference, and not otherwise)
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the object
      *  being read; negative only if the object number is unavailable (e.g., if
      *  reading from the trailer, or reading at the top level, in which
      *  case we can expect to be reading an object description)
      * @param objGen the object generation of the object containing the object
      *  being read; negative only if the objNum is unavailable
+     * @param numscan if true, don't bother trying to see if a number is
+     *  an object reference (used when already in the middle of testing for
+     *  an object reference, and not otherwise)
      * @param decrypter the decrypter to use
      */
-    private PDFObject readObject(int objNum, int objGen, boolean numscan, PDFDecrypter decrypter) throws IOException
+    private PDFObject readObject(ByteBuffer buf, int objNum, int objGen, boolean numscan, PDFDecrypter decrypter) throws IOException
     {
         // skip whitespace
         int c;
         PDFObject obj = null;
         while (obj == null)
         {
-            while (isWhiteSpace(c = buf.get()));
+        	c = nextNonWhitespaceChar(buf);
             // check character for special punctuation:
             if (c == '<')
             {
@@ -411,37 +486,37 @@ public class PDFFile
                 if (c == '<')
                 {
                     // it's a dictionary
-                	obj = readDictionary(objNum, objGen, decrypter);
+                	obj = readDictionary(buf, objNum, objGen, decrypter);
                 }
                 else
                 {
                     buf.position(buf.position() - 1);
-                    obj = readHexString(objNum, objGen, decrypter);
+                    obj = readHexString(buf, objNum, objGen, decrypter);
                 }
             }
             else if (c == '(')
             {
-            	obj = readLiteralString(objNum, objGen, decrypter);
+            	obj = readLiteralString(buf, objNum, objGen, decrypter);
             }
             else if (c == '[')
             {
                 // it's an array
-            	obj = readArray(objNum, objGen, decrypter);
+            	obj = readArray(buf, objNum, objGen, decrypter);
             }
             else if (c == '/')
             {
                 // it's a name
-                obj = readName();
+                obj = readName(buf);
             }
             else if (c == '%')
             {
                 // it's a comment
-                readLine();
+                readLine(buf);
             }
             else if ((c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.')
             {
                 // it's a number
-                obj = readNumber((char)c);
+                obj = readNumber(buf, (char)c);
                 if (!numscan)
                 {
                     // It could be the start of a reference.
@@ -451,10 +526,10 @@ public class PDFFile
                     // from dereference, which already is using a mark
                     int startPos = buf.position();
 
-                    PDFObject testnum = readObject(-1, -1, true, decrypter);
+                    PDFObject testnum = readObject(buf, -1, -1, true, decrypter);
                     if (testnum != null && testnum.getType() == PDFObject.NUMBER)
                     {
-                    	PDFObject testR = readObject(-1, -1, true, decrypter);
+                    	PDFObject testR = readObject(buf, -1, -1, true, decrypter);
                         if (testR != null && testR.getType() == PDFObject.KEYWORD && testR.getStringValue().equals("R"))
                         {
                             // yup.  it's a reference.
@@ -465,7 +540,7 @@ public class PDFFile
                         }
                         else if (testR != null && testR.getType() == PDFObject.KEYWORD && testR.getStringValue().equals("obj")) {
                             // it's an object description
-                        	obj= readObjectDescription(obj.getIntValue(), testnum.getIntValue(), decrypter);
+                        	obj= readObjectDescription(buf, obj.getIntValue(), testnum.getIntValue(), decrypter);
                         }
                         else
                         {
@@ -481,7 +556,7 @@ public class PDFFile
             else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
             {
                 // it's a keyword
-                obj = readKeyword((char)c);
+                obj = readKeyword(buf, (char)c);
             }
             else
             {
@@ -495,17 +570,40 @@ public class PDFFile
     }
     
     /**
+     * Get the next non-white space character
+     * @param buf the buffer to read from
+     * @return the next non-whitespace character
+     */
+    private int nextNonWhitespaceChar(ByteBuffer buf)
+    {
+        int c;
+        while (isWhiteSpace(c = buf.get()));
+        return c;
+    }
+    
+    /**
+     * Consume all sequential whitespace from the current buffer position,
+     * leaving the buffer positioned at non-whitespace
+     * @param buf the buffer to read from
+     */
+    private void consumeWhitespace(ByteBuffer buf)
+    {
+        nextNonWhitespaceChar(buf);
+        buf.position(buf.position() - 1);
+    }
+    
+    /**
      * requires the next few characters (after whitespace) to match the
      * argument.
+     * @param buf the buffer to read from
      * @param match the next few characters after any whitespace that
      * must be in the file
      * @return true if the next characters match; false otherwise.
      */
-    private boolean nextItemIs(String match) throws IOException
+    private boolean nextItemIs(ByteBuffer buf, String match) throws IOException
     {
         // skip whitespace
-        int c;
-        while (isWhiteSpace(c = buf.get()));
+        int c = nextNonWhitespaceChar(buf);
         for (int i = 0; i < match.length(); i++)
         {
             if (i > 0)
@@ -574,6 +672,7 @@ public class PDFFile
     /**
      * read an entire &lt;&lt; dictionary &gt;&gt;.  The initial
      * &lt;&lt; has already been read.
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the dictionary
      *  being read; negative only if the object number is unavailable, which
      *  should only happen if we're reading a dictionary placed directly
@@ -583,26 +682,26 @@ public class PDFFile
      * @param decrypter the decrypter to use
      * @return the Dictionary as a PDFObject.
      */
-    private PDFObject readDictionary(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readDictionary(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
     	Hashtable hm = new Hashtable();
         // we've already read the <<.  Now get /Name obj pairs until >>
         PDFObject name;
-        while ((name = readObject(objNum, objGen, decrypter)) != null)
+        while ((name = readObject(buf, objNum, objGen, decrypter)) != null)
         {
             // make sure first item is a NAME
             if (name.getType() != PDFObject.NAME)
             {
                 throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DIC_ELE_NAME_MISSING) + name + ')');
             }
-            PDFObject value= readObject(objNum, objGen, decrypter);
+            PDFObject value= readObject(buf, objNum, objGen, decrypter);
             if (value != null)
             {
                 hm.put(name.getStringValue(), value);
             }
         }
         //	System.out.println("End of dictionary at location "+raf.getFilePointer());
-        if (!nextItemIs(">>"))
+        if (!nextItemIs(buf, ">>"))
         {
             throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DIC_BAD_END));
         }
@@ -616,11 +715,11 @@ public class PDFFile
      * @return a number between 0 and 15 whose value matches the next
      * hexidecimal character.  Returns -1 if the next character isn't in
      * [0-9a-fA-F]
+     * @param buf the buffer to read from
      */
-    private int readHexDigit() throws IOException
+    private int readHexDigit(ByteBuffer buf) throws IOException
     {
-        int a;
-        while (isWhiteSpace(a = buf.get()));
+        int a = nextNonWhitespaceChar(buf);
         switch (a)
         {
             case '0': case '1': case '2': case '3': case '4':
@@ -645,16 +744,17 @@ public class PDFFile
      * If the next two characters don't represent a hex value, return -1
      * and reset the read head.  If there is only one hex character,
      * return its value as if there were an implicit 0 after it.
+     * @param buf
      */
-    private int readHexPair() throws IOException
+    private int readHexPair(ByteBuffer buf) throws IOException
     {
-        int first = readHexDigit();
+        int first = readHexDigit(buf);
         if (first < 0)
         {
             buf.position(buf.position() - 1);
             return -1;
         }
-        int second = readHexDigit();
+        int second = readHexDigit(buf);
         if (second < 0)
         {
             buf.position(buf.position() - 1);
@@ -668,6 +768,7 @@ public class PDFFile
 
     /**
      * read a < hex string >.  The initial < has already been read.
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the dictionary
      *  being read; negative only if the object number is unavailable, which
      *  should only happen if we're reading a string placed directly
@@ -676,12 +777,12 @@ public class PDFFile
      *  being read; negative only if the objNum is unavailable
      * @param decrypter the decrypter to use
      */
-    private PDFObject readHexString(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readHexString(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
         // we've already read the <. Now get the hex bytes until >
         int val;
         StringBuffer sb = new StringBuffer();
-        while ((val = readHexPair()) >= 0)
+        while ((val = readHexPair(buf)) >= 0)
         {
             sb.append((char)val);
         }
@@ -689,80 +790,34 @@ public class PDFFile
         {
             throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_BAD_HEX));
         }
-        String unicodeString = unicode(sb.toString());
-        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, unicodeString));
-    }
-    
-    /**
-     * take a string and determine if it is unicode by looking at the lead
-     * characters, and that the string must be a multiple of 2 chars long.
-     * Convert a unicoded string's characters into the true unicode.
-     *
-     * @param input
-     * @return
-     */
-    private String unicode(String input)
-    {
-        // determine if we have unicode, if so, translate it
-        if (input.length() < 2 || (input.length() % 2) != 0)
-        {
-            return input;
-        }
-        int c0 = input.charAt(0) & 0xFF;
-        int c1 = input.charAt(1) & 0xFF;
-        if ((c0 == 0xFE && c1 == 0xFF) || (c0 == 0xFF && c1 == 0xFE))
-        {
-            // we have unicode
-            boolean bigEndian = (input.charAt(1) == 0xFFFF);
-            StringBuffer out = new StringBuffer();
-            for (int i = 2; i < input.length(); i += 2)
-            {
-                if (bigEndian)
-                {
-                    out.append((char)(((input.charAt(i + 1) & 0xFF) << 8) + (input.charAt(i) & 0xFF)));
-                }
-                else
-                {
-                    out.append((char)(((input.charAt(i) & 0xFF) << 8) + (input.charAt(i + 1) & 0xFF)));
-                }
-            }
-            return out.toString();
-        }
-        else
-        {
-            return input;
-        }
+        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, sb.toString()));
     }
     
     /**
      * <p>read a ( character string ).  The initial ( has already been read.
      * Read until a *balanced* ) appears.</p>
      *
-     * <p>PDF Reference Section 3.8.1, Table 3.31 "PDF Data Types" defines
-     * String data as:<pre>
-     * "text string     Bytes that represent characters encoded
-     *                  using either PDFDocEncoding or UTF-16BE with a
-     *                  leading byte-order marker (as defined in
-     *                  "Text String Type" on page 158.)
-     * </pre></p>
+     * <p>Section 3.2.3 of PDF Refernce version 1.7 defines the format of
+     * String objects. Regarding literal strings:</p>
      *
-     * <p>Section 5.3.2 defines character sequences and escapes.<br>
-     * "The strings must conform to the syntax for string objects.
-     * When a string is written by enclosing the data in parentheses,
-     * bytes whose values are the same as those of the ASCII characters
-     * left parenthesis (40), right parenthesis (41), and backslash (92)
-     * must be preceded by a backslash character. All other byte values
-     * between 0 and 255 may be used in a string object. <br>
-     * These rules apply to each individual byte in a string object,
-     * whether the string is interpreted by the text-showing operators
-     * as single-byte or multiple-byte character codes."</p>
+     * <blockquote>Within a literal string, the backslash (\) is used as an
+     * escape character for various purposes, such as to include newline
+     * characters, nonprinting ASCII characters, unbalanced parentheses, or
+     * the backslash character itself in the string. The character
+     * immediately following the backslash determines its precise
+     * interpretation (see Table 3.2). If the character following the
+     * backslash is not one of those shown in the table, the backslash
+     * is ignored.</blockquote>
      *
-     * <p>This only reads 8 bit basic 'strings' so as to avoid a text string
-     * interpretation when one is not desired (e.g., for byte strings).
-     * For a text string interpretation of a string, use
+     * * <p>This only reads 8 bit basic character 'strings' so as to avoid a
+     * text string interpretation when one is not desired (e.g., for byte
+     * strings, as used by the decryption mechanism). For an interpretation of
+     * a string returned from this method, where the object type is defined
+     * as a 'text string' as per Section 3.8.1, Table 3.31 "PDF Data Types",
      * {@link PDFStringUtil#asTextString} ()} or
-     * {@link PDFObject#getTextStringValue()} </p>
-
+     * {@link PDFObject#getTextStringValue()} must be employed.</p>
+     *
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the dictionary
      *  being read; negative only if the object number is unavailable, which
      *  should only happen if we're reading a dictionary placed directly
@@ -771,7 +826,7 @@ public class PDFFile
      *  being read; negative only if the objNum is unavailable
      * @param decrypter the decrypter to use
      */
-    private PDFObject readLiteralString(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readLiteralString(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
         int c;
 
@@ -800,29 +855,57 @@ public class PDFFile
             }
             else if (c == '\\')
             {
-                // time to do some work
+            	// From the spec:
+                // Within a literal string, the backslash (\) is used as an
+                // escape character for various purposes, such as to include
+                // newline characters, nonprinting ASCII characters,
+                // unbalanced parentheses, or the backslash character itself
+                // in the string. The character immediately following the
+                // backslash determines its precise interpretation (see
+                // Table 3.2). If the character following the backslash is not
+                // one of those shown in the table, the backslash is ignored.
+                //
+                // summary of rules:
+                //
+                // \n \r \t \b \f 2-char sequences are used to represent their
+                //  1-char counterparts
+                //
+                // \( and \) are used to escape parenthesis
+                //
+                // \\ for a literal backslash
+                //
+                // \ddd (1-3 octal digits) for a character code
+                //
+                //  \<EOL> is used to put formatting newlines into the
+                //  file, but aren't actually part of the string; EOL may be
+                //  CR, LF or CRLF
+                //
+                // any other sequence should see the backslash ignored
+            	
+                // grab the next character to see what we're dealing with
                 c = buf.get() & 0xFF;
-                if (c >= '0' && c <= '9')
+                if (c >= '0' && c < '8')
                 {
-                    // \ddd form - three OCTAL digits
+                    // \ddd form - one to three OCTAL digits
                     int count = 0;
                     int val = 0;
-                    while (c >= '0' && c <= '8' && count < 3)
+                    while (c >= '0' && c < '8' && count < 3)
                     {
                         val = val * 8 + c - '0';
                         c = buf.get() & 0xFF;
                         count++;
                     }
+                    // we'll have read one character too many
                     buf.position(buf.position() - 1);
                     c = val;
-                }
-                else if (c == 'r')
-                {
-                    c = '\n';   // translate to 0Ah
                 }
                 else if (c == 'n')
                 {
                     c = '\n';
+                }
+                else if (c == 'r')
+                {
+                    c = '\r';
                 }
                 else if (c == 't')
                 {
@@ -836,40 +919,42 @@ public class PDFFile
                 {
                     c = '\f';
                 }
-                else
+                else if (c == '\r')
                 {
-	                //  ignore escaped EOL
-	                if (c == '\r')
-	                {
-	                    // check for following \n
-	                    c = buf.get() & 0xFF;
-	                    if (c != '\n')
-	                    {
-	                        buf.position(buf.position() - 1);
-	                    }
-	                    c = -1;
-	                }
-	                else if (c == '\n')
-	                {
-	                    c = -1;
-	                }
+                	// escaped CR to be ignored; look for a following LF
+                    c = buf.get() & 0xFF;
+                    if (c != '\n')
+                    {
+                    	// not an LF, we'll consume this character on
+                        // the next iteration
+                        buf.position(buf.position() - 1);
+                    }
+                    c = -1;
                 }
+                else if (c == '\n')
+                {
+                	// escaped LF to be ignored
+                    c = -1;
+                }
+                // any other c should be used as is, as it's either
+                // one of ()\ in which case it should be used literally,
+                // or the backslash should just be ignored
             }
             if (c >= 0)
             {
                 sb.append((char) c);
             }
         }
-        String unicodeString = unicode(sb.toString());
-        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, unicodeString));
+        return new PDFObject(this, PDFObject.STRING, decrypter.decryptString(objNum, objGen, sb.toString()));
     }
 
     /**
      * Read a line of text.  This follows the semantics of readLine() in
-     * DataInput -- it reads character by character until a '/n' is
-     * encountered.  If a '/r' is encountered, it is discarded.
+     * DataInput -- it reads character by character until a '\n' is
+     * encountered.  If a '\r' is encountered, it is discarded.
+     * @param buf the buffer to read from
      */
-    private String readLine()
+    private String readLine(ByteBuffer buf)
     {
         StringBuffer sb = new StringBuffer();
 
@@ -903,6 +988,7 @@ public class PDFFile
     /**
      * read an [ array ].  The initial [ has already been read.  PDFObjects
      * are read until ].
+     * @param buf the buffer to read from
      * @param objNum the object number of the object containing the dictionary
      *  being read; negative only if the object number is unavailable, which
      *  should only happen if we're reading an array placed directly
@@ -911,12 +997,12 @@ public class PDFFile
      *  being read; negative only if the objNum is unavailable
      * @param decrypter the decrypter to use
      */
-    private PDFObject readArray(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readArray(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
         // we've already read the [.  Now read objects until ]
         Vector ary = new Vector();
         PDFObject obj;
-        while((obj = readObject(objNum, objGen, decrypter)) != null)
+        while((obj = readObject(buf, objNum, objGen, decrypter)) != null)
         {
             ary.addElement(obj);
         }
@@ -937,8 +1023,9 @@ public class PDFFile
 
     /**
      * read a /name.  The / has already been read.
+     * @param buf the buffer to read from
      */
-    private PDFObject readName() throws IOException
+    private PDFObject readName(ByteBuffer buf) throws IOException
     {
         // we've already read the / that begins the name.
         // all we have to check for is #hh hex notations.
@@ -953,7 +1040,7 @@ public class PDFFile
             // H.3.2.4 indicates version 1.1 did not do hex escapes
             if (c == '#' && (majorVersion != 1 && minorVersion != 1))
             {
-                int hex = readHexPair();
+                int hex = readHexPair(buf);
                 if (hex >= 0)
                 {
                     c = hex;
@@ -973,7 +1060,7 @@ public class PDFFile
      * read a number. The initial digit or . or - is passed in as the
      * argument.
      */
-    private PDFObject readNumber(char start) throws IOException
+    private PDFObject readNumber(ByteBuffer buf, char start) throws IOException
     {
     	//TODO: Can this be changed to use floats instead of doubles? It's much faster :)
     	
@@ -1024,7 +1111,7 @@ public class PDFFile
      * read a bare keyword.  The initial character is passed in as the
      * argument.
      */
-    private PDFObject readKeyword(char start) throws IOException
+    private PDFObject readKeyword(ByteBuffer buf, char start) throws IOException
     {
         // we've read the first character (it's passed in as the argument)
         StringBuffer sb = new StringBuffer(String.valueOf(start));
@@ -1040,20 +1127,21 @@ public class PDFFile
     /**
      * read an entire PDFObject.  The intro line, which looks something
      * like "4 0 obj" has already been read.
+     * @param buf the buffer to read from
      * @param objNum the object number of the object being read, being
      *  the first number in the intro line (4 in "4 0 obj")
      * @param objGen the object generation of the object being read, being
      *  the second number in the intro line (0 in "4 0 obj").
      * @param decrypter the decrypter to use
      */
-    private PDFObject readObjectDescription(int objNum, int objGen, PDFDecrypter decrypter) throws IOException
+    private PDFObject readObjectDescription(ByteBuffer buf, int objNum, int objGen, PDFDecrypter decrypter) throws IOException
     {
         // we've already read the 4 0 obj bit.  Next thing up is the object.
         // object descriptions end with the keyword endobj
         long debugpos = buf.position();
-        PDFObject obj= readObject(objNum, objGen, decrypter);
+        PDFObject obj= readObject(buf, objNum, objGen, decrypter);
         // see if it's a dictionary.  If so, this could be a stream.
-        PDFObject endkey= readObject(objNum, objGen, decrypter);
+        PDFObject endkey= readObject(buf, objNum, objGen, decrypter);
         if (endkey.getType() != PDFObject.KEYWORD)
         {
             throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_KEYWORD));
@@ -1061,14 +1149,14 @@ public class PDFFile
         if (obj.getType() == PDFObject.DICTIONARY && endkey.getStringValue().equals("stream"))
         {
             // skip until we see \n
-            readLine();
-            ByteBuffer data = readStream(obj);
+            readLine(buf);
+            ByteBuffer data = readStream(buf, obj);
             if (data == null)
             {
                 data = ByteBuffer.allocateDirect(0);
             }
             obj.setStream(data);
-            endkey= readObject(objNum, objGen, decrypter);
+            endkey= readObject(buf, objNum, objGen, decrypter);
         }
         // at this point, obj is the object, keyword should be "endobj"
         String endcheck = endkey.getStringValue();
@@ -1085,10 +1173,11 @@ public class PDFFile
      * read the stream portion of a PDFObject.  Calls decodeStream to
      * un-filter the stream as necessary.
      *
+     * @param buf the buffer to read from
      * @param dict the dictionary associated with this stream.
      * @return a ByteBuffer with the encoded stream data
      */
-    private ByteBuffer readStream(PDFObject dict) throws IOException
+    private ByteBuffer readStream(ByteBuffer buf, PDFObject dict) throws IOException
     {
         // pointer is at the start of a stream.  read the stream and
         // decode, based on the entries in the dictionary
@@ -1112,7 +1201,7 @@ public class PDFFile
         buf.position(buf.position() + length);
         int ending = buf.position();
         
-        if (!nextItemIs("endstream"))
+        if (!nextItemIs(buf, "endstream"))
         {
             System.out.println("read " + length + " chars from " + start + " to " + ending);
             throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EOS));
@@ -1125,146 +1214,36 @@ public class PDFFile
     
     /**
      * read the cross reference table from a PDF file.  When this method
-     * is called, the file pointer must point to the start of the word
-     * "xref" in the file.  Reads the xref table and the trailer dictionary.
-     * If dictionary has a /Prev entry, move file pointer
-     * and read new trailer
-     * @param password
+     * is called, the file pointer must point to the start of an xref table
+     * (i.e., to the start of the "xref" keyword) or an xref stream object.
+     * Reads the xref entries and populate xrefEntries. Also reads the
+     * trailer/xref stream dictionary to set root, fileIdentifier and encryption
+     * parameters. If /Prev entries are present, proceeds to read previous
+     * trailers and xrefs, too.
+     * @param password the password to use for decryption
      */
-    private void readTrailer(PDFPassword password) 
+    private void readTrailersAndXrefs(PDFPassword password) 
     	throws IOException, PDFAuthenticationFailureException, EncryptionUnsupportedByProductException, EncryptionUnsupportedByPlatformException
     {
         // the table of xrefs
-        objIdx = new PDFXref[50];
-        
-        PDFDecrypter newDefaultDecrypter = null;
-        
+    	
         // read a bunch of nested trailer tables
-        while (true)
+    	boolean furtherCrossrefsToRead = true;
+        while (furtherCrossrefsToRead)
         {
-            // make sure we are looking at an xref table
-            if (!nextItemIs("xref"))
+        	PDFObject header = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
+        	
+            if (header.getType() == PDFObject.KEYWORD && "xref".equals(header.getStringValue()))
             {
-                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF));
+                furtherCrossrefsToRead = readCrossrefTableAndTrailer(password);
             }
-            
-            // read a bunch of linked tabled
-            while (true)
+            else if (isXrefStream(header))
             {
-                // read until the word "trailer"
-            	PDFObject obj = readObject(-1, -1, IdentityDecrypter.getInstance());
-                if (obj.getType() == PDFObject.KEYWORD && obj.getStringValue().equals("trailer"))
-                {
-                    break;
-                }
-                
-                // read the starting position of the reference
-                if (obj.getType() != PDFObject.NUMBER)
-                {
-                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_FIRST));
-                }
-                int refstart = obj.getIntValue();
-                
-                // read the size of the reference table
-                obj = readObject(-1, -1, IdentityDecrypter.getInstance());
-                if (obj.getType() != PDFObject.NUMBER)
-                {
-                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_LEN));
-                }
-                int reflen = obj.getIntValue();
-                
-                // skip a line
-                readLine();
-                
-                // extend the objIdx table, if necessary
-                if (refstart + reflen >= objIdx.length)
-                {
-                    PDFXref[] nobjIdx = new PDFXref[refstart + reflen];
-                    System.arraycopy(objIdx, 0, nobjIdx, 0, objIdx.length);
-                    objIdx = nobjIdx;
-                }
-                
-                // read reference lines
-                for (int refID = refstart; refID < refstart + reflen; refID++)
-                {
-                    // each reference line is 20 bytes long
-                    byte[] refline = new byte[20];
-                    buf.get(refline);
-
-                    // ignore this line if the object ID is already defined
-                    if (objIdx[refID] != null)
-                    {
-                        continue;
-                    }
-                    
-                    // see if it's an active object
-                    if (refline[17] == 'n')
-                    {
-                        objIdx[refID] = new PDFXref(refline);
-                    }
-                    else
-                    {
-                        objIdx[refID] = new PDFXref(null);
-                    }
-                }
-            }
-            
-            // at this point, the "trailer" word (not EOL) has been read.
-            PDFObject trailerdict = readObject(-1, -1, IdentityDecrypter.getInstance());
-            if (trailerdict.getType() != PDFObject.DICTIONARY)
-            {
-                throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_DICT));
-            }
-            
-            // read the root object location
-            if (root == null)
-            {
-                root = trailerdict.getDictRef("Root");
-                if (root != null)
-                {
-                    root.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
-                }
-            }
-            
-            // read the encryption information
-            if (encrypt == null)
-            {
-                encrypt = trailerdict.getDictRef("Encrypt");
-                if (encrypt != null)
-                {
-                    encrypt.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
-                }
-                newDefaultDecrypter = PDFDecrypterFactory.createDecryptor(encrypt, trailerdict.getDictRef("ID"), password);
-            }
-            
-            if (info == null)
-            {
-                info = trailerdict.getDictRef("Info");
-                if (info != null)
-                {
-                    if (!info.isIndirect())
-                    {
-                        throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_TRAILER_INDIRECT));
-                    }
-                    info.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
-                }
-            }
-            
-            // read the location of the previous xref table
-            PDFObject prevloc = trailerdict.getDictRef("Prev");
-            if (prevloc != null)
-            {
-                buf.position(prevloc.getIntValue());
+                furtherCrossrefsToRead = readCrossrefStream(header, true);
             }
             else
             {
-                break;
-            }
-            // see if we have an optional Version entry
-            
-            if (root.getDictRef("Version") != null)
-            {
-                processVersion(root.getDictRef("Version").getStringValue());
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_TABLE_STREAM) + header);
             }
         }
         
@@ -1274,11 +1253,17 @@ public class PDFFile
             throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NO_ROOT));
         }
         
+        if (root.getDictRef("Version") != null)
+        {
+            processVersion(root.getDictRef("Version").getStringValue());
+        }
+        
         // check what permissions are relevant
         if (encrypt != null)
         {
+            defaultDecrypter = PDFDecrypterFactory.createDecryptor(encrypt, fileIdentifier, password);
             PDFObject permissions = encrypt.getDictRef("P");
-            if (permissions != null && !newDefaultDecrypter.isOwnerAuthorised())
+            if (permissions!=null && !defaultDecrypter.isOwnerAuthorised())
             {
                 int perms= permissions != null ? permissions.getIntValue() : 0;
                 if (permissions!=null)
@@ -1287,13 +1272,317 @@ public class PDFFile
                     saveable = (perms & 16) != 0;
                 }
             }
-            // Install the new default decrypter only after the trailer has
-            // been read, as nothing we're reading passing through is encrypted
-            defaultDecrypter = newDefaultDecrypter;
         }
         
         // dereference the root object
         root.dereference();
+    }
+    
+    /**
+     * Identify whether a given PDFObject identifies itself as a crossreference
+     * stream
+     * @param header the object to test
+     * @return whether the object is an xref stream
+     * @throws IOException if there's a problem reading the header
+     */
+    private boolean isXrefStream(PDFObject header) throws IOException
+    {
+        return header.getType() == PDFObject.STREAM && "XRef".equals(header.getDictRef("Type").getStringValue());
+    }
+    
+    /**
+     * Read entries from a xref table, and its trailer dictionary, which
+     * is expected to follow it
+     * @param password the password
+     * @return whether a previous crossref table/stream should be read; the
+     * buffer will have been positioned at its start point
+     * @throws IOException in case of a bad format, or IO problems
+     */
+    private boolean readCrossrefTableAndTrailer(PDFPassword password) throws IOException
+    {
+    	// we're positioned at the start of a cross reference table
+        PDFObject headerObject;
+        while (true)
+        {
+        	// read until the word "trailer"
+        	
+        	headerObject = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
+            if (headerObject.getType() != PDFObject.NUMBER)
+            {
+                // we must be out of the cross-ref table!
+                break;
+            }
+            
+            // each subsection will start with
+            //   <first obj number>
+            //   <number of entries in subsection>
+            // read them now:
+            int objNumStart = headerObject.getIntValue();
+            
+            // read the size of the reference table
+            PDFObject sizeObj = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
+            if (sizeObj.getType() != PDFObject.NUMBER)
+            {
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_LEN));
+            }
+            int numEntries = sizeObj.getIntValue();
+            
+            final int lastObjNum = objNumStart + numEntries;
+            ensureXrefEntriesCapacity(lastObjNum + 1);
+            
+            consumeWhitespace(fileBuf);
+            
+            // read entry lines
+            
+            final byte[] refline = new byte[20];
+            for (int objNum = objNumStart; objNum < lastObjNum; objNum++)
+            {
+                // each reference line is 20 bytes long
+                fileBuf.get(refline);
+                
+                // if xrefEntries already contains an entry for this
+                // object number then we've earlier read a xref
+                // for this object number from a later incremental
+                // upgrade
+                if (xrefEntries[objNum] == null)
+                {
+                    PDFXrefEntry entry;
+                    final byte entryType = refline[17];
+                    if (entryType == 'n')
+                    {
+                        // active entry
+                        int offset = Integer.parseInt(new String(refline, 0, 10));
+                        int generation = Integer.parseInt(new String(refline, 11, 5));
+                        final PDFXref ref = new PDFXref(objNum, generation);
+                        entry = PDFXrefEntry.toBodyObject(generation, offset);
+                    }
+                    else if (entryType == 'f')
+                    {
+                        // freed entry
+                        entry = PDFXrefEntry.forFreedObject();
+                    }
+                    else
+                    {
+                        throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_UNK_XREF_ENTRY_TYPE) + entryType);
+                    }
+                    xrefEntries[objNum] = entry;
+                }
+            }
+        }
+
+        // at this point, the "trailer" word (not EOL) has been read, hopefully!
+        if (headerObject.getType() != PDFObject.KEYWORD || !"trailer".equals(headerObject.getStringValue()))
+        {
+            throw new PDFParseException("Expected to find trailer immediately after xref table, but found " + headerObject + " instead");
+        }
+        
+        PDFObject trailerdict = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
+        if (trailerdict.getType() != PDFObject.DICTIONARY)
+        {
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_DICTIONARY_AFTER_TRAILER));
+        }
+        
+        return processTrailerDict(trailerdict, false, true);
+    }
+    
+    /**
+     * Process a trailer or xref stream dictionary, recording root, info,
+     * encrypt and fileIdentifier members as appropriate. If a Prev entry
+     * is found, and followPrev is true, the buffer position is set to the
+     * location of a further xref table/stream to read
+     * @param trailerdict the trailer/xref-stream dictionary
+     * @param xrefStreamSource if the trailer comes from an xref stream, as
+     *  opposed to an xref table
+     * @param followPrev whether Prev entries should be followed
+     * @return whether followPrev was set and a Prev entry was found, indicating
+     * that the buffer is now positioned to have another xref stream/table read
+     * @throws IOException if the file is badly formed, or in case of IO
+     * difficulties
+     */
+    private boolean processTrailerDict(PDFObject trailerdict, boolean xrefStreamSource, boolean followPrev) throws IOException
+    {
+        // read the root object location
+        if (root == null)
+        {
+            root = trailerdict.getDictRef("Root");
+            if (root != null)
+            {
+                root.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+            }
+        }
+        
+        if (fileIdentifier == null)
+        {
+            fileIdentifier = trailerdict.getDictRef("ID");
+        }
+        
+        // read the encryption information
+        if (encrypt == null)
+        {
+            encrypt = trailerdict.getDictRef("Encrypt");
+            if (encrypt != null)
+            {
+                encrypt.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+            }
+        }
+        
+        if (info == null)
+        {
+            info = trailerdict.getDictRef("Info");
+            if (info != null)
+            {
+                if (!info.isIndirect())
+                {
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_TRAILER_INDIRECT));
+                }
+                info.setObjectId(PDFObject.OBJ_NUM_TRAILER, PDFObject.OBJ_NUM_TRAILER);
+            }
+        }
+        
+        if (!xrefStreamSource)
+        {
+            PDFObject xrefStm = trailerdict.getDictRef("XRefStm");
+            if (xrefStm != null)
+            {
+                // this is a hybrid reference file, read the
+                // cross-reference stream before any Prevs
+                fileBuf.position(xrefStm.getIntValue());
+                readCrossrefStream(null, false);
+            }
+        }
+        
+        PDFObject prevloc = null;
+        if (followPrev)
+        {
+        	// read the location of the previous xref table
+            prevloc = trailerdict.getDictRef("Prev");
+            if (prevloc != null)
+            {
+            	fileBuf.position(prevloc.getIntValue());
+            }
+        }
+        
+        return prevloc != null;
+    }
+    
+    /**
+     * Read a Cross Reference Stream from the document
+     * @param xrefStream the xrefStream; if <code>null</code>, the stream
+     *  will be read from the current fileBuf position
+     * @param followPrev if the Prev entry from the dictionary should be
+     *  followed to read a previous xref stream
+     * @return whether a Prev reference has been found and should be followed,
+     *  in which case fileBuf will have been positioned to the start of the
+     *  prev xref table/stream
+     * @throws IOException if the PDF is poorly formed
+     */
+    private boolean readCrossrefStream(PDFObject xrefStream, boolean followPrev) throws IOException
+    {
+    	// the xref stream will have an object number but since there's no
+        // decryption involved, it doesn't matter
+        if (xrefStream == null)
+        {
+            xrefStream = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
+            if (!isXrefStream(xrefStream))
+            {
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_OBJ_CROSS_OFFSET_NO_CROSS_REF));
+            }
+        }
+        
+        final int size = xrefStream.getDictRef("Size").getIntValue();
+        ensureXrefEntriesCapacity(size);
+        final PDFObject[] wObjs = xrefStream.getDictRef("W").getArray();
+        final int[] fieldLengths = new int[3];
+        int entryLength = 0;
+        for (int i = 0; i < 3; ++i)
+        {
+            fieldLengths[i] = wObjs[i].getIntValue();
+            entryLength += fieldLengths[i];
+        }
+        
+        final PDFObject[] index;
+        final PDFObject indexObj = xrefStream.getDictRef("Index");
+        if (indexObj != null)
+        {
+            index = indexObj.getArray();
+        }
+        else
+        {
+            index = new PDFObject[]{new PDFObject(new Integer(0)), new PDFObject(new Integer(size))};             
+        }
+        
+        final ByteBuffer table = xrefStream.getStreamBuffer();
+        for (int i = 0; i < index.length; i += 2)
+        {
+            final int start = index[i].getIntValue();
+            final int end = start + index[i + 1].getIntValue();
+            for (int objNum = start; objNum < end; ++objNum)
+            {
+                if (xrefEntries[objNum] == null)
+                {
+                    int type;
+                    if (fieldLengths[0] == 0)
+                    {
+                        type = PDFXrefEntry.TYPE_OBJ_IN_BODY;
+                    }
+                    else
+                    {
+                        type = PDFXrefEntry.forTypeField(readInt(table, fieldLengths[0]));
+                    }
+                    int field2  = readInt(table, fieldLengths[1]);
+                    // note that this is supposed to default to 0 if field 3
+                    // length is 0 for type 1 entries, and that will work just fine
+                    int field3  = readInt(table, fieldLengths[2]);
+                    xrefEntries[objNum] = PDFXrefEntry.makeXrefStreamEntry(type, field2, field3);
+                }
+                else
+                {
+                    table.position(table.position() + entryLength);
+                }
+            }
+        }
+        
+        return processTrailerDict(xrefStream, true, followPrev);
+    }
+    
+    /**
+     * Read an numBytes-bytes big-endian unsigned int from a table
+     * @param table the table to read from
+     * @param numBytes the number of bytes to read
+     * @return the integer read; 0 if numBytes is 0
+     */
+    private int readInt(ByteBuffer table, int numBytes)
+    {
+        int val = 0;
+        while (numBytes-- > 0)
+        {
+            final int b = table.get() & 0xFF;
+            val = (val << 8) | b;
+        }
+        return val;
+    }
+    
+    /**
+     * Ensure that the xrefEntries table will support a given number of
+     * objects from 0-size. If we were to read the Size entry from a
+     * cross reference table before processing cross reference tables
+     * then we could immediately set it to the correct size, but until we
+     * do so, we'll just have to resize every now and then, though for
+     * most documents, no resizes should be required.
+     * @param size the required size of the xref table (i.e., the maximum
+     *  object number plus 1)
+     */
+    private void ensureXrefEntriesCapacity(int size)
+    {
+        if (xrefEntries == null || xrefEntries.length < size)
+        {
+            final PDFXrefEntry[] newXrefEntries = new PDFXrefEntry[size];
+            if (xrefEntries != null)
+            {
+                System.arraycopy(xrefEntries, 0, newXrefEntries, 0, xrefEntries.length);
+            }
+            xrefEntries = newXrefEntries;
+        }
     }
     
     /**
@@ -1305,76 +1594,104 @@ public class PDFFile
     private void parseFile(PDFPassword password) throws IOException
     {
         // start at the begining of the file
-        buf.rewind();
-        String versionLine = readLine();
+    	fileBuf.rewind();
+        String versionLine = readLine(fileBuf);
         if (versionLine.startsWith(VERSION_COMMENT))
         {
             processVersion(versionLine.substring(VERSION_COMMENT.length()));
         }
-        buf.rewind();
+        fileBuf.rewind();
         
-        // back up about 32 characters from the end of the file to find
-        // startxref\n
-        byte[] scan = new byte[32];
-        int scanPos = buf.remaining() - scan.length;
-        int loc = 0;
-        
-        while (scanPos >= 0)
+        fileBuf.position(fileBuf.limit() - 1);
+        if (!backscan(fileBuf, "startxref"))
         {
-            buf.position(scanPos);
-            buf.get(scan);
-            
-            // find startxref in scan
-            String scans = new String(scan);
-            loc = scans.indexOf("startxref");
-            if (loc > 0)
-            {
-                if (scanPos + loc + scan.length <= buf.limit())
-                {
-                    scanPos = scanPos + loc;
-                    loc = 0;
-                }
-                
-                break;
-            }
-            scanPos -= scan.length - 10;
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_MAY_NOT_PDF));
+        }
+        int postStartXrefPos = fileBuf.position();
+        
+        // ensure that we've got at least one piece of whitespace here, which
+        // should be a carriage return
+        if (!isWhiteSpace(fileBuf.get()))
+        {
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_SUSPICIOUS_STARTXREF));
         }
         
-        if (scanPos < 0)
+        final StringBuffer xrefBuf = new StringBuffer();
+        char c = (char)nextNonWhitespaceChar(fileBuf);
+        while (c >= '0' && c <= '9') 
         {
-            throw new IOException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_MAY_NOT_PDF));
+            xrefBuf.append(c);
+            c = (char)fileBuf.get();
         }
         
-        buf.position(scanPos);
-        buf.get(scan);
-        String scans = new String(scan);
-        
-        loc += 10;  // skip over "startxref" and first EOL char
-        if (scans.charAt(loc) < 32)
-        {
-            loc++;
-        }  // skip over possible 2nd EOL char
-        while (scans.charAt(loc) == 32)
-        {
-            loc++;
-        } // skip over possible leading blanks
-        // read number
-        int numstart = loc;
-        while (loc < scans.length() && scans.charAt(loc) >= '0' && scans.charAt(loc) <= '9') {
-            loc++;
-        }
-        int xrefpos = Integer.parseInt(scans.substring(numstart, loc));
-        buf.position(xrefpos);
+        int xrefpos = Integer.parseInt(xrefBuf.toString());
+        fileBuf.position(xrefpos);
         
         try
         {
-            readTrailer(password);
+            readTrailersAndXrefs(password);
         }
         catch (UnsupportedEncryptionException e)
         {
             throw new PDFParseException(e.getMessage());
         }
     }
+    
+    /**
+     * Scans backwards from the current buffer position, looking for
+     * the given scan token, which must exist in its entirety before
+     * the current buffer position. When successful, the buffer position is
+     * at the point immediately after the token. If not found, the buffer
+     * position will be at 0.
+     * @param buf the buffer to scan, positioned appropriately
+     * @param scanToken the token to scan for
+     * @return whether the token was found
+     */
+    private boolean backscan(ByteBuffer buf, String scanToken) {
+
+        byte[] scanbuf = new byte[32];
+        if (scanToken.length() * 2 > scanbuf.length)
+        {
+            // should be fine, though less than optimal, for current usages
+            throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_SCANTOKEN_TOO_LONG));
+        }
+        
+        int scanPos = buf.position() - scanbuf.length;
+        if (scanPos < 0)
+        {
+        	// use a shorter scanbuf to do a single, most likely failing, scan
+            scanbuf = new byte[buf.position()];
+            scanPos = 0;
+        }
+        
+        while (scanPos >= 0)
+        {
+            buf.position(scanPos);
+            buf.get(scanbuf);
+            
+            // find startxref in scan
+            String scans = new String(scanbuf);
+            int loc = PDFUtil.String_lastIndexOf(scans, scanToken);
+            if (loc > 0)
+            {
+                buf.position(scanPos + loc + scanToken.length());
+                return true;
+            }
+            
+            int newScanPos = scanPos - scanbuf.length + scanToken.length() - 1;
+            if (newScanPos < 0)
+            {
+                scanPos = scanPos == 0 ? -1 : newScanPos;
+            }
+            else
+            {
+                scanPos = newScanPos;
+            }
+        }
+        
+        return false;
+    }
+
     
     /**
      * Gets the outline tree as a tree of OutlineNode, which is a subclass
@@ -1658,13 +1975,13 @@ public class PDFFile
         PDFObject mediaboxObj = getInheritedValue(pageObj, "MediaBox");
         if (mediaboxObj != null)
         {
-            mediabox = parseRect(mediaboxObj);
+            mediabox = parseNormalisedRectangle(mediaboxObj);
         }
         
         PDFObject cropboxObj = getInheritedValue(pageObj, "CropBox");
         if (cropboxObj != null)
         {
-            cropbox = parseRect(cropboxObj);
+            cropbox = parseNormalisedRectangle(cropboxObj);
         }
         
         PDFObject rotateObj = getInheritedValue(pageObj, "Rotate");
@@ -1763,30 +2080,61 @@ public class PDFFile
         return null;
     }
     
-    /**
-     * get a Rectangle2D.Float representation for a PDFObject that is an
-     * array of four Numbers.
-     * @param obj a PDFObject that represents an Array of exactly four
-     * Numbers.
-     */
-    public XYRectFloat parseRect(PDFObject obj) throws IOException
+    public static XYRectFloat parseNormalisedRectangle(PDFObject obj) throws IOException
     {
-        if (obj.getType() == PDFObject.ARRAY)
-        {
-            PDFObject bounds[] = obj.getArray();
-            if (bounds.length == 4)
-            {
-                return new XYRectFloat(bounds[0].getFloatValue(), bounds[1].getFloatValue(), bounds[2].getFloatValue() - bounds[0].getFloatValue(), 
-                		bounds[3].getFloatValue() - bounds[1].getFloatValue());
-            }
-            else
-            {
-                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_INVALID_ARRAY));
-            }
-        }
-        else
-        {
-            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_NO_ARRAY));
+    	if (obj != null)
+    	{
+    		if (obj.getType() == PDFObject.ARRAY)
+    		{
+    			PDFObject bounds[] = obj.getArray();
+    			if (bounds.length == 4)
+    			{
+		            final double x0 = bounds[0].getDoubleValue();
+		            final double y0 = bounds[1].getDoubleValue();
+		            final double x1 = bounds[2].getDoubleValue();
+		            final double y1 = bounds[3].getDoubleValue();
+		            
+		            final double minX;
+		            final double maxY;
+		            final double maxX;
+		            final double minY;
+		            
+		            if (x0 < x1)
+		            {
+		                minX = x0;
+		                maxX = x1;
+		            }
+		            else
+		            {
+		                minX = x1;
+		                maxX = x0;
+		            }
+		            if (y0 < y1)
+		            {
+		                minY = y0;
+		                maxY = y1;
+		            }
+		            else
+		            {
+		                minY = y1;
+		                maxY = y0;
+		            }
+		            
+		            return new XYRectFloat(minX, minY, Math.abs(maxX - minX), Math.abs(maxY - minY));
+	            }
+	            else
+	            {
+	                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_INVALID_ARRAY));
+	            }
+	        }
+	        else
+	        {
+	            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_NO_ARRAY));
+	        }
+    	}
+    	else
+    	{
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_RECT_NOT_PRESENT));
         }
     }
 

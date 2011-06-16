@@ -97,4 +97,11 @@ public interface PDFDecrypter
      * @return whether encryption is present
      */
     public boolean isEncryptionPresent();
+    
+    /**
+     * Determines whether decryption applies for a given crypt filter name
+     * @param cryptFilterName the crypt filter name
+     * @return whether the given crypt filter decrypts or not
+     */
+    boolean isEncryptionPresent(String cryptFilterName);
 }

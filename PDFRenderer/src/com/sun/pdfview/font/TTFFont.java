@@ -1,6 +1,6 @@
 /*
  * File: TTFFont.java
- * Version: 1.10
+ * Version: 1.11
  * Initial Creation: May 16, 2010 1:08:36 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -220,8 +220,7 @@ public class TTFFont extends OutlineFont
         float widthfactor = width / advance;
         
         // the base transform scales the glyph to 1x1
-        AffineTransform at = AffineTransform.createScale(1 / unitsPerEm,
-                1 / unitsPerEm);
+        AffineTransform at = AffineTransform.createScale(1 / unitsPerEm, 1 / unitsPerEm);
         at.concatenate(AffineTransform.createScale(widthfactor, 1));
         
         gp.transform(at);
@@ -290,8 +289,20 @@ public class TTFFont extends OutlineFont
         for (int i = 0; i < len; i++)
         {
             // find and render the component glyf
-            GlyfSimple gs = (GlyfSimple)glyf.getGlyph(g.getGlyphIndex(i));
-            Geometry path = renderSimpleGlyph(gs);
+        	Glyf gl = glyf.getGlyph (g.getGlyphIndex (i));
+            Geometry path = null;
+            if (gl instanceof GlyfSimple)
+            {
+                path = renderSimpleGlyph ((GlyfSimple)gl);
+            }
+            else if (gl instanceof GlyfCompound)
+            {
+                path = renderCompoundGlyph (glyf, (GlyfCompound)gl);
+            }
+            else
+            {
+                throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTFFONT_UNSUPPORTED_GLYPH) + gl.getClass().getName());
+            }
             
             // multiply the translations by units per em
             float[] matrix = g.getTransform(i);

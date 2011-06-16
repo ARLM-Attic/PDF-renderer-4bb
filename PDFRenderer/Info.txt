@@ -1,3 +1,5 @@
+--Revision Used: 129---
+
 TODO:
 Finish FilePicker
 -Make sure scrollable "list" works and is drawn correctly (make custom Field that acts like a list row, it's selectable and clickable)
@@ -6,6 +8,8 @@ Finish FilePicker
 -Implement menu
 -Test
 Make sure that 4MB PDF reads fully (find NullPointerException)
+
+Do some tests that involve PDFImage to make sure that it works (since it wasn't exactly "changed" to the current revision)
 
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
@@ -20,7 +24,10 @@ Finish localization
 --helper.graphics.color.ICC_ProfileStub
 --helper.graphics.color.ICC_Profile
 --helper.graphics.color.ICC_ColorSpace
---function.*
+--function.PDFFunction
+--function.FunctionType4
+--function.FunctionType2
+--function.FunctionType0
 --font.Type3Font
 --font.Type1Font
 --font.Type1CFont
@@ -38,7 +45,6 @@ Finish localization
 --decrypt.StandardDecrypter
 --decrypt.PDFDecrypterFactory
 --decrypt.CryptFilterDecrypter
---decode.Predictor
 --decode.PDFDecoder
 --decode.LZWDecode
 --decode.FlateDecode
@@ -65,9 +71,10 @@ Add search functionality
 Add text extraction
 
 Figure out how to add support for text selection in PDF Viewer
-Better compatability for newer versions of PDF
+Better compatibility for newer versions of PDF
 
-PREPROCESSORS:
+
+Defines:
 USE_FIXED32 (Uses Fixed32 instead of float if precision lost is not above a certain theshold, maybe a special class that can switch between them.)
 NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore the built-in implementation).
 //TODO: add more preprocessors
@@ -75,3 +82,5 @@ NATIVE_SOFTREFERENCE (If SoftReference ever gets added natively this will ignore
 
 NOTES:
 -Strings follow the guidelines listed in "http://docs.blackberry.com/en/developers/deliverables/3299/JDE_4.5_Fundamentals_Guide.pdf" which state not to use static final for Strings because then Strings need to be loaded multiple times and multiple instances of the same String exist.
+-If accuracy becomes a problem with transforms, change AffineTransform to use doubles (like the original)
+-PDFImage is drastically different in this (BlackBerry) version compared to the (J2SE) version. This is because BlackBerry doesn't have all the same image/color classes that J2SE has. The native image system is used to handle as much as possible.

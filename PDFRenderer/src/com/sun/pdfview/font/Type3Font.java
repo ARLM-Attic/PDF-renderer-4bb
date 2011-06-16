@@ -1,6 +1,6 @@
 /*
  * File: Type3Font.java
- * Version: 1.3
+ * Version: 1.4
  * Initial Creation: May 15, 2010 12:16:57 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -25,9 +25,7 @@ package com.sun.pdfview.font;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import net.rim.device.api.ui.XYPoint;
-import net.rim.device.api.ui.XYRect;
-
+import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFParser;
@@ -102,15 +100,7 @@ public class Type3Font extends PDFFont
         charProcs = fontObj.getDictRef("CharProcs").getDictionary();
         
         // get the font bounding box
-        PDFObject[] bboxdef = fontObj.getDictRef("FontBBox").getArray();
-        float[] bboxfdef = new float[4];
-        for (int i = 0; i < 4; i++)
-        {
-            bboxfdef[i] = bboxdef[i].getFloatValue();
-        }
-        bbox = new XYRectFloat(bboxfdef[0], bboxfdef[1],
-                bboxfdef[2] - bboxfdef[0],
-                bboxfdef[3] - bboxfdef[1]);
+        bbox = PDFFile.parseNormalisedRectangle(fontObj.getDictRef("FontBBox"));
         if (bbox.isEmpty())
         {
             bbox = null;

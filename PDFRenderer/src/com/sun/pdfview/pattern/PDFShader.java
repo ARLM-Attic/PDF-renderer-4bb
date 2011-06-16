@@ -1,6 +1,6 @@
 /*
  * File: PDFShader.java
- * Version: 1.3
+ * Version: 1.4
  * Initial Creation: May 14, 2010 11:45:02 AM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -25,6 +25,7 @@ package com.sun.pdfview.pattern;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParseException;
@@ -166,14 +167,7 @@ public abstract class PDFShader
         PDFObject bboxObj = shaderObj.getDictRef("BBox");
         if (bboxObj != null)
         {
-            PDFObject[] rectObj = bboxObj.getArray();
-            float minX = rectObj[0].getFloatValue();
-            float minY = rectObj[1].getFloatValue();
-            float maxX = rectObj[2].getFloatValue();
-            float maxY = rectObj[3].getFloatValue();
-            
-            XYRectFloat bbox = new XYRectFloat(minX, minY,  maxX - minX, maxY - minY);
-            shader.setBBox(bbox);
+        	shader.setBBox(PDFFile.parseNormalisedRectangle(bboxObj));
         }
         
         // parse the shader-specific attributes

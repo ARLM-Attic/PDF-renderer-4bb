@@ -37,7 +37,7 @@ import com.sun.pdfview.PDFParseException;
  * Performs identity decryption; that is, inputs aren't encrypted and
  * are returned right back.
  *
- * @Author Luke Kirby
+ * @author Luke Kirby
  */
 public class IdentityDecrypter implements PDFDecrypter
 {
@@ -65,6 +65,11 @@ public class IdentityDecrypter implements PDFDecrypter
     }
     
     public boolean isEncryptionPresent()
+    {
+        return false;
+    }
+    
+    public boolean isEncryptionPresent(String cryptFilterName)
     {
         return false;
     }

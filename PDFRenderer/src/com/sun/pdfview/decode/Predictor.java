@@ -2,7 +2,7 @@
 
 /*
  * File: Predictor.java
- * Version: 1.2
+ * Version: 1.3
  * Initial Creation: May 12, 2010 4:41:54 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -96,7 +96,8 @@ public abstract class Predictor
                 // no predictor
                 return null;
             case 2:
-                throw new PDFParseException("Tiff Predictor not supported");
+            	predictor = new TIFFPredictor();
+                break;
             case 10:
             case 11:
             case 12:
@@ -106,7 +107,7 @@ public abstract class Predictor
                 predictor = new PNGPredictor();
                 break;
             default:
-                throw new PDFParseException("Unknown predictor: " + algorithm);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_PREDICTOR_UNK_PREDICTOR) + algorithm);
         }
         
         // read the colors (optional)

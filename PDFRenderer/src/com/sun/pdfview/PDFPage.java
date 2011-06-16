@@ -1,6 +1,6 @@
 /*
  * File: PDFPage.java
- * Version: 1.5
+ * Version: 1.7
  * Initial Creation: May 14, 2010 7:01:04 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -61,8 +61,14 @@ public class PDFPage
     private boolean finished = false;
     /** the page number used to find this page */
     private int pageNumber;
-    /** the bounding box of the page, in page coordinates */
-    private XYRectFloat bbox;
+    /**
+     * the bounding box of the page, in page coordinates, straight from the page dictionary
+     */
+    private XYRectFloat pageDictBbox;
+    
+    /** the post-rotation bounding box in page points with the x,y co-ordinates at 0,0 */
+    private XYRectFloat targetBbox;
+    
     /** the rotation of this page, in degrees */
     private int rotation;
     /** a map from image info (width, height, clip) to a soft reference to the
@@ -80,7 +86,11 @@ public class PDFPage
     }
     
     /**
-     * create a PDFPage with dimensions in bbox and rotation.
+     * create a PDFPage
+     * @param pageNumber the page number
+     * @param bbox the bounding box, specified in pre-rotation page co-ordinates
+     * @param rotation the rotation to apply to the page; must be 0/90/180/270
+     * @param cache a cache to use
      */
     public PDFPage(int pageNumber, XYRectFloat bbox, int rotation, Cache cache)
     {
@@ -91,6 +101,7 @@ public class PDFPage
         {
             bbox = new XYRectFloat(0, 0, 1, 1);
         }
+        this.pageDictBbox = bbox;
         
         if (rotation < 0)
         {
@@ -99,12 +110,14 @@ public class PDFPage
         
         this.rotation = rotation;
         
-        if (rotation == 90 || rotation == 270)
+        if (rotation == 0 || rotation == 180)
         {
-            bbox = new XYRectFloat(bbox.x, bbox.y, bbox.height, bbox.width);
+            this.targetBbox = new XYRectFloat(0, 0, pageDictBbox.width, pageDictBbox.height);
         }
-        
-        this.bbox = bbox;
+        else
+        {
+            this.targetBbox = new XYRectFloat(0, 0, pageDictBbox.height, pageDictBbox.width);
+        }
         
         // initialize the cache of images and parsers
         renderers = PDFUtil.synchronizedTable(new Hashtable());
@@ -122,25 +135,20 @@ public class PDFPage
      *
      * @param width the maximum width of the image
      * @param height the maximum height of the image
-     * @param clip the region in <b>page space</b> of the page to
-     * display.  It may be null, in which the page's defined crop box
-     * will be used.
+     * @param clip the region in <b>page space co-ordinates</b> of the page to
+     * display.  It may be null, in which the page crop/media box is used.
      */
     public XYDimension getUnstretchedSize(int width, int height, XYRectFloat clip)
     {
         if (clip == null)
         {
-            clip = bbox;
-        }
-        else
-        {
-            if (getRotation() == 90 || getRotation() == 270)
-            {
-                clip = new XYRectFloat(clip.x, clip.y, clip.height, clip.width);
-            }
+            clip = pageDictBbox;
         }
         
-        float ratio = clip.height / clip.width;
+        final boolean swapDimensions = doesRotationSwapDimensions();
+        final double srcHeight = swapDimensions ? clip.width : clip.height;
+        final double srcWidth = swapDimensions ? clip.height : clip.width;
+        double ratio = srcHeight / srcWidth;
         float askratio = (float)height / (float)width;
         if (askratio > ratio)
         {
@@ -154,6 +162,11 @@ public class PDFPage
         }
         
         return new XYDimension(width, height);
+    }
+    
+    private boolean doesRotationSwapDimensions()
+    {
+        return getRotation() == 90 || getRotation() == 270;
     }
     
     /**
@@ -258,27 +271,37 @@ public class PDFPage
     }
     
     /**
-     * get the bounding box of the page, before any rotation.
+     * Get the original crop/media box of the page, in page units, before
+     * any rotation and with clipping co-ordinates
+     * @return the page box
+     */
+    public XYRectFloat getPageBox()
+    {
+        return pageDictBbox;
+    }
+    
+    /**
+     * get the post-rotation box placed at 0, 0 in page units
      */
     public XYRectFloat getBBox()
     {
-        return bbox;
+        return targetBbox;
     }
     
     /**
-     * get the width of this page, after rotation
+     * get the width of this page, in page points, after rotation
      */
     public float getWidth()
     {
-        return bbox.width;
+        return (float)targetBbox.width;
     }
     
-    /**
-     * get the height of this page, after rotation
+    /**s
+     * get the height of this page, in page points, after rotation
      */
     public float getHeight()
     {
-        return bbox.height;
+        return (float)targetBbox.height;
     }
     
     /**
@@ -294,15 +317,19 @@ public class PDFPage
      * pdf coordinates to an image of the specfied width and
      * height in device coordinates
      *
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param clip the desired clip rectangle (in PDF space) or null to use
-     *             the page's bounding box
+     * @param width the width of the target image
+     * @param height the height of the target image
+     * @param clip the desired clip rectangle to use in page co-ordinates;
+     *  use <code>null</code> to draw the page crop/media box
      */
     public AffineTransform getInitialTransform(int width, int height, XYRectFloat clip)
     {
-    	AffineTransform at;
-    	final float[] initalMat = new float[]{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+    	if (clip == null)
+    	{
+            clip = pageDictBbox;
+        }
+    	
+        AffineTransform at;
         switch (getRotation())
         {
             case 0:
@@ -318,29 +345,17 @@ public class PDFPage
             	at = new AffineTransform(0, -1, -1, 0, width, height);
                 break;
             default:
-            	at = new AffineTransform();
-            	break;
-        }
-        
-        if (clip == null)
-        {
-            clip = getBBox();
-        }
-        else if (getRotation() == 90 || getRotation() == 270)
-        {
-            int tmp = width;
-            width = height;
-            height = tmp;
+                throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PAGE_NON_QUAD_ROT) + getRotation());
         }
         
         // now scale the image to be the size of the clip
-        float scaleX = width / clip.width;
-        float scaleY = height / clip.height;
-        at.scale(scaleX, scaleY);
+        double scaleX = (doesRotationSwapDimensions() ? height : width) / clip.width;
+        double scaleY = (doesRotationSwapDimensions() ? width: height) / clip.height;
+        at.scale((float)scaleX, (float)scaleY);
         
         // create a transform that moves the top left corner of the clip region
         // (minX, minY) to (0,0) in the image
-        at.translate(-clip.x, -clip.y);
+        at.translate((float)-clip.x, (float)-clip.y);
         
         return at;
     }

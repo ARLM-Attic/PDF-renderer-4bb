@@ -244,7 +244,7 @@ public class PDFViewer extends UiApplication
 			}
 			catch(Exception e)
 			{
-				Dialog.alert(selected + " doesn't appear to be a PDF file.");
+				Dialog.alert(selected + " doesn't appear to be a PDF file.\n: " + e.getMessage());
 				error = true;
 			}
 			finally
