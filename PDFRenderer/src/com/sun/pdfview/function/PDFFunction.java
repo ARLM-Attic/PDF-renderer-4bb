@@ -109,7 +109,7 @@ public abstract class PDFFunction
         PDFObject typeObj = obj.getDictRef("FunctionType");
         if (typeObj == null)
         {
-            throw new PDFParseException("No FunctionType specified in function!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_NO_TYPE));
         }
         type = typeObj.getIntValue();
         
@@ -117,7 +117,7 @@ public abstract class PDFFunction
         PDFObject domainObj = obj.getDictRef("Domain");
         if (domainObj == null)
         {
-            throw new PDFParseException("No Domain specified in function!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_NO_DOMAIN));
         }
         
         PDFObject[] domainAry = domainObj.getArray();
@@ -146,7 +146,7 @@ public abstract class PDFFunction
             case TYPE_0:
                 if (rangeObj == null)
                 {
-                    throw new PDFParseException("No Range specified in Type 0 Function!");
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_NO_RANGE_T0));
                 }
                 function = new FunctionType0();
                 break;
@@ -159,12 +159,12 @@ public abstract class PDFFunction
             case TYPE_4:
                 if (rangeObj == null)
                 {
-                    throw new PDFParseException("No Range specified in Type 4 Function!");
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_NO_RANGE_T4));
                 }
                 function = new FunctionType4();
                 break;
             default:
-                throw new PDFParseException("Unsupported function type: " + type);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_UNSUPPORTED_TYPE) + type);
         }
         
         // fill in the domain and optionally the range
@@ -301,13 +301,13 @@ public abstract class PDFFunction
         // check the inputs
         if (inputs.length - inputOffset < getNumInputs ())
         {
-            throw new IllegalArgumentException("Wrong number of inputs to function!");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_BAD_INPUT));
         }
         
         // check the outputs
         if (range != null && outputs.length - outputOffset < getNumOutputs ())
         {
-            throw new IllegalArgumentException("Wrong number of outputs for function!");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_BAD_OUTPUT));
         }
         
         // clip the inputs to domain

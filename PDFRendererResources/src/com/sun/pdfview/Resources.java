@@ -34,4 +34,6 @@ public interface Resources
 	public String getString(long ID);
 	
 	public String[] getStringArray(long ID);
+	
+	public String getFormattedString(long ID, Object[] args);
 }

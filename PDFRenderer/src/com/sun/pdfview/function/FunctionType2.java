@@ -64,7 +64,7 @@ public class FunctionType2 extends PDFFunction
         PDFObject nObj = obj.getDictRef("N");
         if (nObj == null)
         {
-            throw new PDFParseException("Exponent required for function type 2!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_TYPE2_REQ_EXPONENT));
         }
         setN(nObj.getFloatValue());
         

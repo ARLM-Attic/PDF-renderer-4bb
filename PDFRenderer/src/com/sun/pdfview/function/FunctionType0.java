@@ -83,7 +83,7 @@ public class FunctionType0 extends PDFFunction
         PDFObject sizeObj = obj.getDictRef("Size");
         if (sizeObj == null)
         {
-            throw new PDFParseException("Size required for function type 0!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_TYPE0_SIZE_REQUIRED));
         }
         PDFObject[] sizeAry = sizeObj.getArray();
         int len;
@@ -98,7 +98,7 @@ public class FunctionType0 extends PDFFunction
         PDFObject bpsObj = obj.getDictRef("BitsPerSample");
         if (bpsObj == null)
         {
-            throw new PDFParseException("BitsPerSample required for function type 0!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_TYPE0_BPS_REQUIRED));
         }
         setBitsPerSample(bpsObj.getIntValue());
         

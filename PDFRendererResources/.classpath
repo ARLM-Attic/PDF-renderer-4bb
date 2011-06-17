@@ -3,5 +3,6 @@
 	<classpathentry excluding="com/sun/pdfview/decode/CCITTCodes|com/sun/pdfview/helper/graphics/color/LINEAR_RGB.pf" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/net.rim.ejde.BlackBerryVMInstallType/BlackBerry JRE 5.0.0"/>
 	<classpathentry kind="src" path=".locale_interfaces"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/lcms2_4bb"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

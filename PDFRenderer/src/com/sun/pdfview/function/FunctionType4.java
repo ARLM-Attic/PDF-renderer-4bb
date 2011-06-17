@@ -940,7 +940,7 @@ public class FunctionType4 extends PDFFunction
     {
         // read the postscript from the stream
         readPS(obj.getStreamBuffer());
-        throw new PDFParseException("Unsupported function type 4.");
+        throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_TYPE4_UNSUPPORTED_TYPE));
     }
     
     /**
@@ -1039,7 +1039,7 @@ public class FunctionType4 extends PDFFunction
         {
             if (operatorName == null)
             {
-                throw new RuntimeException("Cannot have a null operator name");
+                throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_TYPE4_OP_NULL_NAME));
             }
             this.operatorName = operatorName;
         }

@@ -446,7 +446,7 @@ public class PDFObject
         }
         else if (type == NUMBER)
         {
-            return ((Integer)value).intValue();
+            return ((Double)value).intValue();
         }
         
         // wrong type

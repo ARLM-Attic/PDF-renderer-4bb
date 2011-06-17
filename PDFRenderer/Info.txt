@@ -19,10 +19,6 @@ implement the "Graphics" implementation of PDFGraphics (one idea is to store all
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---function.PDFFunction
---function.FunctionType4
---function.FunctionType2
---function.FunctionType0
 --font.Type3Font
 --font.Type1Font
 --font.Type1CFont
@@ -46,10 +42,9 @@ Finish localization
 --decode.CCITTFaxDecoder
 --decode.ASCIIHexDecode
 --decode.ASCII85Decode
---colorspace.PDFColorSpace
 --action.PDFAction
 --action.GoToAction
--All "add code" (with resources) needs to be implemented or rewritten so it uses formatting (add new function to Resources for formatting String resource)
+-All "add code" (with resources) needs to be implemented or rewritten so it uses formatting
 Try to get Geometry.isFilled to properly handle bézier curves properly
 Use preprocessor to remove "debug" code
 Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing

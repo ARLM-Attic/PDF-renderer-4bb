@@ -114,7 +114,7 @@ public class PDFColorSpace
             return patternSpace;
             
         default:
-            throw new IllegalArgumentException("Unknown Color Space name: " + name);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_UNK_COLORSPACE_NAME, new Object[]{new Integer(name)}));
         }
     }
     

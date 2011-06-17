@@ -331,5 +331,13 @@ public final class ResourceManager
 			}
 			throw new UnsupportedOperationException();
 		}
+		
+		//Formatting system uses built in printf functionality from LCMS (this is the only thing that Resources relies on)
+		public String getFormattedString(long ID, Object[] args)
+		{
+			StringBuffer buffer = new StringBuffer(256);
+			int len = littlecms.internal.helper.Utility.sprintf(buffer, getString(ID), args);
+			return buffer.deleteCharAt(len).toString(); //Get rid of the null-char and return
+		}
 	}
 }
