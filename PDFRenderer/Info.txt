@@ -2,14 +2,14 @@
 
 TODO:
 Finish FilePicker
--Make sure scrollable "list" works and is drawn correctly (make custom Field that acts like a list row, it's selectable and clickable)
--Remove context menu
+-Make sure list scrolls
 -Make sure that back button is handled correctly
 -Implement menu
+-For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
 -Test
-Make sure that 4MB PDF reads fully (find NullPointerException)
+Make sure all PDFs work.
 
-Do some tests that involve PDFImage to make sure that it works (since it wasn't exactly "changed" to the current revision)
+Do some tests (and updates) that involve PDFImage to make sure that it works (since it wasn't exactly "changed" to the current revision)
 
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
@@ -18,9 +18,6 @@ implement the "Graphics" implementation of PDFGraphics (one idea is to store all
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---helper.graphics.Geometry
---helper.graphics.Composite
---helper.graphics.BasicStroke
 --helper.graphics.color.ICC_ProfileStub
 --helper.graphics.color.ICC_Profile
 --helper.graphics.color.ICC_ColorSpace

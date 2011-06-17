@@ -53,7 +53,7 @@ public abstract class Composite
 	{
 		if(alpha < 0 || alpha > 1)
 		{
-			throw new IllegalArgumentException("alpha must be between 0f and 1f");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COMPOSITE_ALPHA_RANGE_FLOAT));
 		}
 //#ifdef BlackBerrySDK4.5.0
 		return getInstance(type, Math.min(Math.max((float)PDFUtil.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it out.
@@ -72,7 +72,7 @@ public abstract class Composite
 	{
 		if(alpha < 0 || alpha > 255)
 		{
-			throw new IllegalArgumentException("alpha must be between 0 and 255");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COMPOSITE_ALPHA_RANGE_BYTE));
 		}
 		switch(type)
 		{
@@ -80,7 +80,7 @@ public abstract class Composite
 			case SRC_OVER:
 				return new DefaultComposite(type, alpha);
 			default:
-				throw new IllegalArgumentException("Unknown type");
+				throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COMPOSITE_UNK_TYPE));
 		}
 	}
 	
@@ -150,7 +150,7 @@ public abstract class Composite
 			}
 		}
 		
-		//If more types are added then create a "prcessing" type that will simply do the math and an "executor" that will read the pixels and alpha and send it to
+		//If more types are added then create a "processing" type that will simply do the math and an "executor" that will read the pixels and alpha and send it to
 		//the processor. The results will be set in the Bitmap.
 		
 		//Look at AlphaComposite documentation for equations

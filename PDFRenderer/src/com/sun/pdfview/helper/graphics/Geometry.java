@@ -156,7 +156,7 @@ public class Geometry
 		{
 			if (isDone())
 			{
-				throw new NoSuchElementException("Iterator out of bounds");
+				throw new NoSuchElementException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_ENUMERATION_OUT_OF_BOUNDS));
 			}
 			int type = g.types[typeIndex];
 			int count = Geometry.pointShift[type];
@@ -226,7 +226,7 @@ public class Geometry
     {
         if (checkMove && typeSize == 0)
         {
-            throw new IllegalStateException("First segment should be SEG_MOVETO type");
+            throw new IllegalStateException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_FIRST_SEG_MOVETO));
         }
         if (typeSize == types.length)
         {
@@ -311,7 +311,7 @@ public class Geometry
 	{
 		if (rule != WIND_EVEN_ODD && rule != WIND_NON_ZERO)
 		{
-			throw new IllegalArgumentException("Invalid winding rule value");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_INVALID_WINDING_RULE));
 		}
 		this.rule = rule;
 	}

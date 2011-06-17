@@ -159,29 +159,29 @@ public class BasicStroke
 	{
 		if (width < 0.0f)
 		{
-            throw new IllegalArgumentException("Negative width");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_NEG_WIDTH));
         }
         if (cap != CAP_BUTT && cap != CAP_ROUND && cap != CAP_SQUARE)
         {
-            throw new IllegalArgumentException("Illegal cap");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_ILLEGAL_CAP));
         }
         if (join != JOIN_MITER && join != JOIN_ROUND && join != JOIN_BEVEL)
         {
-            throw new IllegalArgumentException("Illegal join");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_ILLEGAL_JOIN));
         }
         if (join == JOIN_MITER && miterLimit < 1.0f)
         {
-            throw new IllegalArgumentException("miterLimit less than 1.0f");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_MITER_LIM_LS_1));
         }
         if (dash != null)
         {
         	if (dashPhase < 0.0f)
             {
-                throw new IllegalArgumentException("Negative dashPhase");
+                throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_NEG_DASH_PHASE));
             }
             if (dash.length == 0)
             {
-                throw new IllegalArgumentException("Zero dash length");
+                throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_0_DASH_LEN));
             }
             ZERO:
             {
@@ -190,14 +190,14 @@ public class BasicStroke
                 {
                     if (dash[i] < 0.0)
                     {
-                        throw new IllegalArgumentException("Negative dash[" + i + "]");
+                        throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_NEG_DASH) + i + ']');
                     }
                     if (dash[i] > 0.0)
                     {
                         break ZERO;
                     }
                 }
-                throw new IllegalArgumentException("All dash lengths zero");
+                throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_DASH_LEN_ZERO));
             }
         }
         this.width = width;

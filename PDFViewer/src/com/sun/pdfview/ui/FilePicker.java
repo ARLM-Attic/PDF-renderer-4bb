@@ -30,10 +30,9 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 import javax.microedition.io.file.FileSystemRegistry;
 
-import net.rim.device.api.ui.Color;
+import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
-import net.rim.device.api.ui.FocusChangeListener;
 import net.rim.device.api.ui.Graphics;
 //#endif
 //#ifdef BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
@@ -42,7 +41,10 @@ import net.rim.device.api.ui.TouchEvent;
 //#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.ListField;
+import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.component.SeparatorField;
@@ -91,7 +93,7 @@ public abstract class FilePicker
 			if(this.currentFPui != null)
 			{
 				this.currentFPui.selectedFile = null;
-				this.currentFPui.close();
+				this.currentFPui.UIClose();
 			}
 		}
 		
@@ -138,22 +140,25 @@ public abstract class FilePicker
 		{
 			//Create picker
 			final FilePickerUI fpui = this.currentFPui = new FilePickerUI(this);
-			//Get UI application
-			final UiApplication app = UiApplication.getUiApplication();
-			//Push screen on display
-			if(UiApplication.isEventDispatchThread())
+			if(fpui.good)
 			{
-				app.pushModalScreen(fpui);
-			}
-			else
-			{
-				app.invokeAndWait(new Runnable()
+				//Get UI application
+				final UiApplication app = UiApplication.getUiApplication();
+				//Push screen on display
+				if(UiApplication.isEventDispatchThread())
 				{
-					public void run()
+					app.pushModalScreen(fpui);
+				}
+				else
+				{
+					app.invokeAndWait(new Runnable()
 					{
-						app.pushModalScreen(fpui);
-					}
-				});
+						public void run()
+						{
+							app.pushModalScreen(fpui);
+						}
+					});
+				}
 			}
 			//Process results
 			this.currentFPui = null;
@@ -168,9 +173,10 @@ public abstract class FilePicker
 		{
 			private FilePickerImpl fp;
 			public String selectedFile;
-			private VerticalFieldManager list;
-			private FileConnection file;
+			private FieldListField list;
+			private FileConnection curDirectory;
 			private int viewMode;
+			public boolean good;
 			
 			private static final int MODE_THUMBNAIL = 0;
 			private static final int MODE_TITLE = MODE_THUMBNAIL + 1;
@@ -179,25 +185,69 @@ public abstract class FilePicker
 			public FilePickerUI(FilePickerImpl fp)
 			{
 				super(new VerticalFieldManager(), PopupScreen.DEFAULT_MENU | PopupScreen.DEFAULT_CLOSE | PopupScreen.USE_ALL_HEIGHT | PopupScreen.USE_ALL_WIDTH);
+				this.good = true;
 				this.fp = fp;
+				if(this.fp.rootPath != null)
+				{
+					try
+					{
+						this.curDirectory = (FileConnection)Connector.open(this.fp.rootPath, Connector.READ);
+					}
+					catch(Exception ex)
+					{
+						Dialog.alert("Can't open default directory.");
+						this.good = false;
+						return;
+					}
+				}
 				
 				viewMode = MODE_LIST;
 				setupUI();
 			}
 			
-			public void close()
+			public int getViewMode()
 			{
-				if(file != null && file.isOpen())
+				return this.viewMode;
+			}
+			
+			public void UIClose()
+			{
+				if(curDirectory != null && curDirectory.isOpen())
 				{
 					try
 					{
-						file.close();
+						curDirectory.close();
 					}
 					catch (IOException e)
 					{
 					}
 				}
 				super.close();
+			}
+			
+			public void close()
+			{
+				if(closeUI())
+				{
+					UIClose();
+				}
+				else
+				{
+					goBack();
+				}
+			}
+			
+			private boolean closeUI()
+			{
+				if(this.fp.rootPath == null && this.curDirectory == null)
+				{
+					return true;
+				}
+				else if(this.fp.rootPath != null && this.curDirectory != null)
+				{
+					return this.fp.rootPath.equals(this.curDirectory.getURL());
+				}
+				return false;
 			}
 			
 			protected void makeMenu(Menu menu, int instance)
@@ -216,15 +266,16 @@ public abstract class FilePicker
 				
 				add(new SeparatorField());
 				
-				add(list = new VerticalFieldManager(VerticalFieldManager.USE_ALL_WIDTH));
+				add(list = new FieldListField(this));
+				list.setChangeListener(this);
 				populateList();
 			}
 			
 			private void configurePath()
 			{
-				if(this.fp.rootPath == null && file == null)
+				deleteRange(1, 1); //Not very efficient but you never know what changes have occurred
+				if(this.curDirectory == null)
 				{
-					deleteRange(1, 1);
 					insert(new LabelField("Explore"), 1);
 				}
 				else
@@ -234,9 +285,9 @@ public abstract class FilePicker
 					
 					//XXX Add memory icon
 					
-					String path = file.getURL();
-					int pathIndex = path.indexOf('/', 1);
-					horz.add(new LabelField('/' + friendlyName(path.substring(1, pathIndex)) + path.substring(pathIndex), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
+					String path = this.curDirectory.getURL();
+					int pathIndex = path.indexOf('/', 8);
+					horz.add(new LabelField('/' + friendlyName(path.substring(8, pathIndex)) + (pathIndex + 1 == path.length() ? "" : "/") + path.substring(pathIndex + 1), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
 					
 					insert(horz, 1);
 				}
@@ -244,11 +295,10 @@ public abstract class FilePicker
 			
 			private void populateList()
 			{
-				SelectField select;
-				LabelField lab;
+				HorizontalFieldManager row;
 				int len;
 				list.deleteAll();
-				if(this.fp.rootPath == null && file == null)
+				if(this.curDirectory == null)
 				{
 					String[] roots = getRoots();
 					len = roots.length;
@@ -261,14 +311,14 @@ public abstract class FilePicker
 							continue;
 						}
 						
-						select = new SelectField();
-						select.setChangeListener(this);
+						row = list.getNewRow(false);
 						
 						//XXX Icon
 						
-						select.add(new LabelField(friendlyName(roots[i]), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
+						row.add(new LabelField(friendlyName(roots[i]), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
+						row.setCookie(roots[i]);
 						
-						list.add(select);
+						list.commitRow();
 					}
 				}
 				else
@@ -278,8 +328,8 @@ public abstract class FilePicker
 					FileConnection tmp;
 					try
 					{
-						Enumeration en = file.list();
-						String url = file.getURL();
+						Enumeration en = this.curDirectory.list();
+						String url = this.curDirectory.getURL();
 						while(en.hasMoreElements())
 						{
 							tmp = (FileConnection)Connector.open(url + (String)en.nextElement(), Connector.READ);
@@ -296,108 +346,129 @@ public abstract class FilePicker
 							}
 							tmp.close();
 						}
+						if(this.fp.rootPath != null)
+						{
+							folders.addElement("@Up");
+						}
 						if(folders.size() > 0)
 						{
 							len = folders.size();
 							for(int i = 0; i < len; i++)
 							{
-								select = new SelectField();
-								select.setChangeListener(this);
+								row = list.getNewRow(false);
 								
 								//XXX Icon
 								
-								tmp = (FileConnection)Connector.open((String)folders.elementAt(i), Connector.READ);
-								String name = tmp.getName();
-								select.add(new LabelField(name.substring(0, name.length() - 1), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
-								tmp.close();
-								
-								list.add(select);
-							}
-							if(files.size() > 0)
-							{
-								list.add(new SeparatorField());
-							}
-						}
-						len = files.size();
-						if(this.viewMode == MODE_THUMBNAIL)
-						{
-							for(int i = 0; i < len; i += 4)
-							{
-								HorizontalFieldManager man = new HorizontalFieldManager(HorizontalFieldManager.USE_ALL_WIDTH); //TODO: Need to be evenly spaced
-								
-								int max = Math.max(4, len - i);
-								for(int k = i; k < max; k++)
+								String urlStr = (String)folders.elementAt(i);
+								if(urlStr.charAt(0) == '@')
 								{
-									tmp = (FileConnection)Connector.open((String)folders.elementAt(i), Connector.READ);
-									BitmapField bf = new BitmapField(null); //TODO: Need icon
-									bf.setCookie(tmp.getName());
-									man.add(bf);
+									//Special folder option
+									row.add(new LabelField("Up", LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
+									row.setCookie("..");
+								}
+								else
+								{
+									tmp = (FileConnection)Connector.open(urlStr, Connector.READ);
+									String name = tmp.getName();
+									row.add(new LabelField(name.substring(0, name.length() - 1), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
+									row.setCookie(name);
 									tmp.close();
 								}
 								
-								list.add(man);
+								list.commitRow();
+							}
+							if(files.size() > 0)
+							{
+								list.addSeperator();
 							}
 						}
-						else
+						len = files.size();
+						if(len > 0)
 						{
-							for(int i = 0; i < len; i++)
+							if(this.viewMode == MODE_THUMBNAIL)
 							{
-								select = new SelectField();
-								select.setChangeListener(this);
-								
-								//XXX Icon
-								
-								tmp = (FileConnection)Connector.open((String)folders.elementAt(i), Connector.READ);
-								select.add(new LabelField(tmp.getName(), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
-								
-								if(this.viewMode == MODE_LIST)
+								for(int i = 0; i < len; i += 4)
 								{
-									long size = tmp.fileSize();
-									if(size >= 0)
+									row = list.getNewRow(true);
+									
+									int max = Math.max(4, len - i);
+									for(int k = i; k < max; k++)
 									{
-										String sizeMark;
-										if(size == 0)
+										tmp = (FileConnection)Connector.open((String)files.elementAt(i), Connector.READ);
+										BitmapField bf = new BitmapField(null); //TODO: Need icon
+										bf.setCookie(tmp.getName());
+										row.add(bf);
+										tmp.close();
+									}
+									
+									list.commitRow();
+								}
+							}
+							else
+							{
+								for(int i = 0; i < len; i++)
+								{
+									row = list.getNewRow(false);
+									
+									//XXX Icon
+									
+									tmp = (FileConnection)Connector.open((String)files.elementAt(i), Connector.READ);
+									row.add(new LabelField(tmp.getName(), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
+									row.setCookie(tmp.getName());
+									
+									if(this.viewMode == MODE_LIST)
+									{
+										long size = tmp.fileSize();
+										if(size >= 0)
 										{
-											sizeMark = "0 KB";
-										}
-										else if(size < 1024)
-										{
-											sizeMark = "1 KB";
-										}
-										else
-										{
-											size >>= 10; //Equivilant of dividing by 1024
-											if(size < 1024)
+											String sizeMark;
+											if(size == 0)
 											{
-												sizeMark = size + " KB";
+												sizeMark = "0 KB";
+											}
+											else if(size < 1024)
+											{
+												sizeMark = "1 KB";
 											}
 											else
 											{
-												size >>= 10;
+												size >>= 10; //Equivilant of dividing by 1024
 												if(size < 1024)
 												{
-													sizeMark = size + " MB";
+													sizeMark = size + " KB";
 												}
 												else
 												{
 													size >>= 10;
-													sizeMark = size + " GB";
+													if(size < 1024)
+													{
+														sizeMark = size + " MB";
+													}
+													else
+													{
+														size >>= 10;
+														sizeMark = size + " GB";
+													}
 												}
 											}
+											row.add(new LabelField(sizeMark, LabelField.FIELD_RIGHT | LabelField.NON_FOCUSABLE));
 										}
-										select.add(new LabelField(sizeMark, LabelField.FIELD_RIGHT | LabelField.NON_FOCUSABLE));
 									}
+									tmp.close();
+									
+									list.commitRow();
 								}
-								tmp.close();
-								
-								list.add(select);
 							}
 						}
 					}
 					catch(Exception e)
 					{
+						Dialog.alert("Can't open path.");
+						this.selectedFile = null;
+						this.UIClose();
 					}
 				}
+				list.commitHeight();
 			}
 			
 			private String friendlyName(String name)
@@ -411,11 +482,6 @@ public abstract class FilePicker
 					return "Device Memory";
 				}
 				return name;
-			}
-			
-			private String removePrefix(String path)
-			{
-				return path.substring(7);
 			}
 			
 			private boolean passFilter(String name)
@@ -456,108 +522,336 @@ public abstract class FilePicker
 			{
 				if(context != FieldChangeListener.PROGRAMMATIC)
 				{
-					System.out.println("Stuff");
-					// TODO Set the fileConnection (unless it user went to memory selection)
+					if(field instanceof ListField)
+					{
+						ListField list = (ListField)field;
+						Field row = (Field)list.getCallback().get(list, list.getSelectedIndex());
+						String url = (String)row.getCookie();
+						if(url.equals(".."))
+						{
+							goBack();
+						}
+						else
+						{
+							openPath(url);
+						}
+					}
+					else
+					{
+						System.out.println("Stuff");
+						// TODO Set the fileConnection (unless it user went to memory selection)
+					}
 				}
+			}
+			
+			private void openPath(String relPath)
+			{
+				if(this.curDirectory == null)
+				{
+					try
+					{
+						this.curDirectory = (FileConnection)Connector.open("file:///" + relPath + '/', Connector.READ);
+						configurePath();
+						populateList();
+					}
+					catch(Exception e)
+					{
+						Dialog.alert("Can't open root.");
+						this.selectedFile = null;
+						this.UIClose();
+					}
+				}
+				else
+				{
+					if(!relPath.endsWith("/"))
+					{
+						//File
+						this.selectedFile = this.curDirectory.getURL() + relPath;
+						this.close();
+					}
+					else
+					{
+						try
+						{
+							String path = this.curDirectory.getURL() + relPath;
+							
+							this.curDirectory.close();
+							
+							this.curDirectory = (FileConnection)Connector.open(path, Connector.READ);
+							configurePath();
+							populateList();
+						}
+						catch(Exception e)
+						{
+							Dialog.alert("Can't open path.");
+							this.selectedFile = null;
+							this.UIClose();
+						}
+					}
+				}
+			}
+			
+			private void goBack()
+			{
+				//TODO: Make sure "going back" is done correctly
+				try
+				{
+					int len = this.curDirectory.getName().length();
+					
+					this.curDirectory.close();
+					
+					if(len > 0)
+					{
+						String path = this.curDirectory.getURL();
+						path = path.substring(0, path.length() - len);
+						this.curDirectory = (FileConnection)Connector.open(path, Connector.READ);
+					}
+					else
+					{
+						this.curDirectory = null;
+					}
+				}
+				catch(Exception e)
+				{
+					Dialog.alert("Can't go back.");
+					this.selectedFile = null;
+					this.UIClose();
+				}
+				configurePath();
+				populateList();
 			}
 		}
 		
-		//In order for this field to work, all added fields can't be focusable
-		private static class SelectField extends HorizontalFieldManager implements FocusChangeListener
+		private static class FieldListField extends ListField implements ListFieldCallback
 		{
-			private boolean click;
+			private Vector data;
+			private FLFHorizontalFieldManager chorz;
+			private FilePickerUI ui;
 			
-			public SelectField()
+			public FieldListField(FilePickerUI ui)
 			{
-				this(0);
+				setSearchable(false);
+				this.data = new Vector();
+				this.ui = ui;
 			}
 			
-			public SelectField(long style)
+			public int getSelectedIndex()
 			{
-				super(style);
-				
-				NullField field = new NullField();
-				field.setFocusListener(this);
-				add(field);
-			}
-			
-			protected void paint(Graphics graphics)
-			{
-				if(this.getField(0).isFocus())
+				int index = super.getSelectedIndex();
+				if(this.ui.getViewMode() == FilePickerUI.MODE_THUMBNAIL)
 				{
-					int tc = graphics.getColor();
-					graphics.setColor(Color.RED);
-					graphics.fillRect(0, 0, this.getWidth(), this.getHeight());
-					graphics.setColor(tc);
+					index |= 0x80000000;
+					//TODO: If in grid mode then return an "encoded" index
 				}
-				super.paint(graphics);
+				return index;
 			}
 			
-			public void focusChanged(Field field, int eventType)
+			protected void fieldChangeNotify(int context)
 			{
-				if(eventType == FocusChangeListener.FOCUS_LOST)
+				if(context != FieldChangeListener.PROGRAMMATIC)
 				{
-					click = false;
+					super.fieldChangeNotify(context);
 				}
-				invalidate();
 			}
 			
 			protected boolean navigationClick(int status, int time)
 			{
-				if(this.getField(0).isFocus())
+				if(((status & KeypadListener.STATUS_FOUR_WAY) != 0) || ((status & KeypadListener.STATUS_TRACKWHEEL) != 0))
 				{
-					click = true;
+					this.fieldChangeNotify(0);
 					return true;
 				}
 				return super.navigationClick(status, time);
 			}
 			
-			protected boolean navigationUnclick(int status, int time)
+			public void commitHeight()
 			{
-				if(this.getField(0).isFocus() && click)
-				{
-					click = false;
-					invokeAction(0);
-					return true;
-				}
-				return super.navigationUnclick(status, time);
+				this.setRowHeight(getPreferredHeight(this));
 			}
 			
-			protected boolean trackwheelClick(int status, int time)
+			public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width)
 			{
-				if(this.getField(0).isFocus())
-				{
-					click = true;
-					return true;
-				}
-				return super.trackwheelClick(status, time);
+				FLFHorizontalFieldManager horz = (FLFHorizontalFieldManager)((FieldListField)listField).data.elementAt(index);
+				graphics.pushContext(0, y, width, listField.getRowHeight(), 0, y);
+				horz.paint(graphics);
+				graphics.popContext();
 			}
 			
-			protected boolean trackwheelUnclick(int status, int time)
+			protected void layout(int width, int height)
 			{
-				if(this.getField(0).isFocus() && click)
+				super.layout(width, height);
+				
+				int rowWidth = this.getWidth();
+				int rowHeight = this.getRowHeight();
+				for(int i = data.size() - 1; i >= 0; i--)
 				{
-					click = false;
-					invokeAction(0);
-					return true;
+					((FLFHorizontalFieldManager)data.elementAt(i)).layoutIn(rowWidth, rowHeight);
 				}
-				return super.trackwheelUnclick(status, time);
 			}
 			
-//#endif
-//#ifdef BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
-			protected boolean touchEvent(TouchEvent message)
+			public Object get(ListField listField, int index)
 			{
-				switch(message.getEvent())
+				if((index & 0x80000000) == 0x80000000)
 				{
-					case TouchEvent.CLICK:
-						invokeAction(0);
-						return true;
+					//TODO: Encoded index
 				}
-				return super.touchEvent(message);
+				return ((FieldListField)listField).data.elementAt(index);
 			}
-//#endif
-//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
+			
+			public int getPreferredWidth(ListField listField)
+			{
+				int mWidth = 0;
+				for(int i = ((FieldListField)listField).data.size() - 1; i >= 0; i--)
+				{
+					int w = ((FLFHorizontalFieldManager)((FieldListField)listField).data.elementAt(i)).getPreferredWidth();
+					if(w > mWidth)
+					{
+						mWidth = w;
+					}
+				}
+				return mWidth;
+			}
+			
+			public int getPreferredHeight(ListField listField)
+			{
+				int mHeight = 0;
+				for(int i = ((FieldListField)listField).data.size() - 1; i >= 0; i--)
+				{
+					int h = ((FLFHorizontalFieldManager)((FieldListField)listField).data.elementAt(i)).getPreferredHeight();
+					if(h > mHeight)
+					{
+						mHeight = h;
+					}
+				}
+				return mHeight;
+			}
+			
+			public int indexOfList(ListField listField, String prefix, int start)
+			{
+				//Unused
+				return -1;
+			}
+			
+			public void deleteAll()
+			{
+				//Make sure the field knows that no elements exist
+				for(int i = this.getSize() - 1; i >= 0; i--)
+				{
+					this.delete(i);
+				}
+				//Actually remove the elements
+				data.removeAllElements();
+			}
+			
+			public HorizontalFieldManager getNewRow(boolean fieldsSelectable)
+			{
+				if(chorz != null)
+				{
+					throw new IllegalStateException();
+				}
+				return chorz = new FLFHorizontalFieldManager(fieldsSelectable);
+			}
+			
+			public void commitRow()
+			{
+				chorz.commit();
+				commitRow(chorz);
+				chorz = null;
+			}
+			
+			public void addSeperator()
+			{
+				FLFHorizontalFieldManager horz = new FLFHorizontalFieldManager(false);
+				horz.add(new SeparatorField());
+				horz.commit();
+				commitRow(horz);
+			}
+			
+			private void commitRow(Field field)
+			{
+				int index = this.getSize();
+				this.insert(index);
+				data.insertElementAt(field, index);
+			}
+			
+			private static class FLFHorizontalFieldManager extends HorizontalFieldManager
+			{
+				private boolean fieldsSelectable, commited;
+				
+				public FLFHorizontalFieldManager(boolean fieldsSelectable)
+				{
+					super(fieldsSelectable ? 0 : FLFHorizontalFieldManager.NON_FOCUSABLE);
+					this.fieldsSelectable = fieldsSelectable;
+				}
+				
+				public void commit()
+				{
+					commited = true;
+				}
+				
+				public void add(Field field)
+				{
+					if(commited)
+					{
+						throw new IllegalStateException();
+					}
+					if(!fieldsSelectable && field.isFocusable())
+					{
+						throw new IllegalArgumentException();
+					}
+					super.add(field);
+				}
+				
+				public void insert(Field field, int index)
+				{
+					if(commited)
+					{
+						throw new IllegalStateException();
+					}
+					if(!fieldsSelectable && field.isFocusable())
+					{
+						throw new IllegalArgumentException();
+					}
+					super.insert(field, index);
+				}
+				
+				public void delete(Field field)
+				{
+					if(commited)
+					{
+						throw new IllegalStateException();
+					}
+					super.delete(field);
+				}
+				
+				public void deleteAll()
+				{
+					if(commited)
+					{
+						throw new IllegalStateException();
+					}
+					super.deleteAll();
+				}
+				
+				public void deleteRange(int start, int count)
+				{
+					if(commited)
+					{
+						throw new IllegalStateException();
+					}
+					super.deleteRange(start, count);
+				}
+				
+				public void paint(Graphics graphics)
+				{
+					super.paint(graphics);
+				}
+				
+				public void layoutIn(int width, int height)
+				{
+					super.layout(width, height);
+				}
+			}
 		}
 	}
 }
