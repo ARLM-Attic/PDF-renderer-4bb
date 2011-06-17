@@ -2,8 +2,9 @@
 
 TODO:
 Finish FilePicker
--Make sure list scrolls
--Make sure that back button is handled correctly
+-Fix "seperator" use in list-field (figure out how to ignore seperators)
+-Make sure that dialog always uses full size
+-Make sure that file-size field is displayed
 -Implement menu
 -For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
 -Test
@@ -18,9 +19,6 @@ implement the "Graphics" implementation of PDFGraphics (one idea is to store all
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---helper.graphics.color.ICC_ProfileStub
---helper.graphics.color.ICC_Profile
---helper.graphics.color.ICC_ColorSpace
 --function.PDFFunction
 --function.FunctionType4
 --function.FunctionType2

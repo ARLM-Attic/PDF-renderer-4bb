@@ -24,12 +24,14 @@ package com.sun.pdfview.ui;
 
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Stack;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 import javax.microedition.io.file.FileSystemRegistry;
 
+import net.rim.device.api.system.Display;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -176,6 +178,8 @@ public abstract class FilePicker
 			private FieldListField list;
 			private FileConnection curDirectory;
 			private int viewMode;
+			private Stack pathStack;
+			
 			public boolean good;
 			
 			private static final int MODE_THUMBNAIL = 0;
@@ -199,6 +203,7 @@ public abstract class FilePicker
 						this.good = false;
 						return;
 					}
+					this.pathStack = new Stack();
 				}
 				
 				viewMode = MODE_LIST;
@@ -233,7 +238,7 @@ public abstract class FilePicker
 				}
 				else
 				{
-					goBack();
+					goBack(true);
 				}
 			}
 			
@@ -261,35 +266,60 @@ public abstract class FilePicker
 				//Title
 				add(new LabelField("Select"));
 				
-				add(new NullField()); //Temp place holder
+				add(this.curDirectory == null ? new LabelField("Explore") : (Field)new HorizontalFieldManager());
 				configurePath();
 				
 				add(new SeparatorField());
 				
-				add(list = new FieldListField(this));
+				VerticalFieldManager vert = new VerticalFieldManager(VerticalFieldManager.VERTICAL_SCROLL);
+				add(vert);
+				vert.add(list = new FieldListField(this));
 				list.setChangeListener(this);
 				populateList();
 			}
 			
 			private void configurePath()
 			{
-				deleteRange(1, 1); //Not very efficient but you never know what changes have occurred
 				if(this.curDirectory == null)
 				{
-					insert(new LabelField("Explore"), 1);
+					if(!(getField(1) instanceof LabelField))
+					{
+						//Change the field if not the correct type
+						replace(getField(1), new LabelField("Explore"));
+					}
 				}
 				else
 				{
+					if(!(getField(1) instanceof HorizontalFieldManager))
+					{
+						//Change the field if not the correct type
+						replace(getField(1), new HorizontalFieldManager());
+					}
+					
 					//Memory and path
-					HorizontalFieldManager horz = new HorizontalFieldManager();
+					HorizontalFieldManager horz = (HorizontalFieldManager)getField(1);
 					
 					//XXX Add memory icon
 					
 					String path = this.curDirectory.getURL();
 					int pathIndex = path.indexOf('/', 8);
-					horz.add(new LabelField('/' + friendlyName(path.substring(8, pathIndex)) + (pathIndex + 1 == path.length() ? "" : "/") + path.substring(pathIndex + 1), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
 					
-					insert(horz, 1);
+					StringBuffer buffer = new StringBuffer();
+					buffer.append('/');
+					buffer.append(friendlyName(path.substring(8, pathIndex)));
+					if(pathIndex + 1 < path.length())
+					{
+						buffer.append(path.substring(pathIndex, path.length() - 1));
+					}
+					
+					if(horz.getFieldCount() < 1) //XXX Change to 2 when icon is added (and make sure that "else" gets updated as well
+					{
+						horz.add(new LabelField(buffer.toString(), LabelField.FIELD_LEFT | LabelField.ELLIPSIS));
+					}
+					else
+					{
+						((LabelField)horz.getField(0)).setText(buffer.toString());
+					}
 				}
 			}
 			
@@ -330,6 +360,10 @@ public abstract class FilePicker
 					{
 						Enumeration en = this.curDirectory.list();
 						String url = this.curDirectory.getURL();
+						if(this.fp.rootPath != null)
+						{
+							folders.addElement("@Up");
+						}
 						while(en.hasMoreElements())
 						{
 							tmp = (FileConnection)Connector.open(url + (String)en.nextElement(), Connector.READ);
@@ -345,10 +379,6 @@ public abstract class FilePicker
 								}
 							}
 							tmp.close();
-						}
-						if(this.fp.rootPath != null)
-						{
-							folders.addElement("@Up");
 						}
 						if(folders.size() > 0)
 						{
@@ -529,10 +559,52 @@ public abstract class FilePicker
 						String url = (String)row.getCookie();
 						if(url.equals(".."))
 						{
-							goBack();
+							if(this.pathStack != null)
+							{
+								boolean push = true;
+								if(this.pathStack.size() > 0)
+								{
+									String path = (String)this.pathStack.peek();
+									if(path.equals(".."))
+									{
+										this.pathStack.pop();
+										push = false;
+									}
+								}
+								if(push)
+								{
+									String path = this.curDirectory.getName();
+									if(path.length() == 0)
+									{
+										path = this.curDirectory.getURL().substring(8);
+										path = path.substring(0, path.length() - 1);
+									}
+									this.pathStack.push(path);
+								}
+							}
+							goBack(false);
 						}
 						else
 						{
+							if(this.pathStack != null)
+							{
+								if(this.pathStack.size() > 0)
+								{
+									String path = (String)this.pathStack.peek();
+									if(path.equals(url))
+									{
+										this.pathStack.pop();
+									}
+									else
+									{
+										this.pathStack.push("..");
+									}
+								}
+								else
+								{
+									this.pathStack.push("..");
+								}
+							}
 							openPath(url);
 						}
 					}
@@ -567,7 +639,7 @@ public abstract class FilePicker
 					{
 						//File
 						this.selectedFile = this.curDirectory.getURL() + relPath;
-						this.close();
+						this.UIClose();
 					}
 					else
 					{
@@ -591,9 +663,28 @@ public abstract class FilePicker
 				}
 			}
 			
-			private void goBack()
+			private void goBack(boolean processStack)
 			{
-				//TODO: Make sure "going back" is done correctly
+				if(processStack && this.pathStack != null && this.pathStack.size() > 0)
+				{
+					String path = (String)this.pathStack.pop();
+					if(path.equals(".."))
+					{
+						goBackProcess();
+					}
+					else
+					{
+						openPath(path);
+					}
+				}
+				else
+				{
+					goBackProcess();
+				}
+			}
+			
+			private void goBackProcess()
+			{
 				try
 				{
 					int len = this.curDirectory.getName().length();

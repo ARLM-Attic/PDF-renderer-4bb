@@ -73,7 +73,7 @@ public class ICC_ColorSpace extends ColorSpace
 			case ICC_Profile.CLASS_INPUT:
 				break; // OK, it is color conversion profile
 			default:
-				throw new IllegalArgumentException("Invalid profile class.");
+				throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_COLORSPACE_INVALID_CLASS));
 		}
 		
 		profile = pf;
@@ -259,7 +259,7 @@ public class ICC_ColorSpace extends ColorSpace
 			
 			if(src.length < inputLength)
 			{
-				throw new IllegalStateException("Converter input profile does not have enough channels to convert properly.");
+				throw new IllegalStateException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_COLORSPACE_NOT_ENOUGH_CHANNELS));
 			}
 			
 			short[] dst = new short[outputLength];

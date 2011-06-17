@@ -262,10 +262,10 @@ public class ICC_Profile
 		}
 		catch (IOException e)
 		{
-			throw new IllegalArgumentException("Can't open color profile");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_CANT_OPEN_PROFILE));
 		}
 		
-		throw new IllegalArgumentException("Not a predefined color space");
+		throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_NOT_PREDEFINED));
 	}
 	
 	/**
@@ -278,7 +278,7 @@ public class ICC_Profile
 	public static ICC_Profile getInstance(InputStream s) throws IOException
 	{
 		byte[] header = new byte[headerSize];
-		String invalidDataMessage = "Invalid ICC Profile Data";
+		String invalidDataMessage = com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_INVALID_ICC);
 		
 		// Get header from the input stream
 		if (s.read(header) != headerSize)
@@ -323,7 +323,7 @@ public class ICC_Profile
 		}
 		catch (Exception e)
 		{
-			throw new IllegalArgumentException("Invalid ICC Profile Data");
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_INVALID_ICC));
 		}
 		
 		//Original source code had check for Microsoft Windows... As if that is would be on a BlackBerry...
@@ -358,7 +358,7 @@ public class ICC_Profile
 		}
 		
 		// Not an ICC profile class
-		throw new IllegalArgumentException("Profile class does not comply with ICC specification");
+		throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_BAD_ICC_PROFILE));
 	}
 	/**
 	 * Returns the color space type.
@@ -429,7 +429,7 @@ public class ICC_Profile
 	        	return -1; //Not implemented
 		}
 		
-		throw new IllegalArgumentException("Color space doesn't comply with ICC specification");
+		throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_BAD_ICC_COLORSPACE));
 	}
 	
 	public int getNumComponents()
@@ -482,7 +482,7 @@ public class ICC_Profile
 	            return 15;
 		}
 		
-		throw new IllegalArgumentException("Color space doesn't comply with ICC specification");
+		throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_BAD_ICC_COLORSPACE));
 	}
 	
 	/**

@@ -43,7 +43,7 @@ public final class ICC_ProfileStub extends ICC_Profile
             case ColorSpace.CS_GRAY:
                 break;
             default:
-                throw new IllegalArgumentException("Invalid colorspace");
+                throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_STUB_INVALID_COLORSPACE));
         }
         colorspace = csSpecifier;
     }
@@ -63,7 +63,7 @@ public final class ICC_ProfileStub extends ICC_Profile
             case ColorSpace.CS_GRAY:
                 return 1;
             default:
-                throw new UnsupportedOperationException("Stub cannot perform this operation");
+                throw new UnsupportedOperationException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_STUB_NO_OP));
 		 }
 	 }
 	 
@@ -78,7 +78,7 @@ public final class ICC_ProfileStub extends ICC_Profile
             case ColorSpace.CS_GRAY:
                 return ColorSpace.TYPE_GRAY;
             default:
-                throw new UnsupportedOperationException("Stub cannot perform this operation");
+                throw new UnsupportedOperationException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_STUB_NO_OP));
 		 }
 	 }
 	 
@@ -99,7 +99,7 @@ public final class ICC_ProfileStub extends ICC_Profile
 		 		return ICC_Profile.getInstance(ColorSpace.CS_PYCC);
 		 		*/
 		 	default:
-		 		throw new UnsupportedOperationException("Stub cannot perform this operation");
+		 		throw new UnsupportedOperationException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_PRO_STUB_NO_OP));
 		 }
 	 }
 }
