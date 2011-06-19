@@ -392,7 +392,32 @@ public class PDFObject
             {
                 ByteBuffer streamBuf = decodeStream(filterLimits);
                 // ByteBuffer streamBuf = stream;
-                return (ByteBuffer)ByteBuffer.wrap(streamBuf.array()).position(streamBuf.position()).limit(streamBuf.limit()); //Closest on BlackBerry to ByteBuffer.duplicate()
+                ByteBuffer dupBuf; //Closest on BlackBerry to ByteBuffer.duplicate()
+                if(streamBuf.hasArray())
+                {
+                	//Simply get the data and wrap it
+                	dupBuf = ByteBuffer.wrap(streamBuf.array());
+                }
+                else
+                {
+                	//Need to read the data into a new buffer
+                	byte[] buffer = new byte[4096];
+                	int pos = streamBuf.position();
+                	dupBuf = ByteBuffer.allocateDirect(streamBuf.remaining());
+                	while(streamBuf.remaining() > 0)
+                	{
+                		int rem = streamBuf.remaining();
+                		if(rem < 4096)
+                		{
+                			buffer = new byte[rem];
+                		}
+                		streamBuf.get(buffer);
+                		dupBuf.put(buffer);
+                	}
+                	streamBuf.position(pos);
+                	dupBuf.flip();
+                }
+                return (ByteBuffer)dupBuf.position(streamBuf.position()).limit(streamBuf.limit());
                 
                 //From: http://www.docjar.org/html/api/java/nio/ByteBuffer.java.html
                 //return new ByteBufferImpl (backing_buffer, array_offset, capacity(), limit(), position(), mark, isReadOnly()); //Buffer.duplicate ()

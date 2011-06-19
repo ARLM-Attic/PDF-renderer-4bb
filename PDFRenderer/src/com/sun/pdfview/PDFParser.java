@@ -1050,13 +1050,14 @@ public class PDFParser extends BaseWatchable
             }
             else
             {
+            	Object[] args = new Object[]{cmd};
                 if (catchexceptions)
                 {
-                    debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_ITERATE_UNK_CMD_DBG) + cmd + " **************************", 10);
+                    debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.PARSER_ITERATE_UNK_CMD_DBG, args), 10);
                 }
                 else
                 {
-                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_ITERATE_UNK_CMD) + cmd);
+                    throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.PARSER_ITERATE_UNK_CMD, args));
                 }
             }
             if (stack.size() != 0)
@@ -1387,7 +1388,7 @@ public class PDFParser extends BaseWatchable
         {
             return t;
         }
-        debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PARSER_PARSEOBJ_UNK_TOKEN) + t.type + ") *************************", 4);
+        debug(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.PARSER_PARSEOBJ_UNK_TOKEN, new Object[]{new Integer(t.type)}), 4);
         return null;
     }
     

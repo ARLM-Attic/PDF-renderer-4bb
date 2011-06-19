@@ -175,7 +175,8 @@ public abstract class FilePicker
 		{
 			private FilePickerImpl fp;
 			public String selectedFile;
-			private FieldListField list;
+			private FieldListField folderList, fileList;
+			private VerticalFieldManager listManager;
 			private FileConnection curDirectory;
 			private int viewMode;
 			private Stack pathStack;
@@ -271,10 +272,12 @@ public abstract class FilePicker
 				
 				add(new SeparatorField());
 				
-				VerticalFieldManager vert = new VerticalFieldManager(VerticalFieldManager.VERTICAL_SCROLL);
-				add(vert);
-				vert.add(list = new FieldListField(this));
-				list.setChangeListener(this);
+				this.listManager = new VerticalFieldManager(VerticalFieldManager.VERTICAL_SCROLL);
+				add(this.listManager);
+				this.folderList = new FieldListField(this);
+				this.fileList = new FieldListField(this);
+				this.folderList.setChangeListener(this);
+				this.fileList.setChangeListener(this);
 				populateList();
 			}
 			
@@ -327,7 +330,9 @@ public abstract class FilePicker
 			{
 				HorizontalFieldManager row;
 				int len;
-				list.deleteAll();
+				this.folderList.deleteAll();
+				this.fileList.deleteAll();
+				this.listManager.deleteAll();
 				if(this.curDirectory == null)
 				{
 					String[] roots = getRoots();
@@ -341,15 +346,16 @@ public abstract class FilePicker
 							continue;
 						}
 						
-						row = list.getNewRow(false);
+						row = this.folderList.getNewRow(false);
 						
 						//XXX Icon
 						
 						row.add(new LabelField(friendlyName(roots[i]), LabelField.FIELD_LEFT | LabelField.ELLIPSIS | LabelField.NON_FOCUSABLE));
 						row.setCookie(roots[i]);
 						
-						list.commitRow();
+						this.folderList.commitRow();
 					}
+					this.listManager.add(this.folderList);
 				}
 				else
 				{
@@ -385,7 +391,7 @@ public abstract class FilePicker
 							len = folders.size();
 							for(int i = 0; i < len; i++)
 							{
-								row = list.getNewRow(false);
+								row = this.folderList.getNewRow(false);
 								
 								//XXX Icon
 								
@@ -405,11 +411,12 @@ public abstract class FilePicker
 									tmp.close();
 								}
 								
-								list.commitRow();
+								this.folderList.commitRow();
 							}
+							this.listManager.add(this.folderList);
 							if(files.size() > 0)
 							{
-								list.addSeperator();
+								this.listManager.add(new SeparatorField());
 							}
 						}
 						len = files.size();
@@ -419,7 +426,7 @@ public abstract class FilePicker
 							{
 								for(int i = 0; i < len; i += 4)
 								{
-									row = list.getNewRow(true);
+									row = this.fileList.getNewRow(true);
 									
 									int max = Math.max(4, len - i);
 									for(int k = i; k < max; k++)
@@ -431,14 +438,14 @@ public abstract class FilePicker
 										tmp.close();
 									}
 									
-									list.commitRow();
+									this.fileList.commitRow();
 								}
 							}
 							else
 							{
 								for(int i = 0; i < len; i++)
 								{
-									row = list.getNewRow(false);
+									row = this.fileList.getNewRow(false);
 									
 									//XXX Icon
 									
@@ -486,9 +493,10 @@ public abstract class FilePicker
 									}
 									tmp.close();
 									
-									list.commitRow();
+									this.fileList.commitRow();
 								}
 							}
+							this.listManager.add(this.fileList);
 						}
 					}
 					catch(Exception e)
@@ -498,7 +506,8 @@ public abstract class FilePicker
 						this.UIClose();
 					}
 				}
-				list.commitHeight();
+				this.folderList.commitHeight();
+				this.fileList.commitHeight();
 			}
 			
 			private String friendlyName(String name)
@@ -552,66 +561,58 @@ public abstract class FilePicker
 			{
 				if(context != FieldChangeListener.PROGRAMMATIC)
 				{
-					if(field instanceof ListField)
+					ListField list = (ListField)field;
+					Field row = (Field)list.getCallback().get(list, list.getSelectedIndex());
+					String url = (String)row.getCookie();
+					if(url.equals(".."))
 					{
-						ListField list = (ListField)field;
-						Field row = (Field)list.getCallback().get(list, list.getSelectedIndex());
-						String url = (String)row.getCookie();
-						if(url.equals(".."))
+						if(this.pathStack != null)
 						{
-							if(this.pathStack != null)
+							boolean push = true;
+							if(this.pathStack.size() > 0)
 							{
-								boolean push = true;
-								if(this.pathStack.size() > 0)
+								String path = (String)this.pathStack.peek();
+								if(path.equals(".."))
 								{
-									String path = (String)this.pathStack.peek();
-									if(path.equals(".."))
-									{
-										this.pathStack.pop();
-										push = false;
-									}
-								}
-								if(push)
-								{
-									String path = this.curDirectory.getName();
-									if(path.length() == 0)
-									{
-										path = this.curDirectory.getURL().substring(8);
-										path = path.substring(0, path.length() - 1);
-									}
-									this.pathStack.push(path);
+									this.pathStack.pop();
+									push = false;
 								}
 							}
-							goBack(false);
-						}
-						else
-						{
-							if(this.pathStack != null)
+							if(push)
 							{
-								if(this.pathStack.size() > 0)
+								String path = this.curDirectory.getName();
+								if(path.length() == 0)
 								{
-									String path = (String)this.pathStack.peek();
-									if(path.equals(url))
-									{
-										this.pathStack.pop();
-									}
-									else
-									{
-										this.pathStack.push("..");
-									}
+									path = this.curDirectory.getURL().substring(8);
+									path = path.substring(0, path.length() - 1);
+								}
+								this.pathStack.push(path);
+							}
+						}
+						goBack(false);
+					}
+					else
+					{
+						if(this.pathStack != null)
+						{
+							if(this.pathStack.size() > 0)
+							{
+								String path = (String)this.pathStack.peek();
+								if(path.equals(url))
+								{
+									this.pathStack.pop();
 								}
 								else
 								{
 									this.pathStack.push("..");
 								}
 							}
-							openPath(url);
+							else
+							{
+								this.pathStack.push("..");
+							}
 						}
-					}
-					else
-					{
-						System.out.println("Stuff");
-						// TODO Set the fileConnection (unless it user went to memory selection)
+						openPath(url);
 					}
 				}
 			}
@@ -805,7 +806,7 @@ public abstract class FilePicker
 			
 			public int getPreferredHeight(ListField listField)
 			{
-				int mHeight = 0;
+				int mHeight = listField.getRowHeight(); //Get the default
 				for(int i = ((FieldListField)listField).data.size() - 1; i >= 0; i--)
 				{
 					int h = ((FLFHorizontalFieldManager)((FieldListField)listField).data.elementAt(i)).getPreferredHeight();
@@ -848,14 +849,6 @@ public abstract class FilePicker
 				chorz.commit();
 				commitRow(chorz);
 				chorz = null;
-			}
-			
-			public void addSeperator()
-			{
-				FLFHorizontalFieldManager horz = new FLFHorizontalFieldManager(false);
-				horz.add(new SeparatorField());
-				horz.commit();
-				commitRow(horz);
 			}
 			
 			private void commitRow(Field field)

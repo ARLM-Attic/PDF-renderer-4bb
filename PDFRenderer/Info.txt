@@ -1,21 +1,23 @@
 --Revision Used: 129---
 
 TODO:
-Finish FilePicker
--Fix "seperator" use in list-field (figure out how to ignore seperators)
--Make sure that dialog always uses full size
--Make sure that file-size field is displayed
--Implement menu
--For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
--Test
-Make sure all PDFs work.
-
-Do some tests (and updates) that involve PDFImage to make sure that it works (since it wasn't exactly "changed" to the current revision)
+Get PDFImage working
+-rewrite loadImage to latest revision
+-Test to make sure that everything works
 
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
 	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
 	If in OS 5.0 support then use OpenGL, take a look at GLUT|ES to see how fonts are drawn.
+
+Finish FilePicker
+-Make sure that dialog always uses full size
+-Make sure that file-size field is displayed
+-Implement menu
+--Implement properties
+-Implement popup
+-For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
+-Test
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):

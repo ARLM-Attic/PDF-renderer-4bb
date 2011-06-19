@@ -2,7 +2,7 @@
 
 /*
  * File: PDFImage.java
- * Version: 1.9
+ * Version: 1.12
  * Initial Creation: May 14, 2010 12:56:10 PM
  *
  * Copyright 2004 Sun Microsystems, Inc., 4150 Network Circle,
@@ -22,9 +22,34 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+//As a precaution since some of the code used in the sub-classes, preprocessData, and readData is based off OpenJDK code.
+/*
+ * Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
 package com.sun.pdfview;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -35,11 +60,11 @@ import java.nio.ByteBuffer;
 import com.sun.pdfview.helper.nio.ByteBuffer;
 //#endif
 
+import net.rim.device.api.io.IOUtilities;
+import net.rim.device.api.math.Fixed32;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.ui.Color;
-//#ifndef BlackBerrySDK4.5.0
-import net.rim.device.api.util.MathUtilities;
-//#endif
 
 import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
@@ -502,11 +527,82 @@ public class PDFImage
     }
     
     /**
-     * Consolidation function to parse data that could represent a index or component based image into a Bitmap. Consolidates getColorModel(), class DecodeComponentColorModel, and part of parseData(byte[]).
+     * Refactor part of parseData and consolidate some functions.
      */
     private Bitmap loadImage(byte[] data, ByteBuffer jpegData)
     {
     	Bitmap bi = null;
+    	
+    	if(jpegData != null)
+    	{
+    		// Use EncodedImage to decode the JPEG into a Bitmap
+    		
+            // TODO - strictly speaking, the application of the YUV->RGB
+            // transformation when reading JPEGs does not adhere to the spec.
+            // We're just going to let JAI read this in - as it is, JAI looks
+            // for the specific Adobe marker header so that it may apply
+            // the transform, so that's good. If that marker isn't present,
+            // then it also applies a number of other heuristics to determine
+            // whether the transform should be applied.
+            // (http://java.sun.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html)
+            // In practice, it probably almost always does the right thing here,
+            // though note that the present or default value of the ColorTransform
+            // dictionary entry is not being observed, so there is scope for
+            // error
+    		// NOTE - It's not entirely clear what EncodedImage does but it works and produces an RGB image
+    		ByteBufferInputStream in = null;
+    		try
+    		{
+	    		in = new ByteBufferInputStream(jpegData);
+	    		EncodedImage ei = EncodedImage.createEncodedImage(IOUtilities.streamToBytes(in), 0, -1, "image/jpeg");
+	    		if(ei.getWidth() == this.width && ei.getHeight() == this.height)
+	    		{
+	    			//Image is correct size, return it
+	    			bi = ei.getBitmap();
+	    		}
+	    		else
+	    		{
+	    			//Image is not the correct size, resize it
+	    			int xScale = Fixed32.div(Fixed32.toFP(ei.getWidth()), Fixed32.toFP(this.width));
+	    			int yScale = Fixed32.div(Fixed32.toFP(ei.getHeight()), Fixed32.toFP(this.height));
+	    			ei = ei.scaleImage32(xScale, yScale);
+	    			ei.setDecodeMode(EncodedImage.DECODE_READONLY);
+	    			bi = ei.getBitmap();
+	    		}
+    		}
+    		catch(Exception e)
+    		{
+    		}
+    		finally
+    		{
+    			if(in != null)
+    			{
+    				try
+    				{
+    					in.close();
+    				}
+    				catch(IOException e)
+    				{
+    				}
+    			}
+    		}
+    	}
+    	else
+    	{
+    		int[] pixData = new int[getWidth() * getHeight()];
+    		
+    		bi = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, getWidth(), getHeight());
+    		if(readData(data, pixData))
+    		{
+    			bi.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+    		}
+    		
+    		//Set the data
+    		bi.setARGB(pixData, 0, getWidth(), 0, 0, getWidth(), getHeight());
+    	}
+    	
+    	/*
+    	//XXX OLD-Kept until testing of this class is complete
     	InputStream seek = null;
     	try
     	{
@@ -635,14 +731,221 @@ public class PDFImage
     			}
     		}
     	}
+    	*/
     	
     	return bi;
     }
     
+    //If you want an easy explanation: data is, well, data. preprocessData is the equivalent of a SampleModel. readData (after preprocessData) is the equivalent of ColorModel.
+    /**
+     * Convert the data to A/RGB data.
+     * @param data The data to convert.
+     * @param bmpData The converted data.
+     * @return If alpha exists or not.
+     */
+    private boolean readData(byte[] data, int[] argbData)
+    {
+    	PDFColorSpace cs = getColorSpace();
+    	boolean alpha = false;
+    	
+    	byte[] pdata = preprocessData(data, cs);
+    	int dataLen = pdata.length;
+    	
+    	if (cs instanceof IndexedColor)
+        {
+			//IndexedColorModel
+            IndexedColor ics = (IndexedColor)cs;
+            
+            byte[] components = ics.getColorComponents();
+            int num = ics.getCount();
+            
+            // process the decode array
+            if (decode != null)
+            {
+                byte[] normComps = new byte[components.length];
+                
+                // move the components array around
+                for (int i = 0; i < num; i++)
+                {
+                    byte[] orig = new byte[1];
+                    orig[0] = (byte)i;
+                    
+                    float[] res = normalize(orig, null, 0);
+                    int idx = (int) res[0];
+                    
+                    normComps[i * 3] = components[idx * 3];
+                    normComps[(i * 3) + 1] = components[(idx * 3) + 1];
+                    normComps[(i * 3) + 2] = components[(idx * 3) + 2];
+                }
+                
+                components = normComps;
+            }
+            
+            // make sure the size of the components array is 2 ^ numBits
+            // since if it's not, Java will complain
+            int correctCount = 1 << getBitsPerComponent();
+            if (correctCount < num)
+            {
+                byte[] fewerComps = new byte[correctCount * 3];
+                
+                System.arraycopy(components, 0, fewerComps, 0, correctCount * 3);
+                
+                components = fewerComps;
+                num = correctCount;
+            }
+            if (colorKeyMask == null || colorKeyMask.length == 0)
+            {
+            	//alpha = false;
+            	for(int i = 0; i < dataLen; i++)
+            	{
+            		int pos = pdata[i] & 0xFF;
+            		argbData[i] = (components[pos + 0] << 16) | (components[pos + 1] << 8) | components[pos + 2];
+            	}
+            }
+            else
+            {
+                byte[] aComps = new byte[num * 4];
+                int idx = 0;
+                for (int i = 0; i < num; i++)
+                {
+                    aComps[idx++] = components[(i * 3)];
+                    aComps[idx++] = components[(i * 3) + 1];
+                    aComps[idx++] = components[(i * 3) + 2];
+                    aComps[idx++] = (byte)0xFF;
+                }
+                int len = colorKeyMask.length;
+                for (int i = 0; i < len; i += 2)
+                {
+                    for (int j = colorKeyMask[i]; j <= colorKeyMask[i + 1]; j++)
+                    {
+                        aComps[(j * 4) + 3] = 0;    // make transparent
+                    }
+                }
+                alpha = true;
+                for(int i = 0; i < dataLen; i++)
+            	{
+            		int pos = pdata[i] & 0xFF;
+            		argbData[i] = (aComps[pos + 3] << 24) | (aComps[pos + 0] << 16) | (aComps[pos + 1] << 8) | aComps[pos + 2];
+            	}
+            }
+        }
+        else
+        {
+        	//Component-based images
+            if(decode != null)
+            {
+            	int com = cs.getNumComponents();
+            	float[] norm = new float[com];
+            	byte[] pix = new byte[com];
+            	int k;
+            	for(int i = 0, d = 0; i < dataLen; i += com) //Since 
+            	{
+            		for(k = 0; k < com; k++)
+            		{
+            			pix[k] = pdata[k + i];
+            		}
+            		normalize(pix, norm, 0);
+            		argbData[d++] = 0xFF000000 | rgb2int(norm[0], norm[1], norm[2]);
+            	}
+            }
+            else
+            {
+            	//ComponentColorModel, most code is based off of ComponentColorModel and ColorModel.
+            	ColorSpace jcs = cs.getColorSpace(); //Might need to convert values to RGB
+            	ComponentDecoder dec = new ComponentDecoder(jcs, getBitsPerComponent());
+            	
+            	dec.decode(pdata, dataLen, argbData, argbData.length);
+            }
+            
+            //Don't need to handle color space conversion: IndexedColor is already in RGB, JPEG is handled for us, the last 2 possibilities already convert to RGB if not already in it.
+        }
+    	return alpha;
+    }
+    
+    private static int rgb2int(float r, float g, float b)
+	{
+		return (((int)(r * 255.0f + 0.5f)) << 16) | (((int)(g * 255.0f + 0.5f)) << 8) | ((int)(b * 255.0f + 0.5f));
+	}
+    
+    /**
+     * Preprocess the data so bytes aren't packed together.
+     * @param data The data to "preprocess"
+     * @param cs The colorspace to use.
+     * @return The preprocessed data
+     */
+    private byte[] preprocessData(byte[] data, PDFColorSpace cs)
+    {
+    	int comCount = cs.getNumComponents();
+    	byte[] ndata;
+    	int len = data.length;
+    	if(comCount == 1 && getBitsPerComponent() < 8)
+    	{
+    		//Packed
+    		
+    		int bpc = getBitsPerComponent();
+    		int finalShift = 8 - bpc;
+    		int finalMask = ((byte)(0xF << finalShift)) & 0xFF;
+    		int pixPerByte = 8 / bpc;
+    		len *= pixPerByte;
+    		ndata = new byte[len];
+    		for(int d = 0, s = 0; d < len; s++)
+    		{
+    			int shift = finalShift;
+    			int mask = finalMask;
+    			for(int i = 0; i < pixPerByte; i++)
+    			{
+    				ndata[d++] = (byte)((data[s] & mask) >>> shift);
+    				shift -= finalShift;
+    				mask >>= bpc;
+    			}
+    		}
+    	}
+    	else
+    	{
+    		int bpc = getBitsPerComponent();
+    		int pixelSize = comCount * bpc;
+    		if(pixelSize != 1 && pixelSize != 2 && pixelSize != 4)
+    		{
+    			//PdfSubByteSampleModel
+    			int w = getWidth();
+    			ndata = new byte[comCount * w * getHeight()];
+    			
+    			int bitsPerLine = 8 * ((pixelSize * w + 7) / 8);
+    			int componentMask = (1 << bpc) - 1;
+    			int ignoredBitsPerComponentPerByte = 8 - bpc;
+    			
+    			//TODO: Figure out how to calulate these values, do the math my hand and you'll realize what these are
+    			int gap = 0; //Then subtract by bpc since that will automatically be added
+    			int limit = 0;
+    			int inc = 0;
+    			
+    			for(int i = 0, x = 0, d = 0; (i >> 3) < len; i += bpc)
+    			{
+    				ndata[d++] = (byte)((data[i >> 3] >>> (ignoredBitsPerComponentPerByte - (i & 7))) & componentMask);
+    				if(i == limit)
+    				{
+    					//This just doesn't seem right but the original class does this so...
+    					i += gap;
+    					limit += inc;
+    				}
+    			}
+    		}
+    		else
+    		{
+	    		//Component
+	    		
+	    		//PDFImage does everything with bytes so no need to worry about SHORT/USHORT/etc. sized items.
+	    		ndata = data; //ComponentSampleModel simply reads the data as it is.
+    		}
+    	}
+    	return ndata;
+    }
+    
+    /* XXX OLD-Kept until testing of this class is complete
     /**
      * Read in component based/packed pixel based images.
      * @return The image data.
-     */
+     * /
     private byte[] readData(InputStream in, PDFColorSpace cs) throws IOException
     {
     	int comCount = cs.getNumComponents();
@@ -682,6 +985,7 @@ public class PDFImage
     	}
     	return data;
     }
+    */
     
     /**
      * Normalize an array of values to match the decode array
@@ -771,9 +1075,9 @@ public class PDFImage
 				System.arraycopy(input, i, in, 0, numComponents);
         		if (is_sRGB)
         		{
-                    int comp1 = getDefComponent(in, 0);
-                    int comp2 = getDefComponent(in, 1);
-                    int comp3 = getDefComponent(in, 2);
+                    int comp1 = in[0] & 0xff;
+                    int comp2 = in[1] & 0xff;
+                    int comp3 = in[2] & 0xff;
                     if (bitsPerCom != 8)
                     {
                     	comp1 = colorLUTs[0][comp1] & 0xff;
@@ -790,16 +1094,6 @@ public class PDFImage
         		}
         	}
 			return o;
-		}
-		
-		private int getDefComponent(byte[] pixel, int idx)
-		{
-            return pixel[idx] & 0xff;
-		}
-		
-		private int rgb2int(float r, float g, float b)
-		{
-			return (((int)(r * 255.0f + 0.5f)) << 16) | (((int)(g * 255.0f + 0.5f)) << 8) | ((int)(b * 255.0f + 0.5f));
 		}
 		
 		public float[] getNormalizedComponents(byte[] pixel, float[] normComponents, int normOffset)

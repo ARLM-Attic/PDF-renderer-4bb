@@ -168,9 +168,9 @@ public class PDFFile
     public PDFFile(ByteBuffer buf, PDFPassword password) throws IOException
     {
         this.fileBuf = buf;
-
+        
         cache = new Cache();
-
+        
         parseFile(password);
     }
     
@@ -330,7 +330,7 @@ public class PDFFile
 	        	final PDFObject stream = dereference(entry.getStream(), getDefaultDecrypter());
 	            if (stream == null || stream.getType() != PDFObject.STREAM || !"ObjStm".equals(stream.getDictRef("Type").getStringValue()))
 	            {
-	                throw new PDFParseException(entry.getStream().getObjectNumber() + ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NOT_STREAM_BUT_REF_AS));
+	                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_NOT_STREAM_BUT_REF_AS, new Object[]{new Integer(entry.getStream().getObjectNumber())}));
 	            }
 	            
 	            final ByteBuffer streamBuf = stream.getStreamBuffer();
