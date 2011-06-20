@@ -48,13 +48,14 @@ public class ICC_ColorSpace extends ColorSpace
 	private float[] minValues = null;
 	private float[] maxValues = null;
 	
-	private Object[] converterCache;
+	private Object[] converterCache; //Make it local since this ColorSpace can vary
 	
 	//Scaling helper values
 	private float[] channelMulipliers = null;
-	//private float[] invChannelMulipliers = null; //Used for "from" conventions
+	private float[] invChannelMulipliers = null; //Used for "from" conventions
 	
 	private static final ICC_Profile sRGBProfile = ((ICC_ColorSpace)ColorSpace.getInstance(CS_sRGB)).getProfile();
+	private static final ICC_Profile xyzProfile = ((ICC_ColorSpace)ColorSpace.getInstance(CS_CIEXYZ)).getProfile();
 	
 	/**
 	 * Constructs a new ICC_ColorSpace from an ICC_Profile object.
@@ -77,7 +78,7 @@ public class ICC_ColorSpace extends ColorSpace
 		}
 		
 		profile = pf;
-		converterCache = new Object[1];
+		converterCache = new Object[2];
 		fillMinMaxValues();
 	}
 	
@@ -87,10 +88,9 @@ public class ICC_ColorSpace extends ColorSpace
         maxValues = new float[n];
         minValues = new float[n];
         channelMulipliers = new float[n];
-        //invChannelMulipliers = new float[n];
+        invChannelMulipliers = new float[n];
         switch (getType())
         {
-        	/*
             case ColorSpace.TYPE_XYZ:
                 minValues[0] = 0;
                 minValues[1] = 0;
@@ -99,7 +99,6 @@ public class ICC_ColorSpace extends ColorSpace
                 maxValues[1] = MAX_XYZ;
                 maxValues[2] = MAX_XYZ;
                 break;
-             */
             case ColorSpace.TYPE_Lab:
                 minValues[0] = 0;
                 minValues[1] = -128;
@@ -122,7 +121,7 @@ public class ICC_ColorSpace extends ColorSpace
         {
         	float dif = maxValues[i] - minValues[i];
         	channelMulipliers[i] = MAX_SHORT / dif;
-        	//invChannelMulipliers[i] = dif / MAX_SHORT;
+        	invChannelMulipliers[i] = dif / MAX_SHORT;
         }
     }
 	
@@ -138,8 +137,20 @@ public class ICC_ColorSpace extends ColorSpace
 	
 	public float[] fromCIEXYZ(float[] colorvalue)
 	{
-		System.out.println("PDF ALERT---ICC_ColorSpace.fromCIEXYZ is called but not implemented.");
-		throw new UnsupportedOperationException("To Implement");
+        short[] data = new short[3];
+        
+        data[0] = (short)((colorvalue[0] * XYZ2SHORT_FACTOR) + 0.5f);
+        data[1] = (short)((colorvalue[1] * XYZ2SHORT_FACTOR) + 0.5f);
+        data[2] = (short)((colorvalue[2] * XYZ2SHORT_FACTOR) + 0.5f);
+        
+        short[] converted = ICC_Converter.convertColors(new ICC_Profile[]{xyzProfile, this.getProfile()}, data, converterCache, 1); //Could probably cache ICC_Profile array, maybe later
+        
+        // unscale to XYZ
+        float[] res = new float[getNumComponents()];
+        
+        unscaleColor(res, converted);
+        
+        return res;
 	}
 	
 	public float[] fromRGB(float[] rgbvalue)
@@ -183,7 +194,6 @@ public class ICC_ColorSpace extends ColorSpace
         }
 	}
 	
-	/* Used for "from" conventions
 	private void unscaleColor(float[] pixelData, short[] chanData)
 	{
 		int n = getNumComponents();
@@ -192,7 +202,15 @@ public class ICC_ColorSpace extends ColorSpace
 	        pixelData[chan] = (chanData[chan] & 0xFFFF) * invChannelMulipliers[chan] + minValues[chan];
 	    }
 	}
-	*/
+	
+	public boolean equals(Object obj)
+	{
+		if(obj != null && obj instanceof ICC_ColorSpace)
+		{
+			return ((ICC_ColorSpace)obj).profile == this.profile; //If the profiles are the same, then the profiles are the same.
+		}
+		return false;
+	}
 	
 	private static class ICC_Converter
 	{

@@ -51,7 +51,6 @@
 package com.sun.pdfview;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
@@ -70,6 +69,8 @@ import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.decode.PDFDecoder;
 import com.sun.pdfview.helper.ColorSpace;
+import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
+import com.sun.pdfview.helper.PDFUtil;
 
 /**
  * Encapsulates a PDF Image
@@ -300,8 +301,31 @@ public class PDFImage
                 bi = parseData(data, jpegBytes);
                 imageObj.setCache(bi);
             }
-            //if(bi != null)
-            //	ImageIO.write(bi, "png", new File("/tmp/test/" + System.identityHashCode(this) + ".png"));
+            //* //XXX Disable when done
+            if(bi != null)
+            {
+            	EncodedImage ei = net.rim.device.api.system.PNGEncodedImage.encode(bi);
+            	try
+            	{
+            		javax.microedition.io.file.FileConnection file = (javax.microedition.io.file.FileConnection)javax.microedition.io.Connector.open("file:///SDCard/BlackBerry/pictures/" + ei.hashCode() + ".png", javax.microedition.io.Connector.READ_WRITE);
+            		if(file.exists())
+            		{
+            			file.truncate(0);
+            		}
+            		else
+            		{
+            			file.create();
+            		}
+            		java.io.OutputStream out = file.openOutputStream();
+            		out.write(ei.getData());
+            		out.close();
+            		file.close();
+            	}
+            	catch(Exception e)
+            	{
+            	}
+            }
+            //*/
             return bi;
         }
         catch (IOException ioe)
@@ -586,6 +610,7 @@ public class PDFImage
     				}
     			}
     		}
+    		jpegData = null;
     	}
     	else
     	{
@@ -850,14 +875,29 @@ public class PDFImage
             }
             else
             {
-            	//ComponentColorModel, most code is based off of ComponentColorModel and ColorModel.
-            	ColorSpace jcs = cs.getColorSpace(); //Might need to convert values to RGB
-            	ComponentDecoder dec = new ComponentDecoder(jcs, getBitsPerComponent());
-            	
-            	dec.decode(pdata, dataLen, argbData, argbData.length);
+            	ColorSpace jcs = cs.getColorSpace();
+                ColorSpace rgbCS = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+                if (isGreyscale(jcs) && bpc <= 8)
+                {
+                	//Speed up processing
+                	convertGreyscaleToArgb(pdata, argbData);
+                }
+//#ifdef FORCE_IMG_DECODE
+                else
+//#else
+                else if (!isImageMask() && jcs instanceof ICC_ColorSpace && !jcs.equals(rgbCS))
+//#endif
+                {
+                	//This is very slow, hopefully it will never come to this.
+                	
+	            	//ComponentColorModel, most code is based off of ComponentColorModel and ColorModel.
+	            	ComponentDecoder dec = new ComponentDecoder(jcs, getBitsPerComponent());
+	            	
+	            	dec.decode(pdata, dataLen, argbData, argbData.length); //Might need to convert values to RGB
+                }
             }
             
-            //Don't need to handle color space conversion: IndexedColor is already in RGB, JPEG is handled for us, the last 2 possibilities already convert to RGB if not already in it.
+            //Don't need to handle color space conversion: IndexedColor is already in RGB, JPEG is handled for us, the last 3 possibilities already convert to RGB if not already in it.
         }
     	return alpha;
     }
@@ -866,6 +906,16 @@ public class PDFImage
 	{
 		return (((int)(r * 255.0f + 0.5f)) << 16) | (((int)(g * 255.0f + 0.5f)) << 8) | ((int)(b * 255.0f + 0.5f));
 	}
+    
+    private boolean isGreyscale(ColorSpace aCs)
+    {
+        return aCs == PDFColorSpace.getColorSpace(PDFColorSpace.COLORSPACE_GRAY).getColorSpace();
+    }
+    
+    private void convertGreyscaleToArgb(byte[] data, int[] argb)
+    {
+    	//TODO
+    }
     
     /**
      * Preprocess the data so bytes aren't packed together.
@@ -876,13 +926,13 @@ public class PDFImage
     private byte[] preprocessData(byte[] data, PDFColorSpace cs)
     {
     	int comCount = cs.getNumComponents();
+    	int bpc = getBitsPerComponent();
     	byte[] ndata;
     	int len = data.length;
-    	if(comCount == 1 && getBitsPerComponent() < 8)
+    	if(comCount == 1 && bpc < 8)
     	{
     		//Packed
     		
-    		int bpc = getBitsPerComponent();
     		int finalShift = 8 - bpc;
     		int finalMask = ((byte)(0xF << finalShift)) & 0xFF;
     		int pixPerByte = 8 / bpc;
@@ -902,31 +952,31 @@ public class PDFImage
     	}
     	else
     	{
-    		int bpc = getBitsPerComponent();
     		int pixelSize = comCount * bpc;
-    		if(pixelSize != 1 && pixelSize != 2 && pixelSize != 4)
+    		if(bpc < 8 && pixelSize != 1 && pixelSize != 2 && pixelSize != 4)
     		{
+    			PDFUtil.assert(bpc < 8, "bpc < 8", "This is designed just for use with per-component sizes of less than 8 bits; you should probably use PixelInterleavedSampleModel");
+    			PDFUtil.assert(bpc == 1 || bpc == 2 || bpc == 4, "bpc == 1 || bpc == 2 || bpc == 4", "we don't want to grab components across byte boundaries");
+    			
     			//PdfSubByteSampleModel
     			int w = getWidth();
+    			int h = getHeight();
     			ndata = new byte[comCount * w * getHeight()];
     			
     			int bitsPerLine = 8 * ((pixelSize * w + 7) / 8);
     			int componentMask = (1 << bpc) - 1;
     			int ignoredBitsPerComponentPerByte = 8 - bpc;
     			
-    			//TODO: Figure out how to calulate these values, do the math my hand and you'll realize what these are
-    			int gap = 0; //Then subtract by bpc since that will automatically be added
-    			int limit = 0;
-    			int inc = 0;
-    			
-    			for(int i = 0, x = 0, d = 0; (i >> 3) < len; i += bpc)
+    			//Do this the slow-and-steady way, going through each component.
+    			for(int x = 0, d = 0; x < w; x++)
     			{
-    				ndata[d++] = (byte)((data[i >> 3] >>> (ignoredBitsPerComponentPerByte - (i & 7))) & componentMask);
-    				if(i == limit)
+    				for(int y = 0; y < h; y++)
     				{
-    					//This just doesn't seem right but the original class does this so...
-    					i += gap;
-    					limit += inc;
+    					for(int i = 0; i < comCount; i++)
+    					{
+    						int pos = y * bitsPerLine + pixelSize * x + bpc * i;
+    						ndata[d++] = (byte)((data[pos >> 3] >>> (ignoredBitsPerComponentPerByte - (pos & 7))) & componentMask); //Note: An odd gap occurs when changing height
+    					}
     				}
     			}
     		}
