@@ -97,6 +97,71 @@ public class PDFImage
         System.out.println(string);
     }
     
+    private int[] GREY_TO_ARGB = null;
+    
+    private int[] getGreyToArgbMap(int numBits, ColorSpace cs)
+    {
+    	if(GREY_TO_ARGB == null)
+    	{
+    		GREY_TO_ARGB = createGreyToArgbMap(numBits, cs);
+    	}
+    	return GREY_TO_ARGB;
+    }
+    /*
+    private static int[][] GREY_TO_ARGB = new int[8][];
+    
+    private static int[] getGreyToArgbMap(int numBits)
+    {
+    	PDFUtil.assert(numBits <= 8, "numBits <= 8");
+        int[] argbVals = GREY_TO_ARGB[numBits - 1];
+        if (argbVals == null)
+        {
+            argbVals = createGreyToArgbMap(numBits);
+        }
+        return argbVals;
+    }
+    */
+    
+    /**
+     * Create a map from all bit-patterns of a certain depth greyscale to the
+     * corresponding sRGB values via the ICC colorr converter.
+     * @param numBits the number of greyscale bits
+     * @return a 2^bits array of standard 32-bit ARGB fits for each greyscale value
+     *  at that bitdepth
+     */
+    /*
+    private static int[] createGreyToArgbMap(int numBits)
+    {
+    	final ColorSpace greyCs = PDFColorSpace.getColorSpace(PDFColorSpace.COLORSPACE_GRAY).getColorSpace();
+    */
+    private static int[] createGreyToArgbMap(int numBits, final ColorSpace greyCs)
+    {
+    	int len;
+    	byte[] greyVals = new byte[len = 1 << numBits];
+        for (int i = 0; i < len; i++)
+        {
+            greyVals[i] = (byte)(i & 0xFF);
+        }
+        
+        final int[] argbVals = new int[len];
+        final int mask = (1 << numBits) - 1;
+        final float[] norm = new float[1];
+        final float min = greyCs.getMinValue(0);
+        final float scale = 1f / mask;
+        float[] res;
+        
+        //Instead of doing the color conversion for an entire image, just do it for the color range
+        for(int i = 0; i < len; i++)
+        {
+        	norm[0] = min + (float)(greyVals[i] & 0xFF) * scale;
+        	res = greyCs.toRGB(norm);
+        	argbVals[i] = 0xFF000000 | rgb2int(res[0], res[1], res[2]);
+        }
+        
+        //GREY_TO_ARGB[numBits - 1] = argbVals;
+        return argbVals;
+    }
+    
     /** color key mask. Array of start/end pairs of ranges of color components to
      *  mask out. If a component falls within any of the ranges it is clear. */
     private int[] colorKeyMask = null;
@@ -301,7 +366,7 @@ public class PDFImage
                 bi = parseData(data, jpegBytes);
                 imageObj.setCache(bi);
             }
-            //* //XXX Disable when done
+            /* //XX X Disable when done
             if(bi != null)
             {
             	EncodedImage ei = net.rim.device.api.system.PNGEncodedImage.encode(bi);
@@ -895,6 +960,7 @@ public class PDFImage
 	            	
 	            	dec.decode(pdata, dataLen, argbData, argbData.length); //Might need to convert values to RGB
                 }
+                //XXX What about if the image is RGB? and FORCE_IMG_DECODE is disabled
             }
             
             //Don't need to handle color space conversion: IndexedColor is already in RGB, JPEG is handled for us, the last 3 possibilities already convert to RGB if not already in it.
@@ -909,12 +975,82 @@ public class PDFImage
     
     private boolean isGreyscale(ColorSpace aCs)
     {
-        return aCs == PDFColorSpace.getColorSpace(PDFColorSpace.COLORSPACE_GRAY).getColorSpace();
+        return aCs.getType() == ColorSpace.TYPE_GRAY;
     }
     
     private void convertGreyscaleToArgb(byte[] data, int[] argb)
     {
-    	//TODO
+    	// we use an optimised greyscale colour conversion, as with scanned
+        // greyscale/mono documents consisting of nothing but page-size
+        // images, using the ICC converter is perhaps 15 times slower than this
+        // method. Using an example scanned, mainly monochrome document, on this
+        // developer's machine pages took an average of 3s to render using the
+        // ICC converter filter, and around 115ms using this method. We use
+        // pre-calculated tables generated using the ICC converter to map between
+        // each possible greyscale value and its desired value in sRGB.
+        // We also try to avoid going through SampleModels, WritableRasters or
+        // BufferedImages as that takes about 3 times as long.
+    	int i = 0;
+        final int[] greyToArgbMap = getGreyToArgbMap(bpc, getColorSpace().getColorSpace());
+        final int width = getWidth();
+        final int height = getHeight();
+        if (bpc == 1)
+        {
+            int calculatedLineBytes = (width + 7) / 8;
+            int rowStartByteIndex;
+            // avoid hitting the WritableRaster for the common 1 bpc case
+            if (greyToArgbMap[0] == 0 && greyToArgbMap[1] == 0xFFFFFFFF)
+            {
+                // optimisation for common case of a direct map to full white
+                // and black, using bit twiddling instead of consulting the
+                // greyToArgb map
+                for (int y = 0; y < height; ++y)
+                {
+                    // each row is byte-aligned
+                    rowStartByteIndex = y * calculatedLineBytes;
+                    for (int x = 0; x < width; ++x)
+                    {
+                        final byte b = data[rowStartByteIndex + x / 8];
+                        final int white = b >> (7 - (x & 7)) & 1;
+                        // if white == 0, white - 1 will be 0xFFFFFFFF,
+                        //  which when xored with 0xFFFFFF will produce 0
+                        // if white == 1, white - 1 will be 0,
+                        //  which when xored with 0xFFFFFF will produce 0xFFFFFF
+                        //  (ignoring the top two bytes, which are always set high anyway)
+                        argb[i] = 0xFF000000 | ((white - 1) ^ 0xFFFFFF);
+                        ++i;
+                    }
+                }
+            }
+            else
+            {
+                // 1 bpc case where we can't bit-twiddle and need to consult
+                // the map
+                for (int y = 0; y < height; ++y)
+                {
+                    rowStartByteIndex = y * calculatedLineBytes;
+                    for (int x = 0; x < width; ++x)
+                    {
+                        final byte b = data[rowStartByteIndex + x / 8];
+                        final int val = b >> (7 - (x & 7)) & 1;
+                        argb[i] = greyToArgbMap[val];
+                        ++i;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int y = 0; y < height; ++y)
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    final int greyscale = data[x + y * width] & 0xFF;
+                    argb[i] = greyToArgbMap[greyscale];
+                    ++i;
+                }
+            }
+        }
     }
     
     /**
@@ -1134,13 +1270,13 @@ public class PDFImage
                     	comp2 = colorLUTs[1][comp2] & 0xff;
                     	comp3 = colorLUTs[2][comp3] & 0xff;
                     }
-                    output[o] = (comp1 << 16) | (comp2 << 8) | comp3;
+                    output[o] = 0xFF000000 | (comp1 << 16) | (comp2 << 8) | comp3;
                 }
         		else
         		{
 	                normComp = getNormalizedComponents(in, normComp, 0);
 	                float[] rgbComp = cs.toRGB(normComp);
-	                output[o] = rgb2int(rgbComp[0], rgbComp[1], rgbComp[2]);
+	                output[o] = 0xFF000000 | rgb2int(rgbComp[0], rgbComp[1], rgbComp[2]);
         		}
         	}
 			return o;

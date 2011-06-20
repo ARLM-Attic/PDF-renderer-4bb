@@ -1,14 +1,13 @@
 --Revision Used: 129---
 
 TODO:
-Implement the manual greyscale-2-argb converter
-Test PDFImage
-
 Redo static colorspace storage so they use Runtime store (this reduces time across different apps to startup but is better in the long term, it's actually necessary since it is possible to run the image processing and parsing on deamon threads, which will cause multiple instances of the same Object and increase memory usage. Also, in the case of PDFImage parsing, if ColorSpaces are compared and they where created on different threads then cs.equals(cs) can return false)
 -ColorSpace
 -ICC_Profile
 
 Now do the same thing as before, but for all static variables
+
+It seems almost like CalGreyScale likes to have a blue-tint associated with it, figure out how to correct this when converting images (or maybe just use the native grey colorspace)
 
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
@@ -23,6 +22,8 @@ Finish FilePicker
 -Implement popup
 -For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
 -Test
+
+Figure out how to handle large PDFs. As of right now it will get out of memory exceptions.
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
@@ -82,3 +83,4 @@ NOTES:
 -Strings follow the guidelines listed in "http://docs.blackberry.com/en/developers/deliverables/3299/JDE_4.5_Fundamentals_Guide.pdf" which state not to use static final for Strings because then Strings need to be loaded multiple times and multiple instances of the same String exist.
 -If accuracy becomes a problem with transforms, change AffineTransform to use doubles (like the original)
 -PDFImage is drastically different in this (BlackBerry) version compared to the (J2SE) version. This is because BlackBerry doesn't have all the same image/color classes that J2SE has. The native image system is used to handle as much as possible.
+-In the J2SE version of PDF Renderer, PDFImage will create the image in the native color format, then convert to RGB. In the BlackBerry PDFImage, it goes straight to RGB. This changes a couple things such as the greyscale converter, which was originally used to speed up conversion from greyscale to RGB, now used to create the RGB image.
