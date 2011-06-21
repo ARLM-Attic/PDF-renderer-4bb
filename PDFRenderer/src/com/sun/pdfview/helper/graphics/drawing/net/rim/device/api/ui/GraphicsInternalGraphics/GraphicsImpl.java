@@ -96,7 +96,7 @@ public class GraphicsImpl extends PDFGraphics
 			tmpG = new Graphics(tmpBmp);
 //#endif
 			tmpG.setBackgroundColor(Color.BLACK);
-			tmpG.setColor(Color.BLACK);
+			tmpG.setColor(Color.WHITE);
 		}
 		if(tmpG != null)
 		{
@@ -208,15 +208,128 @@ public class GraphicsImpl extends PDFGraphics
 	{
 		//Fill doesn't seem to use Stroke
 		Geometry.Enumeration en = s.getPathEnumerator(this.trans);
+		
+		//XXX Temp
+		net.rim.device.api.ui.XYRect bounds = new net.rim.device.api.ui.XYRect();
+		Object[] path = generatePath(en, bounds);
+		if(path != null)
+		{
+			createMaskGraphics(bounds.width, bounds.height);
+			
+			PaintGenerator gen = foreground.createGenerator(this.trans);
+			TranslatedBitmap btm = gen.getBitmap(bounds.x, bounds.y, bounds.width, bounds.height);
+			gen.dispose();
+			
+			tmpG.translate(-bounds.x, -bounds.y);
+			tmpG.drawFilledPath((int[])path[0], (int[])path[1], (byte[])path[2], (int[])path[3]);
+			tmpG.translate(bounds.x, bounds.y);
+			
+			Graphics tg;
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+			tg = Graphics.create(btm.getBitmap());
+//#else
+			tg = new Graphics(btm.getBitmap());
+//#endif
+			tg.rop(Graphics.ROP2_DSa, 0, 0, bounds.width, bounds.height, tmpBmp, 0, 0);
+			
+			this.destination.pushContext(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0);
+			
+			this.destination.drawBitmap(bounds, btm.getBitmap(), 0, 0);
+			
+			this.destination.popContext();
+		}
+	}
+	
+	private Object[] generatePath(Geometry.Enumeration en, net.rim.device.api.ui.XYRect rect)
+	{
+		int[] xP = null;
+		int[] yP = null;
+		byte[] types = null;
+		int[] offsets = null;
+		
+		int xs, ys, ts, os;
+		xs = ys = ts = os = 0;
+		
+		int fx = 0;
+		int fy = 0;
+		int tx, ty;
+		boolean moveCalled = false;
+		
 		float[] coords = new float[6];
 		while(!en.isDone())
 		{
 			switch(en.currentSegment(coords))
 			{
-			//TODO
+				case Geometry.Enumeration.SEG_MOVETO:
+					if(moveCalled)
+					{
+						return null;
+					}
+					moveCalled = true;
+					fx = rect.width = rect.x = (int)Math.floor(coords[0]);
+					fy = rect.height = rect.y = (int)Math.floor(coords[1]);
+					xP = ensureSize(xP, ++xs);
+					yP = ensureSize(yP, ++ys);
+					xP[xs - 1] = fx;
+					yP[ys - 1] = fy;
+					break;
+				case Geometry.Enumeration.SEG_LINETO:
+					tx = (int)Math.floor(coords[0]);
+					ty = (int)Math.floor(coords[1]);
+					if(tx < rect.x)
+					{
+						rect.x = tx;
+					}
+					else if(tx > rect.width)
+					{
+						rect.width = tx;
+					}
+					if(ty < rect.y)
+					{
+						rect.y = ty;
+					}
+					else if(ty > rect.height)
+					{
+						rect.height = ty;
+					}
+					xP = ensureSize(xP, ++xs);
+					yP = ensureSize(yP, ++ys);
+					xP[xs - 1] = tx;
+					yP[ys - 1] = ty;
+					break;
+				case Geometry.Enumeration.SEG_CLOSE:
+					xP = ensureSize(xP, ++xs);
+					yP = ensureSize(yP, ++ys);
+					xP[xs - 1] = fx;
+					yP[ys - 1] = fy;
+					break;
+				//TODO
 			}
 			en.next();
 		}
+		rect.width = Math.abs(rect.width - rect.x);
+		rect.height = Math.abs(rect.height - rect.y);
+		
+		if(rect.width == 0 || rect.height == 0)
+		{
+			return null;
+		}
+		return new Object[]{xP, yP, types, offsets};
+	}
+	
+	private int[] ensureSize(int[] dat, int size)
+	{
+		if(dat == null)
+		{
+			return new int[size];
+		}
+		if(dat.length < size)
+		{
+			int[] n = new int[size];
+			System.arraycopy(dat, 0, n, 0, dat.length);
+			return n;
+		}
+		return dat;
 	}
 	
 	public Geometry getClip()
