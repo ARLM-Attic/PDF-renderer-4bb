@@ -33,6 +33,7 @@ FILE_UNK_XREF_TYPE#0="Don't know how to handle xref type ";
 FILE_XREF_INDEX_NOT_IN_STREAM#0="Xref references index that does not exist in stream";
 FONT_TTFFONT_UNSUPPORTED_GLYPH#0="Unsupported glyph type ";
 FONT_TTF_UNK_GLYF#0="Unknown glyf type: ";
+FONT_TYPE3_NAME_REQUIRED#0="Glyph name required for Type3 font! Source character: %d";
 FUNCTION_FUNC3_MISSING_BOUNDS#0="Bounds required for function type 3!";
 FUNCTION_FUNC3_MISSING_DOMAIN#0="domain required for function type 3!";
 FUNCTION_FUNC3_MISSING_ENCODE#0="Encode required for function type 3!";

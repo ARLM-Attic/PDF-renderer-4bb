@@ -53,7 +53,8 @@ public class FunctionType4 extends PDFFunction
 {
 	/** the set of all Operations we support. These operations are defined
      * in Appendix B - Operators.*/
-    private static Vector operationSet = null;
+	private static final long OPERATION_SET_ID = 0xD4058D2516BF4008L;
+    private static Vector operationSet;
     /** the list of tokens and sub-expressions. */
     private LinkedList tokens = new LinkedList();
     /** the stack of operations. The stack contents should all be Comparable. */
@@ -91,6 +92,7 @@ public class FunctionType4 extends PDFFunction
          * http://www.adobe.com/products/postscript/pdfs/PLRM.pdf
          * Chapter 8 - Operator Details
          */
+    	operationSet = (Vector)com.sun.pdfview.ResourceManager.singletonStorageGet(OPERATION_SET_ID);
         if (operationSet == null)
         {
             operationSet = new Vector();
@@ -932,6 +934,7 @@ public class FunctionType4 extends PDFFunction
                     stack.addFirst(obj);
                 }
             });
+            com.sun.pdfview.ResourceManager.singletonStorageSet(OPERATION_SET_ID, operationSet);
         }
     }
     

@@ -41,8 +41,8 @@ import com.sun.pdfview.PDFParseException;
  */
 public class IdentityDecrypter implements PDFDecrypter
 {
-	//If system is multithreaded then this could get created multiple times and waste memory
-	private static IdentityDecrypter INSTANCE = new IdentityDecrypter();
+	private static final long IDENTITY_DECRYPTOR_ID = 0x7977626E3448F098L;
+	private static IdentityDecrypter INSTANCE;
 	
     public ByteBuffer decryptBuffer(String cryptFilterName, PDFObject streamObj, ByteBuffer streamBuf) throws PDFParseException
     {
@@ -61,6 +61,15 @@ public class IdentityDecrypter implements PDFDecrypter
     
     public static IdentityDecrypter getInstance()
     {
+    	if(INSTANCE == null)
+    	{
+    		INSTANCE = (IdentityDecrypter)com.sun.pdfview.ResourceManager.singletonStorageGet(IDENTITY_DECRYPTOR_ID);
+    		if(INSTANCE == null)
+    		{
+    			INSTANCE = new IdentityDecrypter();
+    			com.sun.pdfview.ResourceManager.singletonStorageSet(IDENTITY_DECRYPTOR_ID, INSTANCE);
+    		}
+    	}
         return INSTANCE;
     }
     

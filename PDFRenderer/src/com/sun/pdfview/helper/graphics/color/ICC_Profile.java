@@ -173,6 +173,12 @@ public class ICC_Profile
 	static final int headerMagicNumber = 0x61637370;
 	
 	// Cache of predefined profiles
+	private static final long CS_sRGB_PROFILE_ID = 0x75312FEDB2463B0EL;
+	private static final long CS_XYZ_PROFILE_ID = 0xA41D05A15386DDB6L;
+	private static final long CS_GRAY_PROFILE_ID = 0xB32C55D66B185550L;
+	//private static final long CS_PYCC_PROFILE_ID = 0x12C967DCC01358DDL;
+	//private static final long CS_LIN_RGB_PROFILE_ID = 0xEEFB266E571D923CL;
+	
     private static ICC_Profile sRGBProfile;
     private static ICC_Profile xyzProfile;
     private static ICC_Profile grayProfile;
@@ -229,32 +235,57 @@ public class ICC_Profile
 				case ColorSpace.CS_sRGB:
 					if (sRGBProfile == null)
 					{
-						sRGBProfile = getInstance("sRGB.pf");
+						sRGBProfile = (ICC_Profile)ResourceManager.singletonStorageGet(CS_sRGB_PROFILE_ID);
+						if (sRGBProfile == null)
+						{
+							sRGBProfile = getInstance("sRGB.pf");
+							ResourceManager.singletonStorageSet(CS_sRGB_PROFILE_ID, sRGBProfile);
+						}
 					}
 					return sRGBProfile;
 				case ColorSpace.CS_CIEXYZ:
 					if (xyzProfile == null)
 					{
-						xyzProfile = getInstance("CIEXYZ.pf");
+						xyzProfile = (ICC_Profile)ResourceManager.singletonStorageGet(CS_XYZ_PROFILE_ID);
+						if (xyzProfile == null)
+						{
+							xyzProfile = getInstance("CIEXYZ.pf");
+							ResourceManager.singletonStorageSet(CS_XYZ_PROFILE_ID, xyzProfile);
+						}
 					}
 					return xyzProfile;
 				case ColorSpace.CS_GRAY:
 					if (grayProfile == null)
 					{
-						grayProfile = getInstance("GRAY.pf");
+						grayProfile = (ICC_Profile)ResourceManager.singletonStorageGet(CS_GRAY_PROFILE_ID);
+						if (grayProfile == null)
+						{
+							grayProfile = getInstance("GRAY.pf");
+							ResourceManager.singletonStorageSet(CS_GRAY_PROFILE_ID, grayProfile);
+						}
 					}
 					return grayProfile;
 					/*
 				case ColorSpace.CS_PYCC:
 					if (pyccProfile == null)
 					{
-						pyccProfile = getInstance("PYCC.pf");
+						pyccProfile = (ICC_Profile)ResourceManager.singletonStorageGet(CS_PYCC_PROFILE_ID);
+						if (pyccProfile == null)
+						{
+							pyccProfile = getInstance("PYCC.pf");
+							ResourceManager.singletonStorageSet(CS_PYCC_PROFILE_ID, pyccProfile);
+						}
 					}
 					return pyccProfile;
 				case ColorSpace.CS_LINEAR_RGB:
 					if (linearRGBProfile == null)
 					{
-						linearRGBProfile = getInstance("LINEAR_RGB.pf");
+						linearRGBProfile = (ICC_Profile)ResourceManager.singletonStorageGet(CS_LIN_RGB_PROFILE_ID);
+						if (linearRGBProfile == null)
+						{
+							linearRGBProfile = getInstance("LINEAR_RGB.pf");
+							ResourceManager.singletonStorageSet(CS_LIN_RGB_PROFILE_ID, linearRGBProfile);
+						}
 					}
 					return linearRGBProfile;
 					*/

@@ -154,7 +154,7 @@ public class Type3Font extends PDFFont
     {
         if (name == null)
         {
-            throw new IllegalArgumentException("Glyph name required for Type3 font! Source character: " + (int)src);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE3_NAME_REQUIRED, new Object[]{new Integer((int)src)}));
         }
         
         PDFObject pageObj = (PDFObject) charProcs.get(name);

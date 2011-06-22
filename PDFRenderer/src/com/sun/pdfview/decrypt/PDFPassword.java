@@ -148,7 +148,7 @@ public class PDFPassword
         // generated the password. I don't think we're going to try
         // all different code pages, though. Here are
         // a few ideas, anyway!
-
+    	
         // skip undefined chars
         new PDFDocEncodingByteGenerator(null),
         // replace undefined chars with 0

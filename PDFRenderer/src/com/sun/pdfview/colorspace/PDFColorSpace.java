@@ -57,27 +57,66 @@ public class PDFColorSpace
     public static final int COLORSPACE_PATTERN = 3;
     
     /** the device-dependent color spaces */
-    //private static PDFColorSpace graySpace = new PDFColorSpace(ColorSpace.getInstance(ColorSpace.CS_GRAY));
-    private static PDFColorSpace rgbSpace = new PDFColorSpace(ColorSpace.getInstance(ColorSpace.CS_sRGB));
-    private static PDFColorSpace cmykSpace = new PDFColorSpace(new CMYKColorSpace());
+    private static final long PDF_CS_GRAY_ID = 0x4A042B32B235E300L;
+    private static final long PDF_CS_RGB_ID = 0x4CB4C8A6537D5C18L;
+    private static final long PDF_CS_CMYK_ID = 0x8ED55C5DB58272C0L;
+    //private static PDFColorSpace graySpace;
+    private static PDFColorSpace rgbSpace;
+    private static PDFColorSpace cmykSpace;
     
     /** the pattern space */
-    private static PDFColorSpace patternSpace = new PatternSpace();
+    private static final long PDF_PATTERY_SPACE_ID = 0x22CCE51F780E6E80L;
+    private static PDFColorSpace patternSpace;
     
     /** graySpace and the gamma correction for it. */
     private static PDFColorSpace graySpace;
     
     static
     {
+    	/*
+    	graySpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_CS_GRAY_ID);
+    	if(graySpace == null)
+    	{
+    		graySpace = new PDFColorSpace(ColorSpace.getInstance(ColorSpace.CS_GRAY));
+    		ResourceManager.singletonStorageSet(PDF_CS_GRAY_ID, graySpace);
+    	}
+    	*/
+    	
+    	rgbSpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_CS_RGB_ID);
+    	if(rgbSpace == null)
+    	{
+    		rgbSpace = new PDFColorSpace(ColorSpace.getInstance(ColorSpace.CS_sRGB));
+    		ResourceManager.singletonStorageSet(PDF_CS_RGB_ID, rgbSpace);
+    	}
+    	
+    	cmykSpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_CS_CMYK_ID);
+    	if(cmykSpace == null)
+    	{
+    		cmykSpace = new PDFColorSpace(new CMYKColorSpace());
+    		ResourceManager.singletonStorageSet(PDF_CS_CMYK_ID, cmykSpace);
+    	}
+    	
+    	patternSpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_PATTERY_SPACE_ID);
+    	if(patternSpace == null)
+    	{
+    		patternSpace = new PatternSpace();
+    		ResourceManager.singletonStorageSet(PDF_PATTERY_SPACE_ID, patternSpace);
+    	}
+    	
         boolean useSGray = true;
         
-        try
+        graySpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_CS_GRAY_ID);
+        if(graySpace == null)
         {
-            graySpace = new PDFColorSpace((!useSGray) ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : new ICC_ColorSpace(ICC_Profile.getInstance(ResourceManager.getResource("colorspace").getStream("sGray.icc"))));
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException();
+	        try
+	        {
+	            graySpace = new PDFColorSpace((!useSGray) ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : new ICC_ColorSpace(ICC_Profile.getInstance(ResourceManager.getResource("colorspace").getStream("sGray.icc"))));
+	            ResourceManager.singletonStorageSet(PDF_CS_GRAY_ID, graySpace);
+	        }
+	        catch (Exception e)
+	        {
+	            throw new RuntimeException();
+	        }
         }
     }
     

@@ -62,7 +62,7 @@ public class SoftReference
 			synchronized(obj)
 			{
 				store.remove(SOFT_REFERENCE_ID);
-				//free = freeVector((Vector)obj); //Originally freed each object in the array... For a 4MB PDF, pre-rendering then freeing it took about 6min. Way to 
+				//free = freeVector((Vector)obj); //Originally freed each object in the array... For a 4MB PDF, pre-rendering then freeing it took about 6min. Way too 
 				//		long, though this is what RIM's sample code had they also say in their documents that when arrays are freed each element in the array is also 
 				//		freed. Let them do the work.
 				LowMemoryManager.markAsRecoverable(obj);

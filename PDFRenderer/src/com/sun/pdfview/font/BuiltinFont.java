@@ -41,6 +41,7 @@ import com.sun.pdfview.helper.Properties;
 public class BuiltinFont extends Type1Font
 {
 	/** the properties file */
+	private static final long BUILT_IN_FONT_PROPERTIES_ID = 0x970687E93FC96C74L;
     private static Properties props;
     /** the fonts themselves */
     private static Hashtable fonts;
@@ -201,8 +202,13 @@ public class BuiltinFont extends Type1Font
         // load the base fonts properties files, if it isn't already loaded
         if (props == null)
         {
-            props = new Properties();
-            props.load(res.getStream("BaseFonts.properties"));
+        	props = (Properties)ResourceManager.singletonStorageGet(BUILT_IN_FONT_PROPERTIES_ID);
+        	if (props == null)
+        	{
+	            props = new Properties();
+	            props.load(res.getStream("BaseFonts.properties"));
+	            ResourceManager.singletonStorageSet(BUILT_IN_FONT_PROPERTIES_ID, props);
+        	}
         }
         
         // make sure we're a known font

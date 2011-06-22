@@ -20,6 +20,7 @@
  */
 package com.sun.pdfview.helper;
 
+import com.sun.pdfview.ResourceManager;
 import com.sun.pdfview.helper.graphics.color.ICC_ColorSpace;
 import com.sun.pdfview.helper.graphics.color.ICC_ProfileStub;
 
@@ -47,9 +48,13 @@ public abstract class ColorSpace
 	/** Any of the family of CMYK color spaces.*/
 	public static final int TYPE_CMYK = 9;
 	
-	private static ColorSpace cs_Gray = null;
-	private static ColorSpace cs_CIEXYZ = null;
-	private static ColorSpace cs_sRGB = null;
+	private static final long CS_GRAY_ID = 0x1AE1A3BDC83FEE96L;
+	private static final long CS_CIEXYZ_ID = 0x6296029173B47810L;
+	private static final long CS_SRGB_ID = 0xC8711DEA872E1D70L;
+	
+	private static ColorSpace cs_Gray;
+	private static ColorSpace cs_CIEXYZ;
+	private static ColorSpace cs_sRGB;
 	
 	private int type;
 	private int numComponents;
@@ -182,19 +187,34 @@ public abstract class ColorSpace
 			case CS_sRGB:
 				if (cs_sRGB == null)
 				{
-					cs_sRGB = new ICC_ColorSpace(new ICC_ProfileStub(CS_sRGB));
+					cs_sRGB = (ICC_ColorSpace)ResourceManager.singletonStorageGet(CS_SRGB_ID);
+					if (cs_sRGB == null)
+					{
+						cs_sRGB = new ICC_ColorSpace(new ICC_ProfileStub(CS_sRGB));
+						ResourceManager.singletonStorageSet(CS_SRGB_ID, cs_sRGB);
+					}
 				}
 				return cs_sRGB;
 			case CS_CIEXYZ:
 				if (cs_CIEXYZ == null)
 				{
-					cs_CIEXYZ = new ICC_ColorSpace(new ICC_ProfileStub(CS_CIEXYZ));
+					cs_CIEXYZ = (ICC_ColorSpace)ResourceManager.singletonStorageGet(CS_CIEXYZ_ID);
+					if (cs_CIEXYZ == null)
+					{
+						cs_CIEXYZ = new ICC_ColorSpace(new ICC_ProfileStub(CS_CIEXYZ));
+						ResourceManager.singletonStorageSet(CS_CIEXYZ_ID, cs_CIEXYZ);
+					}
 				}
 				return cs_CIEXYZ;
 			case CS_GRAY:
 				if (cs_Gray == null)
 				{
-					cs_Gray = new ICC_ColorSpace(new ICC_ProfileStub(CS_GRAY));
+					cs_Gray = (ICC_ColorSpace)ResourceManager.singletonStorageGet(CS_GRAY_ID);
+					if (cs_CIEXYZ == null)
+					{
+						cs_Gray = new ICC_ColorSpace(new ICC_ProfileStub(CS_GRAY));
+						ResourceManager.singletonStorageSet(CS_GRAY_ID, cs_Gray);
+					}
 				}
 				return cs_Gray;
 		}

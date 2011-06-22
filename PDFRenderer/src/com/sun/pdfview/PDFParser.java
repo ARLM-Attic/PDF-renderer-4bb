@@ -61,7 +61,7 @@ import com.sun.pdfview.i18n.ResourcesResource;
 public class PDFParser extends BaseWatchable
 {
 	/** emit a file of DCT stream data. */
-    public final static String  DEBUG_DCTDECODE_DATA = "debugdctdecode";
+    public static String DEBUG_DCTDECODE_DATA = "debugdctdecode";
     
     // ---- parsing variables
     

@@ -1,11 +1,11 @@
 --Revision Used: 129---
 
 TODO:
-Redo static colorspace storage so they use Runtime store (this reduces time across different apps to startup but is better in the long term, it's actually necessary since it is possible to run the image processing and parsing on deamon threads, which will cause multiple instances of the same Object and increase memory usage. Also, in the case of PDFImage parsing, if ColorSpaces are compared and they where created on different threads then cs.equals(cs) can return false)
--ColorSpace
--ICC_Profile
+Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).
 
-Now do the same thing as before, but for all static variables
+Determine if CCITTFaxDecoder.java can use static final instead of simply static
+
+Make sure that ROP is being used correctly.
 
 It seems almost like CalGreyScale likes to have a blue-tint associated with it, figure out how to correct this when converting images (or maybe just use the native grey colorspace)
 
@@ -23,11 +23,30 @@ Finish FilePicker
 -For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
 -Test
 
+FunctionType4:
+-Make sure that "cvi" and "truncate" actually processes like it is specified (check .class file)
+-Implement "cvr"
+-Double check "ifelse" to make sure that it will execute correctly
+-Get "copy" working (seems like they tried and failed)
+-Implement "parse" function
+-Implement "doFunction" function
+-Implement "popBoolean" function
+-Implement "pushBoolean" function
+-Implement "popDouble" function
+-Implement "pushDouble" function
+-Implement "popExpression" function
+-Implement "pushExpression" function
+-Implement "popLong" function
+-Implement "pushLong" function
+-Implement "popObject" function
+-Implement "pushObject" function
+-Implement "readPS" function
+-Implement "Expression"
+
 Figure out how to handle large PDFs. As of right now it will get out of memory exceptions.
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---font.Type3Font
 --font.Type1Font
 --font.Type1CFont
 --font.PDFFontEncoding

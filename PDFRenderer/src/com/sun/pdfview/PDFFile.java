@@ -116,17 +116,55 @@ public class PDFFile
     private PDFObject fileIdentifier = null;
     
     /**
-     * Developer should call this whenever their app closes and it uses/used any object in this library.
+     * Clean up any references that were created by the app. This simply calls does the call {@link #appClosing(boolean, boolean) appClosing(cleanRef, false)}.
+     * <br>
+     * There are 2 kinds of references. One is app references which are created by the PDF for use by the PDF only. The second is for general references that can 
+     * be reused across multiple PDFs and devices. This function cleans the PDF references, and if {@link cleanRef} is <code>true</code>, it cleans the general
+     * references.
+     * @param cleanRef If <code>true</code> then "general references" (see above note) are cleaned up.
+     */
+    public static void appClosing(boolean cleanRef)
+    {
+    	appClosing(cleanRef, false);
+    }
+    
+    /**
+     * Clean up any references that were created by the app. This calls {@link #appClosing()} before performing any extra "cleaning" refernces.
+     * There are 2 kinds of references. One is app references which are created by the PDF for use by the PDF only. The second is for general references that can 
+     * be reused across multiple PDFs and devices. This function cleans the PDF references, and if {@link cleanRef} is <code>true</code>, it cleans the general
+     * references. As an extra, option, PDFs use colorspaces through the LCMS library. If {@link cleanRef} is <code>true</code> and {@link cleanColorspace} is
+     * <code>true</code> then LCMS references will be cleaned up.
+     * @param cleanRef If <code>true</code> then "general references" (see above note) are cleaned up.
+     * @param cleanColorspace If <code>true</code> then LCMS references are cleaned. This will only occur if {@link cleanRef} is <code>true</code>.
+     */
+    public static void appClosing(boolean cleanRef, boolean cleanColorspace)
+    {
+    	appClosing();
+    	if(cleanRef)
+    	{
+    		ResourceManager.singltonStorageCleanup();
+    		if(cleanColorspace)
+    		{
+    			littlecms.internal.helper.Utility.singltonStorageCleanup();
+    		}
+    	}
+    }
+    
+    /**
+     * Developer should call this whenever their app closes and it uses/used any object in this library. Note this will remove all loaded entries used by this app. 
+     * If previous apps executed and didn't call this, their data will be removed as well.
+     * <br>
+     * There are 2 kinds of references. One is app references which are created by the PDF for use by the PDF only. The second is for general references that can 
+     * be reused across multiple PDFs and devices. This function only cleans the PDF references.
      */
     public static void appClosing()
     {
-    	ResourceManager.singltonStorageCleanup();
 //#ifndef NATIVE_SOFTREFERENCE
     	//Little hack to clean up references to this library. This won't work if multiple apps access this library at the same time. Luckily the SoftReferences that this
     	//would clean up will be recreated if they are removed.
     	new SoftReference(new String[]{"CLEANUP_REFRENCES_CALLBACK", "PSW:00221133"});
 //#endif
-    	//TODO: If a native SoftReference is created then how should references be cleaned up?
+    	//TODO: If a native SoftReference is created then how should references be cleaned up? Maybe it will automatically get cleaned up when all references are removed.
     }
     
     //TODO: Add support for InputStream but make sure that if it is something like a input stream from a HTTP request that the file can be read in sections and doesn't need full, instant loads.

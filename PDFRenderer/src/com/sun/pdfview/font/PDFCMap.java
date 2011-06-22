@@ -38,6 +38,7 @@ public abstract class PDFCMap
 	/**
      * A cache of known CMaps by name
      */
+	private static final long CACHE_ID = 0x6C0B12C2A3CDAF6AL;
     private static Hashtable cache;
     
     /** Creates a new instance of CMap */
@@ -71,7 +72,12 @@ public abstract class PDFCMap
     {
         if (cache == null)
         {
-            populateCache();
+        	cache = (Hashtable)com.sun.pdfview.ResourceManager.singletonStorageGet(CACHE_ID);
+        	if (cache == null)
+        	{
+        		populateCache();
+        		com.sun.pdfview.ResourceManager.singletonStorageSet(CACHE_ID, cache);
+        	}
         }
         
         if (!cache.containsKey(mapName))
@@ -85,9 +91,10 @@ public abstract class PDFCMap
     /**
      * Populate the cache with well-known types
      */
-    protected static void populateCache() {
+    protected static void populateCache()
+    {
         cache = new Hashtable();
-    
+        
         // add the Identity-H map
         cache.put("Identity-H", new PDFCMap()
         {

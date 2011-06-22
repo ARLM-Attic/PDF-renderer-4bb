@@ -65,15 +65,33 @@ import net.rim.device.api.io.LineReader;
 public class AdobeGlyphList
 {
 	/** provide a translation from a glyph name to the possible unicode values. */
+	private static final long GLYPH_TO_UNICODE_ID = 0x6AAE9EAE44A58DF0L;
     static private Hashtable glyphToUnicodes;
     /** provide a translation from a unicode value to a glyph name. */
+    private static final long UNICODE_TO_GLYPH_ID = 0xA64118F5A97DCB2L;
     static private Hashtable unicodeToGlyph;
     /** the loader thread we are reading through. */
+    private static final long GLYPH_LOADER_ID = 0x25199A0E9FCF4700L; //This is an odd one to store but what basically will happen is a dead thread will be returned and will do nothing.
     static Thread glyphLoaderThread = null;
     
     static
     {
-        new AdobeGlyphList();
+    	if(glyphToUnicodes == null)
+    	{
+	    	glyphToUnicodes = (Hashtable)ResourceManager.singletonStorageGet(GLYPH_TO_UNICODE_ID);
+	    	if(glyphToUnicodes == null)
+	    	{
+	    		new AdobeGlyphList();
+	    		ResourceManager.singletonStorageSet(GLYPH_TO_UNICODE_ID, glyphToUnicodes);
+	    		ResourceManager.singletonStorageSet(UNICODE_TO_GLYPH_ID, unicodeToGlyph);
+	    		ResourceManager.singletonStorageSet(GLYPH_LOADER_ID, glyphLoaderThread);
+	    	}
+	    	else
+	    	{
+	    		unicodeToGlyph = (Hashtable)ResourceManager.singletonStorageGet(UNICODE_TO_GLYPH_ID);
+	    		glyphLoaderThread = (Thread)ResourceManager.singletonStorageGet(GLYPH_LOADER_ID);
+	    	}
+    	}
     }
     
     /** 

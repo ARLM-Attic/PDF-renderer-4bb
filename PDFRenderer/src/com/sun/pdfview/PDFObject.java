@@ -98,7 +98,22 @@ public class PDFObject
     public static final int OBJ_NUM_TRAILER = -1;
 
     /** the NULL PDFObject */
+    //private static final long NULL_OBJ_ID = 0xD83DF8FB297756A0L;
     public static final PDFObject nullObj = new PDFObject(null, NULL, null);
+    /*
+    static
+    {
+    	if(nullObj == null)
+    	{
+    		nullObj = (PDFObject)com.sun.pdfview.ResourceManager.singletonStorageGet(NULL_OBJ_ID);
+    		if(nullObj == null)
+    		{
+    			nullObj = new PDFObject(null, NULL, null);
+    			com.sun.pdfview.ResourceManager.singletonStorageSet(NULL_OBJ_ID, nullObj);
+    		}
+    	}
+    }
+    */
     /** the type of this object */
     private int type;
     /** the value of this object. It can be a wide number of things, defined by type */
