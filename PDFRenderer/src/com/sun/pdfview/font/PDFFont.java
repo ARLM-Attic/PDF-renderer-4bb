@@ -207,7 +207,7 @@ public abstract class PDFFont
         }
         else
         {
-            throw new PDFParseException("Don't know how to handle a '" + subType + "' font");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_FONT_HANDLE_FONT, new Object[]{subType}));
         }
         
         font.setSubtype(subType);

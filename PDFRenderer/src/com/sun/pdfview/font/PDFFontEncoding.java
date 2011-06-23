@@ -101,7 +101,7 @@ public class PDFFontEncoding
             }
             else
             {
-                throw new IllegalArgumentException("Uknown encoding type: " + type);
+                throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_ENCODING_UNK_ENCODING_TYPE, new Object[]{new Integer(type)}));
             }
         }
     }
@@ -213,7 +213,7 @@ public class PDFFontEncoding
                 }
                 else
                 {
-                    throw new IllegalArgumentException("Unexpected type in diff array: " + diffArray[i]);
+                    throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_ENCODING_UNEXPECTED_TYPE, new Object[]{diffArray[i].toString()}));
                 }
             }
         }
@@ -236,7 +236,7 @@ public class PDFFontEncoding
         }
         else
         {
-            throw new IllegalArgumentException("Unknown encoding: " + encodingName);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_ENCODING_UNK_ENCODING, new Object[]{encodingName}));
         }
     }
 }

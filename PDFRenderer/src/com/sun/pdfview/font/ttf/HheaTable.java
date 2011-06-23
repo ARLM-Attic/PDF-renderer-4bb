@@ -92,7 +92,7 @@ public class HheaTable extends TrueTypeTable
     {
         if (data.remaining() != 36)
         {
-            throw new IllegalArgumentException("Bad Head table size");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_HHEA_BAD_SIZE));
         }
         setVersion(data.getInt());
         setAscent(data.getShort());

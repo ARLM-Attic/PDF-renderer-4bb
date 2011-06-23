@@ -110,7 +110,7 @@ public class CMapFormat0 extends CMap
     {
         if (glyphIndex.length != 256)
         {
-            throw new IllegalArgumentException("Glyph map must be size 256!");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_CMAP0_BAD_GLYPH_MAP_SIZE));
         }
         
         this.glyphIndex = glyphIndex;
@@ -159,12 +159,12 @@ public class CMapFormat0 extends CMap
     {
         if (length != 262)
         {
-            throw new IllegalArgumentException("Bad length for CMap format 0");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_CMAP0_BAD_LEN));
         }
         
         if (data.remaining() != 256)
         {
-            throw new IllegalArgumentException("Wrong amount of data for CMap format 0");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_CMAP0_WRONG_DATA_AMOUNT));
         }
         
         byte[] map = new byte[256];

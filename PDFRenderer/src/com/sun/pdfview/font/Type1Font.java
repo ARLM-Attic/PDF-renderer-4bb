@@ -632,12 +632,12 @@ public class Type1Font extends OutlineFont
                 switch (v)
                 {
                     case 0:   // x
-                        throw new RuntimeException("Bad command (" + v + ")");
+                        throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1_BAD_CMD, new Object[]{new Integer(v)}));
                     case 1:   // hstem
                         sloc = 0;
                         break;
                     case 2:   // x
-                        throw new RuntimeException("Bad command (" + v + ")");
+                        throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1_BAD_CMD, new Object[]{new Integer(v)}));
                     case 3:   // vstem
                         sloc = 0;
                         break;
@@ -783,7 +783,7 @@ public class Type1Font extends OutlineFont
                         }
                         else
                         {
-                            throw new RuntimeException("Bad command (" + v + ")");
+                            throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1_BAD_CMD, new Object[]{new Integer(v)}));
                         }
                         break;
                     case 13:  // s w hsbw
@@ -803,7 +803,7 @@ public class Type1Font extends OutlineFont
                     case 18:  // x
                     case 19:  // x
                     case 20:  // x
-                        throw new RuntimeException("Bad command (" + v + ")");
+                        throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1_BAD_CMD, new Object[]{new Integer(v)}));
                     case 21:  // x y rmoveto
                         pt.y += pop();
                         pt.x += pop();
@@ -822,7 +822,7 @@ public class Type1Font extends OutlineFont
                     case 27:  // x
                     case 28:  // x
                     case 29:  // x
-                        throw new RuntimeException("Bad command (" + v + ")");
+                        throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1_BAD_CMD, new Object[]{new Integer(v)}));
                     case 30:  // y1 x2 y2 x3 vhcurveto
                         x3 = pop();
                         y2 = pop();

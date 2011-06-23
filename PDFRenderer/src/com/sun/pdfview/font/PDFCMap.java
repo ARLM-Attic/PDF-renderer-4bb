@@ -61,7 +61,7 @@ public abstract class PDFCMap
         }
         else
         {
-            throw new IOException("CMap type not Name or Stream!");
+            throw new IOException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_CMAP_NOT_NAME_OR_STREAM));
         }
     }
     
@@ -82,7 +82,7 @@ public abstract class PDFCMap
         
         if (!cache.containsKey(mapName))
         {
-            throw new IOException("Unknown CMap: " + mapName);
+            throw new IOException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_CMAP_UNK_CMAP, new Object[]{mapName}));
         }
         
         return (PDFCMap)cache.get(mapName);
@@ -110,7 +110,7 @@ public abstract class PDFCMap
      */
     protected static PDFCMap parseCMap(PDFObject map) throws IOException
     {
-        throw new IOException("Parsing CMap Files Unsupported!");
+        throw new IOException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_CMAP_UNSUPPORTED_PARSE));
     }
     
     /**

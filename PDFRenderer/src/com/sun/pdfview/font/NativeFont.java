@@ -112,7 +112,7 @@ public class NativeFont extends OutlineFont
             }
             catch (Exception ffe)
             {
-                throw new PDFParseException ("Font format exception: " + ffe);
+                throw new PDFParseException (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_NATIVE_FORMAT, new Object[]{ffe.toString()}));
             }
         }
         else

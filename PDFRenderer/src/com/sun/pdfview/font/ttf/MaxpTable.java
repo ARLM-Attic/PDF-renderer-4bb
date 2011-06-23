@@ -112,7 +112,7 @@ public class MaxpTable extends TrueTypeTable
     {
         if (data.remaining() != 32)
         {
-            throw new IllegalArgumentException("Bad size for Maxp table");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_MAXP_BAD_SIZE));
         }
         
         setVersion(data.getInt());

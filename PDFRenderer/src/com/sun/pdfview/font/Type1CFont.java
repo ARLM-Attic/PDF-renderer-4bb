@@ -198,7 +198,7 @@ public class Type1CFont extends OutlineFont
         else if (!charstring) // dict shouldn't have a 255 code
         {
             printData ();
-            throw new RuntimeException ("Got a 255 code while reading dict");
+            throw new RuntimeException (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1C_DICT_255_CODE));
         }
         else // num was 255
         {
@@ -326,7 +326,7 @@ public class Type1CFont extends OutlineFont
         int encsz = readByte();
         if (encsz < 1 || encsz > 4)
         {
-            throw new RuntimeException ("Offsize: " + encsz + ", must be in range 1-4.");
+            throw new RuntimeException (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1C_OFFSIZE_OUT_OF_RANGE, new Object[]{new Integer(encsz)}));
         }
         // pos is now at the first offset.  last offset is at count*encsz
         pos += count * encsz;
@@ -406,7 +406,7 @@ public class Type1CFont extends OutlineFont
         int encsz = readByte ();
         if (encsz < 1 || encsz > 4)
         {
-            throw new RuntimeException("Offsize: " + encsz + ", must be in range 1-4.");
+            throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1C_OFFSIZE_OUT_OF_RANGE, new Object[]{new Integer(encsz)}));
         }
         pos += encsz * id;
         int from = readInt(encsz);
@@ -697,7 +697,7 @@ public class Type1CFont extends OutlineFont
         if (readInt(2) != 1)
         {
             printData();
-            throw new RuntimeException ("More than one font in this file!");
+            throw new RuntimeException (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TYPE1C_GT_1_FONT));
         }
         Range r = getIndexEntry(fnames, 0);
         fontname = new String(data, r.getStart(), r.getLen());

@@ -66,7 +66,7 @@ public class CMapFormat4 extends CMap
     {
         if (map.length != (endCode - startCode) + 1)
         {
-            throw new IllegalArgumentException("Wrong number of entries in map");
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_CMAP4_WRONG_ENT_COUNT));
         }
         
         Segment s = new Segment(startCode, endCode, true);

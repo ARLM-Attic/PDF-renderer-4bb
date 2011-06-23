@@ -214,7 +214,7 @@ public class BuiltinFont extends Type1Font
         // make sure we're a known font
         if (!props.containsKey(baseFont + ".file"))
         {
-            throw new IllegalArgumentException("Unknown Base Font: " + baseFont);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_BUILTIN_UNK_BASE, new Object[]{baseFont}));
         }
         
         // get the font information from the properties file

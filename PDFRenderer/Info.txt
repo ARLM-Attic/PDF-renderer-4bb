@@ -47,19 +47,6 @@ Figure out how to handle large PDFs. As of right now it will get out of memory e
 
 Finish localization
 -Finish general localization (com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_PATTERN_NAME)):
---font.Type1Font
---font.Type1CFont
---font.PDFFontEncoding
---font.PDFFont
---font.PDFCMap
---font.NativeFont
---font.BuiltinFont
---font.ttf.TrueTypeTable
---font.ttf.MaxpTable
---font.ttf.HheaTable
---font.ttf.HeadTable
---font.ttf.CMapFormat4
---font.ttf.CMapFormat0
 --decrypt.StandardDecrypter
 --decrypt.PDFDecrypterFactory
 --decrypt.CryptFilterDecrypter

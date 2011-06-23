@@ -193,7 +193,7 @@ public class TrueTypeTable
         
         if (c.length != 4)
         {
-            throw new IllegalArgumentException("Bad tag length: " + tag);
+            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTF_TTTABLE_BAD_TAG_LEN, new Object[]{tag}));
         }
         
         return c[0] << 24 | c[1] << 16 | c[2] << 8 | c[3];
