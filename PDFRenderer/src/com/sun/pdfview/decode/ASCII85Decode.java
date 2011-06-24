@@ -98,7 +98,7 @@ public class ASCII85Decode
                 }
                 else
                 {
-                    throw new PDFParseException("Bad character in ASCII85Decode: not ~>");
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_ASCII_85_BAD_CHAR));
                 }
             }
             else if (five[i] >= '!' && five[i] <= 'u')
@@ -114,12 +114,12 @@ public class ASCII85Decode
                 }
                 else
                 {
-                    throw new PDFParseException("Inappropriate 'z' in ASCII85Decode");
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_ASCII_85_INAPPROPRIATE_Z));
                 }
             }
             else
             {
-                throw new PDFParseException("Bad character in ASCII85Decode: " + five[i] + " (" + (char) five[i] + ")");
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECODE_ASCII_85_BAD_CHAR_FORM, new Object[]{new Integer(five[i])}));
             }
         }
         

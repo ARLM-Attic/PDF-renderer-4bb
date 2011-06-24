@@ -74,12 +74,12 @@ public class CryptFilterDecrypter implements PDFDecrypter
         defaultStreamDecrypter = (PDFDecrypter)this.decrypters.get(defaultStreamCryptName);
         if (defaultStreamDecrypter == null)
         {
-            throw new PDFParseException("Unknown crypt filter specified as default for streams: " + defaultStreamCryptName);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FILTER_UNK_CRYPT_STREAM, new Object[]{defaultStreamCryptName}));
         }
         defaultStringDecrypter = (PDFDecrypter)this.decrypters.get(defaultStringCryptName);
         if (defaultStringDecrypter == null)
         {
-            throw new PDFParseException("Unknown crypt filter specified as default for strings: " + defaultStringCryptName);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FILTER_UNK_CRYPT_STRING, new Object[]{defaultStringCryptName}));
         }
     }
 
@@ -93,9 +93,9 @@ public class CryptFilterDecrypter implements PDFDecrypter
         else
         {
             decrypter = (PDFDecrypter)decrypters.get(cryptFilterName);
-            if (decrypter == null) {
-                throw new PDFParseException("Unknown CryptFilter: " +
-                        cryptFilterName);
+            if (decrypter == null)
+            {
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FILTER_UNK_CRYPTFILTER, new Object[]{cryptFilterName}));
             }
         }
         return decrypter.decryptBuffer(

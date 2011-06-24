@@ -49,7 +49,7 @@ public class GoToAction extends PDFAction
         PDFObject destObj = obj.getDictRef("D");
         if (destObj == null)
         {
-            throw new PDFParseException("No destination in GoTo action " + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.ACTION_GOTO_NO_DEST, new Object[]{obj.toString()}));
         }
         
         // parse it

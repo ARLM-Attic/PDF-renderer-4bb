@@ -52,6 +52,8 @@ import net.rim.device.api.crypto.InitializationVector;
 import net.rim.device.api.crypto.NoSuchAlgorithmException;
 import net.rim.device.api.crypto.SymmetricKey;
 import net.rim.device.api.util.Arrays;
+import com.sun.pdfview.ResourceManager;
+import com.sun.pdfview.i18n.ResourcesResource;
 
 //TODO: Go through and redo exceptions, and make sure everything works properly
 
@@ -205,12 +207,12 @@ public class StandardDecrypter implements PDFDecrypter
             // Unexpected, as our test of JCE availability should have caught
             // problems with cipher availability.
             // It may well be a problem with document content?
-            throw new PDFParseException("Unable to check passwords: " + e.getMessage());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_CANT_CHECK_PASSWORD, new Object[]{e.getMessage()}));
         }
 
         if (generalKeyBytes == null)
         {
-            throw new PDFAuthenticationFailureException("Password failed authentication for both owner and user password");
+            throw new PDFAuthenticationFailureException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_PASSWORD_FAIL_AUTHENT));
         }
     }
     
@@ -218,7 +220,7 @@ public class StandardDecrypter implements PDFDecrypter
     {
         if (cryptFilterName != null)
         {
-            throw new PDFParseException("This encryption version does not support Crypt filters");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_ENCRYP_VER_UNSUPPORT_FILTER));
         }
         
         if (streamObj != null)
@@ -294,11 +296,11 @@ public class StandardDecrypter implements PDFDecrypter
         }
         catch (PDFParseException e)
         {
-            throw new PDFParseException("Internal error; failed to produce test cipher: " + e.getMessage());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_FAIL_MAKE_TEST_CIPHER, new Object[]{e.getMessage()}));
         }
         catch (NoSuchAlgorithmException e)
         {
-            throw new EncryptionUnsupportedByPlatformException("JCE does not offer required cipher");
+            throw new EncryptionUnsupportedByPlatformException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BB_NO_OFFER_CIPHER));
         }
         /*
         catch (NoSuchPaddingException e)
@@ -316,7 +318,7 @@ public class StandardDecrypter implements PDFDecrypter
         */
         catch (CryptoException e)
         {
-        	throw new EncryptionUnsupportedByPlatformException("JCE did not accept cipher parameter");
+        	throw new EncryptionUnsupportedByPlatformException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BB_NO_ACCEPT_CIPHER_PARAM));
 		}
         
         try
@@ -325,7 +327,7 @@ public class StandardDecrypter implements PDFDecrypter
         }
         catch (NoSuchAlgorithmException e)
         {
-            throw new EncryptionUnsupportedByPlatformException("No MD5 digest available from JCE");
+            throw new EncryptionUnsupportedByPlatformException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_NO_MD5));
         }
         
         if (encryptionAlgorithm != EncryptionAlgorithm.RC4)
@@ -341,11 +343,11 @@ public class StandardDecrypter implements PDFDecrypter
             }
             catch(CryptoTokenException te)
             {
-            	throw new EncryptionUnsupportedByPlatformException("JCE did not accept 40-bit RC4 key; policy problem?");
+            	throw new EncryptionUnsupportedByPlatformException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BB_RC4_KEY));
             }
             catch (CryptoException e)
             {
-                throw new EncryptionUnsupportedByPlatformException("JCE did not offer RC4 cipher");
+                throw new EncryptionUnsupportedByPlatformException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BB_NO_OFFER_RC4));
             }
         }
     }
@@ -368,7 +370,7 @@ public class StandardDecrypter implements PDFDecrypter
         catch (CryptoException e)
         {
             // we should have caught this earlier in testCipherAvailability
-            throw new PDFParseException("Unable to create cipher due to platform limitation: " + e.getMessage());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_PLATFORM_CIPHER_DENIAL, new Object[]{e.getMessage()}));
         }
         
         try
@@ -383,7 +385,7 @@ public class StandardDecrypter implements PDFDecrypter
         }
         catch (CryptoException e)
         {
-            throw new PDFParseException("Could not decrypt: " + e.getMessage());
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_DECRYPT_FAIL, new Object[]{e.getMessage()}));
         }
     }
     
@@ -431,16 +433,16 @@ public class StandardDecrypter implements PDFDecrypter
             }
             else
             {
-                throw new PDFParseException("AES encrypted stream too short - no room for initialisation vector");
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_INIT_VECTOR_TOO_SMALL));
             }
             
             final AESKey aesKey = new AESKey(decryptionKeyBytes);
             final InitializationVector aesIv = new InitializationVector(initialisationVector);
             cipher = DecryptorFactory.getBlockDecryptorEngine(aesKey, CIPHER_AES, aesIv);
         }
-        else 
+        else
         {
-            throw new PDFParseException("Internal error - unhandled cipher type: " + encryptionAlgorithm);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_UNHANDLED_CIPHER_TYPE, new Object[]{new Integer(encryptionAlgorithm)}));
         }
         return cipher;
     }
@@ -477,7 +479,7 @@ public class StandardDecrypter implements PDFDecrypter
         catch (NoSuchAlgorithmException e)
         {
             // unexpected, as we will already have tested availability
-            throw new PDFParseException("Unable to get MD5 digester");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_NO_MD5_DIGEST));
         }
         md5.update(this.generalKeyBytes);
         md5.update((byte)objNum);
@@ -532,11 +534,11 @@ public class StandardDecrypter implements PDFDecrypter
     {
         if (objNum < 0)
         {
-            throw new PDFParseException("Internal error: Object has bogus object number");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BOGUS_NUMBER));
         }
         else if (objGen < 0)
         {
-            throw new PDFParseException("Internal error: Object has bogus generation number");
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.DECRYPT_STANDARD_BOGUS_GENERATION));
         }
     }
     
@@ -624,7 +626,7 @@ public class StandardDecrypter implements PDFDecrypter
         }
         else
         {
-            throw new EncryptionUnsupportedByProductException("Unsupported standard security handler revision " + revision);
+            throw new EncryptionUnsupportedByProductException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_UNSUPPORTED_SECURITY_HANDLER_REV, new Object[]{new Integer(revision)}));
         }
     }
     
@@ -729,7 +731,7 @@ public class StandardDecrypter implements PDFDecrypter
         }
         else
         {
-            throw new EncryptionUnsupportedByProductException("Unsupported revision: " + revision);
+            throw new EncryptionUnsupportedByProductException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_UNSUPPORTED_REV, new Object[]{new Integer(revision)}));
         }
         
         // Step 3: The result of step 2 purports to be the user password.
@@ -829,7 +831,7 @@ public class StandardDecrypter implements PDFDecrypter
         PDFUtil.assert(calculatedUValue.length == 32, "calculatedUValue.length == 32");
         if (uValue.length != calculatedUValue.length)
         {
-            throw new PDFParseException("Improper U entry length; expected 32, is " + uValue.length);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.DECRYPT_STANDARD_IMPROPER_U_LEN, new Object[]{new Integer(uValue.length)}));
         }
         // Only the first 16 bytes are significant if using revision > 2
         final int numSignificantBytes = revision == 2 ? 32 : 16;

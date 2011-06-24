@@ -189,7 +189,7 @@ public class PDFDecoder
                 }
                 else
                 {
-                    throw new PDFParseException("Unknown coding method:" + spec.ary[i].getStringValue());
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECODE_DECODER_UNK_CODING_METHOD, new Object[]{spec.ary[i].getStringValue()}));
                 }
             }
         }

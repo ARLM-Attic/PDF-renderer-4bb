@@ -105,16 +105,16 @@ public class PDFDecrypterFactory
                 }
                 else
                 {
-                    throw new EncryptionUnsupportedByPlatformException("Unsupported encryption version: " + v);
+                    throw new EncryptionUnsupportedByPlatformException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_UNSUPPORTED_ENCRYPT_VER, new Object[]{new Integer(v)}));
                 }
             }
             else if (filter == null)
             {
-                throw new PDFParseException("No Filter specified in Encrypt dictionary");
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_NO_FILTER_SPECIFIED));
             }
             else
             {
-                throw new EncryptionUnsupportedByPlatformException("Unsupported encryption Filter: " + filter + "; only Standard is supported.");
+                throw new EncryptionUnsupportedByPlatformException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_UNSUPPORTED_ENCRYPT_FILTER, new Object[]{filter.toString()}));
             }
         }
     }
@@ -161,7 +161,7 @@ public class PDFDecrypterFactory
         final PDFObject cfDict = encryptDict.getDictRef("CF");
         if (cfDict == null)
         {
-            throw new PDFParseException("No CF value present in Encrypt dict for V4 encryption");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_CF_DICT_V4));
         }
         final Enumeration cfNameIt = cfDict.getDictKeys();
         while (cfNameIt.hasMoreElements())
@@ -194,7 +194,7 @@ public class PDFDecrypterFactory
             }
             else
             {
-                throw new UnsupportedOperationException("Unknown CryptFilter method: " + cfm);
+                throw new UnsupportedOperationException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_UNK_CRYPTFILTER, new Object[]{cfm}));
             }
             cfDecrypters.put(cfName, cfDecrypter);
         }
@@ -251,44 +251,44 @@ public class PDFDecrypterFactory
         final PDFObject rObj = encryptDict.getDictRef("R");
         if (rObj == null)
         {
-            throw new PDFParseException("No R entry present in Encrypt dictionary");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_NO_R_IN_DICT));
         }
         
         final int revision = rObj.getIntValue();
         if (revision < 2 || revision > 4)
         {
-            throw new EncryptionUnsupportedByPlatformException("Unsupported Standard security handler revision; R=" + revision);
+            throw new EncryptionUnsupportedByPlatformException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_UNSUP_R_REV, new Object[]{new Integer(revision)}));
         }
         
         // O describes validation details for the owner key
         final PDFObject oObj = encryptDict.getDictRef("O");
         if (oObj == null)
         {
-            throw new PDFParseException("No O entry present in Encrypt dictionary");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_NO_O_IN_DICT));
         }
         final byte[] o = oObj.getStream();
         if (o.length != 32)
         {
-            throw new PDFParseException("Expected owner key O value of 32 bytes; found " + o.length);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_O_OUTOFRANGE, new Object[]{new Integer(o.length)}));
         }
         
         // U describes validation details for the user key
         final PDFObject uObj = encryptDict.getDictRef("U");
         if (uObj == null)
         {
-            throw new PDFParseException("No U entry present in Encrypt dictionary");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_NO_U_IN_DICT));
         }
         final byte[] u = uObj.getStream();
         if (u.length != 32)
         {
-            throw new PDFParseException("Expected user key U value of 32 bytes; found " + o.length);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_U_OUTOFRANGE, new Object[]{new Integer(u.length)}));
         }
         
         // P describes the permissions regarding document usage
         final PDFObject pObj = encryptDict.getDictRef("P");
         if (pObj == null)
         {
-            throw new PDFParseException("Required P entry in Encrypt dictionary not found");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECRYPT_FACTORY_NO_P_IN_DICT));
         }
         
         return new StandardDecrypter(encryptionAlgorithm, documentId, keyLength.intValue(), revision, o, u, pObj.getIntValue(), encryptMetadata, password);

@@ -92,7 +92,7 @@ public class FlateDecode
         }
         catch (IOException dfe)
         {
-            throw new PDFParseException("Data format exception:" + dfe.getMessage());
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECODE_FLATE_DATA_FORMAT_EXCEPTION, new Object[]{dfe.getMessage()}));
         }
         
         // return the output as a byte buffer

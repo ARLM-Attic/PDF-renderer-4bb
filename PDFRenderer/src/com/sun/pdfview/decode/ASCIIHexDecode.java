@@ -86,7 +86,7 @@ public class ASCIIHexDecode
                 else
                 {
                     // unknown character
-                    throw new PDFParseException("Bad character " + c + "in ASCIIHex decode");
+                    throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECODE_ASCII_HEX_BAD_CHAR, new Object[]{new Integer(c)}));
                 }
                 
                 // return the useful character
@@ -95,7 +95,7 @@ public class ASCIIHexDecode
         }
         
         // end of stream reached
-        throw new PDFParseException("Short stream in ASCIIHex decode");
+        throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_ASCII_HEX_EOS));
     }
     
     /**

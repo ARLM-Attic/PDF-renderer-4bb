@@ -161,7 +161,7 @@ public class LZWDecode
             cW = nextCode();
             if (cW == -1)
             {
-                throw new PDFParseException("Missed the stop code in LZWDecode!");
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_LZW_MISSED_STOP));
             }
             if (cW == STOP)
             {

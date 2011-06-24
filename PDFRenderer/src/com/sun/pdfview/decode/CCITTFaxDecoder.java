@@ -652,7 +652,7 @@ public class CCITTFaxDecoder
 				else if (bits == 15)
 				{
 					// EOL code
-					throw new RuntimeException("EOL code word encountered in Black run."); //$NON-NLS-1$
+					throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_BLACK)); //$NON-NLS-1$
 				}
 				else
 				{
@@ -728,7 +728,7 @@ public class CCITTFaxDecoder
 				}
 				else if (bits == 0) // ERROR
 				{
-					throw new RuntimeException("Invalid code encountered.");
+					throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_INVALID_CODE));
 				}
 				else if (bits == 15)
 				{
@@ -893,7 +893,7 @@ public class CCITTFaxDecoder
 		// The data must start with an EOL code
 		if (readEOL(true) != 1)
 		{
-			throw new RuntimeException("First scanline must be 1D encoded."); //$NON-NLS-1$
+			throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_SCANLINE_1D)); //$NON-NLS-1$
 		}
 		
 		int lineOffset = 0;
@@ -1007,7 +1007,7 @@ public class CCITTFaxDecoder
 					}
 					else
 					{
-						throw new RuntimeException("Invalid code encountered while decoding 2D group 3 compressed data."); //$NON-NLS-1$
+						throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_INVALID_CODE_2D_GROUP_3)); //$NON-NLS-1$
 					}
 				}
 				
@@ -1182,7 +1182,7 @@ public class CCITTFaxDecoder
 				{
 					if (nextLesserThan8Bits(3) != 7)
 					{
-						throw new RuntimeException("Invalid code encountered while decoding 2D group 4 compressed data."); //$NON-NLS-1$
+						throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_INVALID_CODE_2D_GROUP_4)); //$NON-NLS-1$
 					}
 					
 					int zeros = 0;
@@ -1326,11 +1326,11 @@ public class CCITTFaxDecoder
 			}
 			else if (bits == 0) // ERROR
 			{
-				throw new RuntimeException("Invalid code encountered."); //$NON-NLS-1$
+				throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_INVALID_CODE)); //$NON-NLS-1$
 			}
 			else if (bits == 15) // EOL
 			{
-				throw new RuntimeException("EOL code word encountered in White run."); //$NON-NLS-1$
+				throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_WHITE)); //$NON-NLS-1$
 			}
 			else
 			{
@@ -1428,7 +1428,7 @@ public class CCITTFaxDecoder
 		}
 		else
 		{
-			throw new RuntimeException("tag must be either 1 or 2."); //$NON-NLS-1$
+			throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_TAG_1_OR_2)); //$NON-NLS-1$
 		}
 		
 		int bitsLeft = 8 - bitPointer;
@@ -1510,7 +1510,7 @@ public class CCITTFaxDecoder
 		}
 		else
 		{
-			throw new RuntimeException("tag must be either 1 or 2."); //$NON-NLS-1$
+			throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_TAG_1_OR_2)); //$NON-NLS-1$
 		}
 		
 		int bitsLeft = 8 - bitPointer;
@@ -1558,7 +1558,7 @@ public class CCITTFaxDecoder
 		// Seek to the next EOL.
 		if (!seekEOL())
 		{
-			throw new RuntimeException("EOL not found");
+			throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_NOT_FOUND));
 		}
 		
 		if (!fillBits)
@@ -1579,7 +1579,7 @@ public class CCITTFaxDecoder
 			}
 			if (next12Bits != 1)
 			{
-				throw new RuntimeException("Scanline must begin with EOL code word."); //$NON-NLS-1$
+				throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_NOT_FIRST)); //$NON-NLS-1$
 			}
 		}
 		else
@@ -1591,7 +1591,7 @@ public class CCITTFaxDecoder
 			
 			if (nextNBits(bitsLeft) != 0)
 			{
-				throw new RuntimeException("All fill bits preceding EOL code must be 0."); //$NON-NLS-1$
+				throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_PRECEDED_BY_ZEROS)); //$NON-NLS-1$
 			}
 			
 			// If the number of bitsLeft is less than 8, then to have a 12
@@ -1602,7 +1602,7 @@ public class CCITTFaxDecoder
 			{
 				if (nextNBits(8) != 0)
 				{
-					throw new RuntimeException("All fill bits preceding EOL code must be 0."); //$NON-NLS-1$
+					throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_PRECEDED_BY_ZEROS)); //$NON-NLS-1$
 				}
 			}
 			
@@ -1636,7 +1636,7 @@ public class CCITTFaxDecoder
 					// If not all zeros
 					if (next8 != 0)
 					{
-						throw new RuntimeException("0 bits expected before EOL");
+						throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_CCITTFAX_DECODER_EOL_PRECEDED_BY_ZERO_BITS));
 					}
 					next8 = nextNBits(8);
 				}

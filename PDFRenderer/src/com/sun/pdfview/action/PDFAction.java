@@ -56,7 +56,7 @@ public class PDFAction
         PDFObject typeObj = obj.getDictRef("S");
         if (typeObj == null)
         {
-            throw new PDFParseException("No action type in object: " + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.ACTION_PDF_NO_TYPE, new Object[]{obj.toString()}));
         }
         
         // create the action based on the type
@@ -69,7 +69,7 @@ public class PDFAction
         else
         {
             /** [JK FIXME: Implement other action types! ] */
-            throw new PDFParseException("Unknown Action type: " + type);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.ACTION_PDF_UNK_TYPE, new Object[]{type}));
         }
         
         // figure out if there is a next action
