@@ -345,7 +345,7 @@ public class PDFPage
             	at = new AffineTransform(0, -1, -1, 0, width, height);
                 break;
             default:
-                throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.PAGE_NON_QUAD_ROT) + getRotation());
+                throw new IllegalArgumentException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.PAGE_NON_QUAD_ROT, new Object[]{new Integer(getRotation())}));
         }
         
         // now scale the image to be the size of the clip

@@ -87,7 +87,7 @@ public class PDFXrefEntry
             case TYPE_OBJ_IN_STREAM:
                 return toStreamObject(new PDFXref(field2, 0), field3);
             default:
-                throw new UnsupportedOperationException("Unhandled xref entry type " + type);
+                throw new UnsupportedOperationException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.XREF_ENTRY_UNHANDLED_TYPE, new Object[]{new Integer(type)}));
         }
     }
 	

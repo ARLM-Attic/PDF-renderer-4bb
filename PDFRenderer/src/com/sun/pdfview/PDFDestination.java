@@ -97,7 +97,7 @@ public class PDFDestination
         // make sure we have the right kind of object
         if (obj == null || obj.getType() != PDFObject.ARRAY)
         {
-            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_CANT_MAKE_DESTINATION) + obj);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_CANT_MAKE_DESTINATION, new Object[]{obj.toString()}));
         }
         
         // the array is in the form [page type args ... ]
@@ -140,7 +140,7 @@ public class PDFDestination
         }
         else 
         {
-            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_UNK_DESTINATION) + type);
+            throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DESTINATION_UNK_DESTINATION, new Object[]{type}));
         }
         
         // now fill in the arguments based on the type

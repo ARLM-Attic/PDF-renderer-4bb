@@ -190,7 +190,7 @@ public class BasicStroke
                 {
                     if (dash[i] < 0.0)
                     {
-                        throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_NEG_DASH) + i + ']');
+                        throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_STROKE_NEG_DASH, new Object[]{new Integer(i)}));
                     }
                     if (dash[i] > 0.0)
                     {

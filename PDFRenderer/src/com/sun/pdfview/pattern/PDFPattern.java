@@ -86,7 +86,7 @@ public abstract class PDFPattern
                 pattern = new PatternType1();
                 break;
             default:
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_PATTERN_UNK_PATTERN) + type);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.PATTERN_PATTERN_UNK_PATTERN, new Object[]{new Integer(type)}));
         }
         
         // set the transform

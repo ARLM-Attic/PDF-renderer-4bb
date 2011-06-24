@@ -264,7 +264,7 @@ public class PDFColorSpace
         }
         else
         {
-            throw new PDFParseException("Unknown color space: " + name + " with " + ary[1]);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.COLORSPACE_UNK_COLORSPACE_NAME_WITH_ARR, new Object[]{name, ary[1].toString()}));
         }
         
         csobj.setCache(value);

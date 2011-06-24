@@ -49,8 +49,6 @@ PDFAction: (see ISO32000_2008, section 12.6)
 
 Figure out how to handle large PDFs. As of right now it will get out of memory exceptions.
 
-Finish localization
--All "add code" (with resources) needs to be implemented or rewritten so it uses formatting
 Try to get Geometry.isFilled to properly handle bézier curves properly
 Use preprocessor to remove "debug" code
 Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing

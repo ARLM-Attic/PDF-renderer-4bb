@@ -107,7 +107,7 @@ public abstract class Predictor
                 predictor = new PNGPredictor();
                 break;
             default:
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.DECODE_PREDICTOR_UNK_PREDICTOR) + algorithm);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.DECODE_PREDICTOR_UNK_PREDICTOR, new Object[]{new Integer(algorithm)}));
         }
         
         // read the colors (optional)

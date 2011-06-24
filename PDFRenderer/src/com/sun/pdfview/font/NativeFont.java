@@ -26,10 +26,6 @@ package com.sun.pdfview.font;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-
-import javax.microedition.io.Connector;
-import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.FontFamily;
@@ -250,6 +246,7 @@ public class NativeFont extends OutlineFont
     	this.f = f;
         
         /*Can't get tables from native Font object, skip it
+        XXX Instead try to get the information manually.
         
         // if it's an OpenType font, parse the relevant tables to get
         // glyph name to code mappings
@@ -336,8 +333,8 @@ public class NativeFont extends OutlineFont
                 //{
                 //	String path = PDFUtil.ERROR_DATA_PATH + getBaseFont() + ".fix";
                 //	PDFUtil.ensurePath(path);
-                //	FileConnection con = (FileConnection)Connector.open(path, Connector.READ);
-                //	OutputStream fos2 = con.openOutputStream();
+                //	javax.microedition.io.file.FileConnection con = (javax.microedition.io.file.FileConnection)javax.microedition.io.Connector.open(path, javax.microedition.io.Connector.READ);
+                //	java.io.OutputStream fos2 = con.openOutputStream();
                 //	fos2.write(fontdata);
                 //	fos2.close();
                 //	con.close();

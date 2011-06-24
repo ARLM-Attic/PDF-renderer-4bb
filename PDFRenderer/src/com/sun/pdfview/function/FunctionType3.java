@@ -147,7 +147,7 @@ public class FunctionType3 extends PDFFunction
         PDFObject[] boundsAry = boundsObj.getArray();
         if (boundsAry.length != k - 1)
         {
-            throw new PDFParseException("Bounds array length " + boundsAry.length + " should be " + (k - 1) + " with functions array length " + functions.length);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNC3_BOUNDS_ARRAY_INVALID_LEN, new Object[]{new Integer(boundsAry.length), new Integer(k - 1), new Integer(functions.length)}));
         }
         bounds = new float[len = boundsAry.length];
         for (int i = 0; i < len; i++)
@@ -164,7 +164,7 @@ public class FunctionType3 extends PDFFunction
         PDFObject[] encodeAry = encodeObj.getArray();
         if (encodeAry.length != 2 * k)
         {
-            throw new PDFParseException("There should be " + (2 * k) + " values in Encode for the given number of functions.");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNC3_ENCODE_INVALID_LEN, new Object[]{new Integer(2 * k)}));
         }
         encode = new float[len = encodeAry.length];
         for (int i = 0; i < len; i++)

@@ -294,7 +294,7 @@ public class ICC_ColorSpace extends ColorSpace
 			
 			if (nProfiles <= 0 || nProfiles > 255)
 			{
-				throw new IllegalArgumentException("Wrong number of profiles. 1..255 expected, " + nProfiles + " found.");
+				throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COLOR_COLORSPACE_INVALID_PROFILE_COUNT, new Object[]{new Integer(nProfiles)}));
 			}
 			
 			lcms2.cmsHPROFILE[] iccProfiles = new lcms2.cmsHPROFILE[nProfiles];

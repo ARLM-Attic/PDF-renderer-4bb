@@ -921,7 +921,7 @@ public class PDFUtil
 		{
             if (index != 0)
             {
-            	throw new IndexOutOfBoundsException("Index: " + index + ", Size: 1");
+            	throw new IndexOutOfBoundsException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_UTIL_SINGLETON_INDEX_OUTOFRANGE, new Object[]{new Integer(index)}));
             }
             return element;
          }

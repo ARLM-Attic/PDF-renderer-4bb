@@ -305,7 +305,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         g.setComposite(Composite.getInstance(Composite.SRC_OVER));
         if (!g.drawImage(bi, at))
         {
-            System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.RENDERER_IMAGE_NOT_COMPLETE));
+            System.out.println("Image not completed!");
         }
         
         // get the total transform that was executed
@@ -546,7 +546,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
             bi = (Bitmap)imageRef.get();
             if (bi == null)
             {
-                System.out.println(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.RENDERER_IMAGE_WENT_AWAY));
+                System.out.println("Image went away.  Stopping");
                 return Watchable.STOPPED;
             }
             

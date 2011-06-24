@@ -301,7 +301,7 @@ public class TTFFont extends OutlineFont
             }
             else
             {
-                throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTFFONT_UNSUPPORTED_GLYPH) + gl.getClass().getName());
+                throw new RuntimeException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FONT_TTFFONT_UNSUPPORTED_GLYPH, new Object[]{gl.getClass().getName()}));
             }
             
             // multiply the translations by units per em

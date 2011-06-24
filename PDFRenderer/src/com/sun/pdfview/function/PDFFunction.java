@@ -164,7 +164,7 @@ public abstract class PDFFunction
                 function = new FunctionType4();
                 break;
             default:
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_UNSUPPORTED_TYPE) + type);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FUNCTION_FUNCTION_UNSUPPORTED_TYPE, new Object[]{new Integer(type)}));
         }
         
         // fill in the domain and optionally the range

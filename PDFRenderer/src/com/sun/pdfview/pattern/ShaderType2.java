@@ -84,7 +84,7 @@ public class ShaderType2 extends PDFShader
         PDFObject coordsObj = shaderObj.getDictRef("Coords");
         if (coordsObj == null)
         {
-            throw new PDFParseException("No coordinates found!");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.PATTERN_SHADERTYPE2_NO_COORDINATES));
         }
         PDFObject[] coords = coordsObj.getArray();
         XYPointFloat start = new XYPointFloat(coords[0].getFloatValue(), coords[1].getFloatValue());
@@ -105,7 +105,7 @@ public class ShaderType2 extends PDFShader
         PDFObject functionObj = shaderObj.getDictRef("Function");
         if (functionObj == null)
         {
-            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.SHADER_SHADERTYPE2_NO_SHADER_FUNCTION));
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.PATTERN_SHADERTYPE2_NO_SHADER_FUNCTION));
         }
         PDFObject[] functionArray = functionObj.getArray();
         int len;

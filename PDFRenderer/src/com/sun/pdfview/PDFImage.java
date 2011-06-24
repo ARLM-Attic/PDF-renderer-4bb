@@ -207,7 +207,7 @@ public class PDFImage
         PDFObject widthObj = obj.getDictRef("Width");
         if (widthObj == null)
         {
-            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_WIDTH) + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_WIDTH, new Object[]{obj.toString()}));
         }
         image.setWidth(widthObj.getIntValue());
         
@@ -215,7 +215,7 @@ public class PDFImage
         PDFObject heightObj = obj.getDictRef("Height");
         if (heightObj == null)
         {
-            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_HEIGHT) + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_HEIGHT, new Object[]{obj.toString()}));
         }
         image.setHeight(heightObj.getIntValue());
         
@@ -254,7 +254,7 @@ public class PDFImage
             PDFObject bpcObj = obj.getDictRef("BitsPerComponent");
             if (bpcObj == null)
             {
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_BPC) + obj);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_BPC, new Object[]{obj.toString()}));
             }
             image.setBitsPerComponent(bpcObj.getIntValue());
             
@@ -262,7 +262,7 @@ public class PDFImage
             PDFObject csObj = obj.getDictRef("ColorSpace");
             if (csObj == null)
             {
-                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_COLORSPACE) + obj);
+                throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_CANT_READ_COLORSPACE, new Object[]{obj.toString()}));
             }
             
             PDFColorSpace cs = PDFColorSpace.getColorSpace(csObj, resources);
@@ -1194,9 +1194,9 @@ public class PDFImage
 	            normComponents[normOffset + 1] = decodeMins[1] + (float)(pixels[1] & 0xFF) * decodeCoefficients[1];
 	        case 1:
 	            normComponents[normOffset ] = decodeMins[0] + (float)(pixels[0] & 0xFF) * decodeCoefficients[0];
-	        break;
+	            break;
 	        default:
-	            throw new IllegalArgumentException("Someone needs to add support for more than 4 components");
+	            throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.IMAGE_NORMALIZE_NEED_MORE_THEN_4_COM_IMPL));
         }
         
         return normComponents;

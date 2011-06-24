@@ -79,9 +79,9 @@ public abstract class ColorSpace
 	{
 		if (idx < 0 || idx > numComponents - 1)
 		{
-			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + idx);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX, new Object[]{new Integer(idx)}));
 		}
-		return com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_UNNAMED_COLOR_COMP) + idx;
+		return com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_UNNAMED_COLOR_COMP, new Object[]{new Integer(idx)});
 	}
 	
 	/**
@@ -126,7 +126,7 @@ public abstract class ColorSpace
 	{
 		if (component < 0 || component > numComponents - 1)
 		{
-			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + component);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX, new Object[]{new Integer(component)}));
 		}
 		return 0;
 	}
@@ -141,7 +141,7 @@ public abstract class ColorSpace
 	{
 		if (component < 0 || component > numComponents - 1)
 		{
-			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX) + component);
+			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.HELPER_COLORSPACE_INVALID_COMP_INDEX, new Object[]{new Integer(component)}));
 		}
 		return 1;
 	}

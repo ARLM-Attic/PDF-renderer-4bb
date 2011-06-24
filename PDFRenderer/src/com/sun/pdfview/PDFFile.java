@@ -416,7 +416,7 @@ public class PDFFile
                 // call to entry.resolves() above
                 return PDFObject.nullObj;
 	        default:
-                throw new UnsupportedOperationException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_UNK_XREF_TYPE) + entry.getType());
+                throw new UnsupportedOperationException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_UNK_XREF_TYPE, new Object[]{new Integer(entry.getType())}));
         }
     }
     
@@ -730,7 +730,7 @@ public class PDFFile
             // make sure first item is a NAME
             if (name.getType() != PDFObject.NAME)
             {
-                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_DIC_ELE_NAME_MISSING) + name + ')');
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_DIC_ELE_NAME_MISSING, new Object[]{name.toString()}));
             }
             PDFObject value= readObject(buf, objNum, objGen, decrypter);
             if (value != null)
@@ -1281,7 +1281,7 @@ public class PDFFile
             }
             else
             {
-                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_EXPECTED_XREF_TABLE_STREAM) + header);
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_EXPECTED_XREF_TABLE_STREAM, new Object[]{header.toString()}));
             }
         }
         
@@ -1401,7 +1401,7 @@ public class PDFFile
                     }
                     else
                     {
-                        throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_UNK_XREF_ENTRY_TYPE) + entryType);
+                        throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_UNK_XREF_ENTRY_TYPE, new Object[]{new Integer(entryType & 0xFF)}));
                     }
                     xrefEntries[objNum] = entry;
                 }
@@ -1411,7 +1411,7 @@ public class PDFFile
         // at this point, the "trailer" word (not EOL) has been read, hopefully!
         if (headerObject.getType() != PDFObject.KEYWORD || !"trailer".equals(headerObject.getStringValue()))
         {
-            throw new PDFParseException("Expected to find trailer immediately after xref table, but found " + headerObject + " instead");
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.FILE_EXPECTED_TRAILER, new Object[]{headerObject.toString()}));
         }
         
         PDFObject trailerdict = readObject(fileBuf, -1, -1, IdentityDecrypter.getInstance());
@@ -1981,7 +1981,7 @@ public class PDFFile
         	streams[i] = contents[i].getStream();
             if (streams[i] == null)
             {
-                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getString(ResourcesResource.FILE_NO_STREAM) + i + ": " + contents[i]);
+                throw new PDFParseException(ResourceManager.getResource(ResourceManager.LOCALIZATION).getFormattedString(ResourcesResource.FILE_NO_STREAM, new Object[]{new Integer(i), contents[i].toString()}));
             }
             len += streams[i].length;
         }

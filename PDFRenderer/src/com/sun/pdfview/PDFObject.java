@@ -239,7 +239,7 @@ public class PDFObject
         }
         else
         {
-            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.OBJECT_BAD_RAW_TYPE) + obj);
+            throw new PDFParseException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getFormattedString(com.sun.pdfview.i18n.ResourcesResource.OBJECT_BAD_RAW_TYPE, new Object[]{obj.toString()}));
         }
     }
 

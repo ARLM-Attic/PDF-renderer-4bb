@@ -168,7 +168,7 @@ public abstract class PDFGraphics
 			catch (Exception e)
 			{
 				//Couldn't find or create graphics system.
-				System.err.println("Graphics creation is not supported yet for: " + drawingDevice.getClass() + '.');
+				System.out.println("Graphics creation is not supported for: " + drawingDevice.getClass() + '.');
 			}
 		}
 		
