@@ -105,7 +105,7 @@ public class PageField extends Field
 					scale = Fixed32.toFP(height) / maxHeight;
 				}
 				
-				eimg.scaleImage32(scale, scale);
+				eimg = eimg.scaleImage32(scale, scale);
 				img = eimg.getBitmap();
 			}
 		}

@@ -446,9 +446,13 @@ public class PDFImage
         if (sMaskImage != null)
         {
             Bitmap si = sMaskImage.getImage();
-
+            
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
             Bitmap outImage = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, getWidth(), getHeight());
             outImage.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+//#else
+            Bitmap outImage = new Bitmap(Bitmap.ROWWISE_32BIT_ARGB8888, getWidth(), getHeight());
+//#endif
             
             int[] srcArray = new int[width];
             int[] maskArray = new int[width];
@@ -681,10 +685,18 @@ public class PDFImage
     	{
     		int[] pixData = new int[getWidth() * getHeight()];
     		
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
     		bi = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, getWidth(), getHeight());
+//#else
+    		bi = new Bitmap(Bitmap.ROWWISE_32BIT_XRGB8888, getWidth(), getHeight());
+//#endif
     		if(readData(data, pixData))
     		{
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
     			bi.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+//#else
+    			bi.createAlpha();
+//#endif
     		}
     		
     		//Set the data

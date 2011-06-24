@@ -38,6 +38,7 @@ import net.rim.device.api.ui.Graphics;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
 import com.sun.pdfview.colorspace.PDFColorSpace;
+import com.sun.pdfview.helper.PDFUtil;
 
 /**
  * decode a DCT encoded array into a byte array.  This class uses Java's
@@ -110,6 +111,7 @@ public class DCTDecode
         }
         
         // figure out the type
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
         int type = Bitmap.ROWWISE_16BIT_COLOR;
         if (numComponents == 1)
         {
@@ -119,15 +121,26 @@ public class DCTDecode
         {
         	type = -type;
         }
+//#else
+        int type = Bitmap.ROWWISE_32BIT_XRGB8888;
+        if (numComponents == 4)
+        {
+        	type = Bitmap.ROWWISE_32BIT_ARGB8888;
+        }
+//#endif
         
         // create a buffered image
         int width = img.getWidth();
         int height = img.getHeight();
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
         Bitmap bimg = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, width, height);
         if (numComponents == 4)
         {
         	bimg.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
         }
+//#else
+        Bitmap bimg = new Bitmap(type, width, height);
+//#endif
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
         Graphics bg = Graphics.create(bimg);
 //#else
@@ -142,10 +155,15 @@ public class DCTDecode
     	int[] data = new int[len = width * height];
     	bimg.getARGB(data, 0, 0, 0, 0, width, height);
     	
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
     	byte[] output = new byte[len * ((type == Bitmap.ROWWISE_MONOCHROME) ? 1 : (type == Bitmap.ROWWISE_16BIT_COLOR ? 3 : 4))];
+//#else
+    	PDFUtil.assert(numComponents == 1 || numComponents == 3 || numComponents == 4, "numComponents == 1 || numComponents == 3 || numComponents == 4");
+    	byte[] output = new byte[len * numComponents]; //Unless an odd image type that doesn't use 1, 3, or 4 components this shouldn't have a problem
+//#endif
     	
     	// -Might not necessarily apply to BlackBerry
-    	// incidentally, there's a bit of an optimisation we could apply here,
+    	// incidentally, there's a bit of an optimization we could apply here,
         // if we weren't pretty confident that this isn't actually going to
         // be called, anyway. Namely, if we just use JAI to read in the data
         // the underlying data buffer seems to typically be byte[] based,
@@ -154,9 +172,17 @@ public class DCTDecode
         // we won't bother, since this code is most likely not going
         // to be used.
     	
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
     	switch(type)
+//#else
+    	switch(numComponents)
+//#endif
     	{
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
 	    	case Bitmap.ROWWISE_16BIT_COLOR:
+//#else
+	    	case 3:
+//#endif
 	    		for (int i = 0; i < len; i++)
 	        	{
 	            	output[i * 3] = (byte)(data[i] >> 16);
@@ -164,7 +190,11 @@ public class DCTDecode
 	                output[i * 3 + 2] = (byte)(data[i]);
 	        	}
 	    		break;
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
 	    	case -Bitmap.ROWWISE_16BIT_COLOR:
+//#else
+	    	case 4:
+//#endif
 	    		for (int i = 0; i < len; i++)
 	        	{
 	        		output[i * 4] = (byte)(data[i] >> 24);
@@ -173,7 +203,11 @@ public class DCTDecode
 	                output[i * 4 + 3] = (byte)(data[i]);
 	        	}
 	    		break;
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
 	    	case Bitmap.ROWWISE_MONOCHROME:
+//#else
+	    	case 1:
+//#endif
 	    		for (int i = 0; i < len; i++)
 	        	{
 	    			output[i] = (byte)((((data[i] >> 16) & 0xFF) + ((data[i] >> 8) & 0xFF) + (data[i] & 0xFF)) / 3);

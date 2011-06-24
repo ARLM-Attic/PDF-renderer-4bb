@@ -369,8 +369,12 @@ public class ShaderType2 extends PDFShader
                 }
             }
             
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
             Bitmap raster = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, w, h);
             raster.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+//#else
+            Bitmap raster = new Bitmap(Bitmap.ROWWISE_32BIT_ARGB8888, w, h);
+//#endif
             //Convert the data it compatible image data
             int len;
             int com = numComponents + 1;

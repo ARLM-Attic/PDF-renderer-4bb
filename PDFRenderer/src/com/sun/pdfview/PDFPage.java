@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PDFPage.java
  * Version: 1.7
@@ -226,8 +228,12 @@ public class PDFPage
                 info.bgColor = Color.WHITE;
             }
             
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
             image = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, info.width, info.height);
             image.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+//#else
+            image = new Bitmap(Bitmap.ROWWISE_32BIT_ARGB8888, info.width, info.height);
+//#endif
             renderer = new PDFRenderer(this, info, image);
             
             if (cache != null)

@@ -88,8 +88,12 @@ public class GraphicsImpl extends PDFGraphics
 		bh = Math.max(bh, h);
 		if(bw != ow || bh != oh)
 		{
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
 			tmpBmp = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, bw, bh);
 			tmpBmp.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP); //Make alpha
+//#else
+			tmpBmp = new Bitmap(Bitmap.ROWWISE_32BIT_ARGB8888, bw, bh); //Make with alpha
+//#endif
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
 			tmpG = Graphics.create(tmpBmp);
 //#else

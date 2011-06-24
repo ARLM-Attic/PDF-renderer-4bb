@@ -1,3 +1,5 @@
+//#preprocessor
+
 /*
  * File: PDFRenderer.java
  * Version: 1.8
@@ -680,8 +682,12 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         int height = bi.getHeight();
         
         // create a destination image of the same size
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
         Bitmap dstImage = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, width, height);
         dstImage.createAlpha(Bitmap.ALPHA_BITDEPTH_8BPP);
+//#else
+        Bitmap dstImage = new Bitmap(Bitmap.ROWWISE_32BIT_ARGB8888, width, height);
+//#endif
         
         // copy the pixels row by row
         for (int i = 0; i < height; i++)
