@@ -121,6 +121,7 @@ public class FullPageField extends GestureField
 	
 	protected void interactionComplete()
 	{
+		//TODO: Stop any rendering, start again with new settings (the only time it should need to do this is with scaling; translation and rotation won't change the rendering so it can remain the same)
 		invalidate();
 	}
 	
@@ -137,9 +138,19 @@ public class FullPageField extends GestureField
 	
 	public synchronized void showPage(PDFPage page)
 	{
-		//TODO
+		//TODO: Start the rendering process for the page
 		String txt = page == null ? "null" : Integer.toString(page.getPageNumber());
 		System.out.println("FullPageField: " + txt);
+	}
+	
+	private void renderPDF()
+	{
+		//TODO: Run rendering in background, when done notify rendering complete.
+	}
+	
+	private void renderingComplete()
+	{
+		//TODO: Display rendered PDF
 	}
 	
 	protected boolean interactionGesture(Gesture gesture)

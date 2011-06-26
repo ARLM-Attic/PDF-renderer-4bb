@@ -9,7 +9,6 @@ Make sure that ROP is being used correctly.
 
 It seems almost like CalGreyScale likes to have a blue-tint associated with it, figure out how to correct this when converting images (or maybe just use the native grey colorspace)
 
-Add a function in PDFPage so that other graphics systems can be used to be drawn to.
 implement the "Graphics" implementation of PDFGraphics (one idea is to store all drawing operations (since they are line/vector type operations, write them to an SVG, load them up and draw the SVG. Floating point operations, partial pixel drawing, scaling, Image drawing, etc. is all taken care of. The only thing is it will probably be slow).
 	Use quality, so if quality is high for Graphics object, use SVG/OpenVG/OpenGL/etc. to draw, for low quality round the points and draw with normal Graphics object.
 	Note in OS 6.0 support for OpenVG has been added, this is basically a OpenGL-like, Graphics-using-float system. Release notes states it adds support for fill and stroke elements in SVG and it seems to support them itself so make sure that the SVG renderer supports these elements in the proper version and that the fastest implementation takes priority.
@@ -23,6 +22,16 @@ Finish FilePicker
 -Implement popup
 -For thumbnail mode, adjust how focus, drawing, and interaction are handled (basically subdivide it)
 -Test
+
+Figure out a method of using the fastest possible renderer available for the device. So the renderer is run on 4.5, it simply uses GraphicsInternal as the backend renderer. 7.0 with OpenGL support available? Use OpenVG 1.1. Dev passes in a GL1.1 object, use that. etc. Leave GraphicsInternal as a lowest-common-denominator for rendering. Maybe do a real-time benchmark and sort the renderers based on time.
+
+Figure out how to handle large PDFs. As of right now it will get out of memory exceptions.
+
+Try to get Geometry.isFilled to properly handle bézier curves properly
+Use preprocessor to remove "debug" code
+Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing ("<cipher name>[_<keyBitLength>[_<blockBitLength>[_<numberOfRounds>]]][/<mode>[/<padding>]]")
+See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
+Update TODOs in various classes
 
 FunctionType4:
 -Make sure that "cvi" and "truncate" actually processes like it is specified (check .class file)
@@ -48,18 +57,9 @@ PDFAction: (see ISO32000_2008, section 12.6)
 -Determine manner of responding to parent app (listener, this way if the user clicks on something, the PDFRenderer can determine what action needs to be taken and respond back to the app. This also allows for app specific operations [such as displaying a file picker in a specific theme])
 -Attempt to implement some other actions
 
-Figure out how to handle large PDFs. As of right now it will get out of memory exceptions.
-
-Try to get Geometry.isFilled to properly handle bézier curves properly
-Use preprocessor to remove "debug" code
-Rewrite StandardDecrypter so it works properly with BlackBerry's crypto classes, handles error properly, and update the documentation to reflect changes and explain what the class is doing
-See what can be done with NativeFont, if OCR can be done or if Geometry should have a special function only for NativeFont.
-Update TODOs in various classes
-
 Modify PDFViewer so that it supports Torch (Trackpad) and other 4.5/4.6/4.7 handsets (also check to make sure that if a CLICK event is used that it is not used on non-SurePress screens like the Torch)
 
 Go through and make sure licenses and authors are noted and given credit to and update documentation so that it portains to BlackBerry PDF Renderer.
-Add resources for internationalization.
 
 Preprocessor support
 Add search functionality

@@ -365,6 +365,7 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			this.clip.append(s, false);
 		}
+		//TODO: The actual clip "mask" should be generated here so that it can simply be applied and doesn't need to be calculated each time
 	}
 	
 	public void setColor(int c)
@@ -393,12 +394,20 @@ public class GraphicsImpl extends PDFGraphics
 				switch(hintValue)
 				{
 					case PDFGraphics.VALUE_ANTIALIAS_ON:
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0
 						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_AALINES, true);
 						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_AAPOLYGONS, true);
+//#else
+						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_ANTIALIASED, true);
+//#endif
 						break;
 					case PDFGraphics.VALUE_ANTIALIAS_OFF:
+//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0
 						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_AALINES, false);
 						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_AAPOLYGONS, false);
+//#else
+						this.destination.setDrawingStyle(Graphics.DRAWSTYLE_ANTIALIASED, false);
+//#endif
 						break;
 					default:
 						return;

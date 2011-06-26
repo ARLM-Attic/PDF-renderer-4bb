@@ -1,11 +1,7 @@
-//#preprocessor
-
-//#implicit BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
-
 /*
- * File: BufferUnderflowException.java
+ * File: GraphicsImpl.java
  * Version: 1.0
- * Initial Creation: Feb 26, 2011 12:57:03 PM
+ * Initial Creation: Jun 25, 2011 11:41:01 PM
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,11 +17,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package com.sun.pdfview.helper.nio;
+package com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsGraphics;
 
 /**
- * Unchecked exception thrown when a relative get operation reaches the source buffer's limit.
+ * PDFgraphics implementation of Graphics. Note, this is a "just in case" class since it is unlikely that a non-GraphicsInternal type Graphics object will be
+ * used (though if you create a LCDUI Image, then a Graphics object, then look at "peer" inside the Graphics object, it is a non-GraphicsInternal type Graphics object.
  */
-public class BufferUnderflowException extends RuntimeException
+public class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl
 {
 }

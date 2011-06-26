@@ -1,5 +1,7 @@
 //#preprocessor
 
+//#implicit BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
+
 /*
  * File: ShortBuffer.java
  * Version: 1.0
@@ -19,8 +21,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
-//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
 package com.sun.pdfview.helper.nio;
 
 /**
@@ -42,4 +42,3 @@ public abstract class ShortBuffer extends Buffer
 	 */
 	public abstract short get();
 }
-//#endif

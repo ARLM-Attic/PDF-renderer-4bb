@@ -34,6 +34,7 @@ import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.XYDimension;
 
 import com.sun.pdfview.helper.AffineTransform;
+import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.PDFUtil;
 import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
@@ -256,6 +257,75 @@ public class PDFPage
         
         // return the image
         return image;
+    }
+    
+    /**
+     * Setup a drawing which will have a drawing that represents by this PDFPage. 
+     * The drawing is guaranteed to stay in sync with the PDFPage as commands 
+     * are added to it.
+     *
+     * The drawing will contain the section of the page specified by the clip,
+     * scaled to fit in the area given by width and height.
+     * 
+     * Note that if getImage was called before this, it could potentially cause
+     * this operation to fail due to a rendering already processing with the
+     * same parameters. The opposite is true if this is called before getImage.
+     * 
+     * @param drawingDest The destination graphics that the PDFPage will be
+     * 			drawn to.
+     * @param width the width of the image to be produced
+     * @param height the height of the image to be produced
+     * @param clip the region in <b>page space</b> of the entire page to
+     *             display
+     * @param drawbg if true, put a white background on the image.  If not,
+     *        draw no color (alpha 0) for the background.
+     * @param wait if true, do not return until this image is fully rendered.
+     * @return true, false response on if the drawing has been started. This may
+     * 		return false if the image has been drawn already, an invalid drawing
+     * 		destination has been passed in as a parameter, or the drawing destination
+     * 		is null. It will return true if proper arguments have been passed in or
+     * 		a drawing already exists.
+     */
+    public boolean drawTo(Object drawingDest, int width, int height, XYRectFloat clip, boolean drawbg, boolean wait)
+    {
+    	// see if we already have this
+    	PDFRenderer renderer = null;
+    	ImageInfo info = new ImageInfo(width, height, clip, 0);
+    	boolean success = false;
+    	
+    	if (cache != null)
+        {
+            renderer = cache.getImageRenderer(this, info);
+        }
+    	
+    	// not in the cache, so create it
+    	if(drawingDest != null && renderer == null)
+    	{
+    		if (drawbg)
+            {
+                info.bgColor = Color.WHITE;
+            }
+    		
+    		PDFGraphics g = PDFGraphics.createGraphics(drawingDest);
+    		if(g != null)
+    		{
+	    		renderer = new PDFRenderer(this, g, info);
+	    		
+	    		renderers.put(info, new WeakReference(renderer));
+    		}
+    	}
+    	
+    	// the renderer may be null if we are getting this from the
+        // cache and rendering has completed.
+    	if (renderer != null)
+        {
+    		success = true;
+            if (!renderer.isFinished())
+            {
+                renderer.go(wait);
+            }
+        }
+    	return success;
     }
     
     /**

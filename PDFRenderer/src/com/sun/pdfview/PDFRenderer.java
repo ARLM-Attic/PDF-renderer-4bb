@@ -117,13 +117,27 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     public PDFRenderer(PDFPage page, PDFGraphics g, XYRect imgbounds, XYRectFloat clip, int bgColor)
     {
+    	this(page, g, new ImageInfo(imgbounds.width, imgbounds.height, clip, bgColor));
+    	
+        g.translate(imgbounds.x, imgbounds.y);
+        //System.out.println("Translating by " + imgbounds.x + "," + imgbounds.y);
+    }
+    
+    /**
+     * create a new PDFGraphics state, given a Graphics2D. This version
+     * will <b>not</b> create an image, and you will get a NullPointerException
+     * if you attempt to call getImage().
+     * @param page the current page
+     * @param g the PDFGraphics object to use for drawing
+     * @param imageinfo the parameters of the image to render
+     */
+    public PDFRenderer(PDFPage page, PDFGraphics g, ImageInfo imageinfo)
+    {
         super();
         
         this.page = page;
         this.g = g;
-        this.imageinfo = new ImageInfo(imgbounds.width, imgbounds.height, clip, bgColor);
-        g.translate(imgbounds.x, imgbounds.y);
-        //System.out.println("Translating by " + imgbounds.x + "," + imgbounds.y);
+        this.imageinfo = imageinfo;
     }
     
     /**
@@ -620,8 +634,11 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         
         // keep around the image ref and image info for use in late addObserver() call
         //EDIT: No observers are used so there is no need
-        imageRef.clear();
-        imageRef = null;
+        if(imageRef != null)
+        {
+	        imageRef.clear();
+	        imageRef = null;
+        }
     }
     
     /**

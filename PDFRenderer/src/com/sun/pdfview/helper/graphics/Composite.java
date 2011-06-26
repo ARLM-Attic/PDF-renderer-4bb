@@ -34,6 +34,22 @@ import com.sun.pdfview.helper.PDFUtil;
  */
 public abstract class Composite
 {
+	/* AlphaComposite to BlackBerry Graphics ROP
+	 * 
+	 * CLEAR ---- ROP2_0
+	 * SRC ------ ??
+	 * DST ------ ROP2_D
+	 * SRC_OVER - ROP2_S
+	 * DST_OVER - ??
+	 * SRC_IN --- ROP2_DSa
+	 * DST_IN --- ??
+	 * SRC_OUT -- ??
+	 * DST_OUT -- ??
+	 * SRC_ATOP - ??
+	 * DST_ATOP - ??
+	 * XOR ------ ROP2_DSx
+	 */
+	
 	/**
 	 * The source is copied to the destination.
 	 */
@@ -56,9 +72,9 @@ public abstract class Composite
 			throw new IllegalArgumentException(com.sun.pdfview.ResourceManager.getResource(com.sun.pdfview.ResourceManager.LOCALIZATION).getString(com.sun.pdfview.i18n.ResourcesResource.HELPER_GRAPHICS_COMPOSITE_ALPHA_RANGE_FLOAT));
 		}
 //#ifdef BlackBerrySDK4.5.0
-		return getInstance(type, Math.min(Math.max((float)PDFUtil.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it out.
+		return getInstance(type, Math.min(Math.max((float)PDFUtil.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it down.
 //#else
-		return getInstance(type, Math.min(Math.max(MathUtilities.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it out.
+		return getInstance(type, Math.min(Math.max(MathUtilities.round(alpha * 255), 0), 255)); //Use Math.min because it might round up and Math.min just to round it down.
 //#endif
 	}
 	
@@ -130,15 +146,12 @@ public abstract class Composite
 //#else
 			Graphics dstOutG = Graphics.create(dstOut.getBitmap());
 //#endif
-			if(dstOut.getX() != 0 || dstOut.getY() != 0)
-			{
-				dstOutG.translate(dstOut.getX(), dstOut.getY());
-			}
+			dstOutG.translate(dstOut.getX(), dstOut.getY());
 			
 			//Since not all code is implemented just do the bare minimum
 			if(this.type == SRC_OVER && dstIn != null)
 			{
-				dstOutG.drawBitmap(0, 0, dstIn.getWidth(), dstIn.getHeight(), dstIn.getBitmap(), dstIn.getX(), dstIn.getY());
+				dstOutG.drawBitmap(dstIn.getX(), dstIn.getY(), dstIn.getWidth(), dstIn.getHeight(), dstIn.getBitmap(), 0, 0);
 			}
 			if(src != null)
 			{
@@ -146,7 +159,7 @@ public abstract class Composite
 				{
 					dstOutG.setGlobalAlpha(srcAlpha);
 				}
-				dstOutG.drawBitmap(0, 0, src.getWidth(), src.getHeight(), src.getBitmap(), src.getX(), src.getY());
+				dstOutG.drawBitmap(src.getX(), src.getY(), src.getWidth(), src.getHeight(), src.getBitmap(), 0, 0);
 			}
 		}
 		
