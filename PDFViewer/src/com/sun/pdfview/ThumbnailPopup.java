@@ -139,8 +139,11 @@ public class ThumbnailPopup extends PopupScreen implements ScrollChangeListener,
 	
 	public void showThumbnail(int page)
 	{
-		//TODO
-		System.out.println("ThumbnailPopup: " + page);
+		//Page number starts at 1
+		if(page > 0 && page <= this.getFieldCount())
+		{
+			this.getField(page - 1).setFocus();
+		}
 	}
 
 	public void setPDF(PDFFile file)

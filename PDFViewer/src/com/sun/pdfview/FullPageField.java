@@ -36,6 +36,8 @@ import net.rim.device.api.ui.XYRect;
  */
 public class FullPageField extends GestureField
 {
+	private static final int SHADOW_OFFSET = 5;
+	
 	private static final int MATRIX_SIZE = 9;
 	private static final int DRAWING_MATRIX = 0;
 	private static final int WORKING_MATRIX = DRAWING_MATRIX + MATRIX_SIZE;
@@ -85,19 +87,23 @@ public class FullPageField extends GestureField
 			VecMath.transformPoints(mat, DRAWING_MATRIX, xPts, yPts, xPts, yPts);
 			
 			//Draw "shadow"
-			graphics.setColor(Color.WHITESMOKE);
-			graphics.setGlobalAlpha(60);
-			graphics.translate(4, 4); //Offset the shadow a bit
+			graphics.setColor(Color.BLACK);
+			graphics.setGlobalAlpha(75);
+			graphics.translate(SHADOW_OFFSET, SHADOW_OFFSET); //Offset the shadow a bit
 			graphics.drawFilledPath(xPts, yPts, null, null);
-			graphics.translate(-4, -4);
+			graphics.translate(-SHADOW_OFFSET, -SHADOW_OFFSET);
 			graphics.setGlobalAlpha(255);
 			
 			//Get UV points for texture
-			int dux = Fixed32.div(Fixed32.ONE, Fixed32.div(Fixed32.toFP(this.curRenderWidth), Fixed32.toFP(extent.width)));
-			int dvy = Fixed32.div(Fixed32.ONE, Fixed32.div(Fixed32.toFP(this.curRenderHeight), Fixed32.toFP(extent.height)));
+			int widthScale = Fixed32.div(Fixed32.toFP(this.curRenderWidth), Fixed32.toFP(extent.width));
+			int heightScale = Fixed32.div(Fixed32.toFP(this.curRenderHeight), Fixed32.toFP(extent.height));
+			int dux = Fixed32.div(this.mat[DRAWING_MATRIX], widthScale);
+			int duy = Fixed32.div(this.mat[DRAWING_MATRIX + 1], heightScale);
+			int dvx = Fixed32.div(this.mat[DRAWING_MATRIX + 3], widthScale);
+			int dvy = Fixed32.div(this.mat[DRAWING_MATRIX + 4], heightScale);
 			
 			//Draw
-			graphics.drawTexturedPath(xPts, yPts, null, null, 0, 0, dux, 0, 0, dvy, this.drawnPage);
+			graphics.drawTexturedPath(xPts, yPts, null, null, 0, 0, dux, dvx, duy, dvy, this.drawnPage);
 		}
 		else
 		{
@@ -146,6 +152,7 @@ public class FullPageField extends GestureField
 	{
 		if(this.needRerender)
 		{
+			//Make sure that if the page will be rescaled to refit the screen that this doesn't run... yet.
 			if(this.page != null)
 			{
 				if(!this.page.isFinished())
@@ -169,9 +176,15 @@ public class FullPageField extends GestureField
 		}
 	}
 	
+	private void checkForPageAdjustment()
+	{
+		//TODO: If page is too small, enlarge. Rotated, rotate back to normal. Translated off screen, move back on screen. If smaller then screen, then call fitToField.
+		//All should be animated.
+	}
+	
 	public void fitToField()
 	{
-		//TODO
+		//TODO: Animate the transformation of the page till it fits back in the field.
 	}
 	
 	public void zoom(int scale)
@@ -251,6 +264,7 @@ public class FullPageField extends GestureField
 				process |= applyMatrix(false);
 				GestureField.matrixSetTranslate(mat, WORKING_MATRIX, gesture.getGestureValue(Gesture.TYPE_PINCH_TRANSLATE_X), gesture.getGestureValue(Gesture.TYPE_PINCH_TRANSLATE_Y));
 				process |= applyMatrix(true);
+				checkForPageAdjustment();
 				return process;
 			case Gesture.EVENT_HOVER:
 				//TODO: Reset page to show the whole page
