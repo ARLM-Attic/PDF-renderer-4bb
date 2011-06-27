@@ -1,6 +1,10 @@
 --Revision Used: 129---
 
 TODO:
+Make sure shadow is "good"
+Figure out how to get entire texture to "move" when dragged around instead of just a "window" to the PDF
+Figure out what to do with "showThumbnail"
+
 Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).
 
 Determine if CCITTFaxDecoder.java can use static final instead of simply static
