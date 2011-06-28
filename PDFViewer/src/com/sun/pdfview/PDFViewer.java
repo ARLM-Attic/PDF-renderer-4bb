@@ -187,7 +187,7 @@ public class PDFViewer extends UiApplication
 			
 			//Setup page screen
 			VerticalFieldManager vert = new VerticalFieldManager(VerticalFieldManager.NO_VERTICAL_SCROLL | VerticalFieldManager.NO_HORIZONTAL_SCROLLBAR);
-			vert.add(pageField = new FullPageField(this));
+			vert.add(pageField = new FullPageField());
 			this.add(vert);
 		}
 		

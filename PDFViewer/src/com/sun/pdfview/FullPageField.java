@@ -1,5 +1,3 @@
-//#preprocessor
-
 /*
  * File: FullPageField.java
  * Version: 1.0
@@ -43,7 +41,6 @@ public class FullPageField extends GestureField
 	private static final int WORKING_MATRIX = DRAWING_MATRIX + MATRIX_SIZE;
 	private int[] mat;
 	
-	private PDFViewer.PDFViewerScreen viewer;
 	private PDFPage page;
 	private int curRenderWidth, curRenderHeight;
 	private Bitmap drawnPage;
@@ -51,10 +48,9 @@ public class FullPageField extends GestureField
 	
 	private int sW, sH;
 	
-	public FullPageField(PDFViewer.PDFViewerScreen pdfviewer)
+	public FullPageField()
 	{
 		super.gestureProcessing = false; //Disable by default
-		this.viewer = pdfviewer;
 		
 		this.mat = new int[MATRIX_SIZE * 2]; //Two matrixes
 		GestureField.matrixSetIdentity(mat, DRAWING_MATRIX);
@@ -216,20 +212,6 @@ public class FullPageField extends GestureField
 		}
 	}
 	
-	private Bitmap setupDraw()
-	{
-		//Initialize the drawing surface
-		this.curRenderWidth = Fixed32.toInt(sW);
-		this.curRenderHeight = Fixed32.toInt(sH);
-//#ifdef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0 | BlackBerrySDK6.0.0
-		Bitmap bmp = new Bitmap(Bitmap.ROWWISE_16BIT_COLOR, this.curRenderWidth, this.curRenderHeight);
-//#else
-		Bitmap bmp = new Bitmap(Bitmap.ROWWISE_32BIT_XRGB8888, this.curRenderWidth, this.curRenderHeight);
-//#endif
-		
-		return bmp;
-	}
-	
 	private void renderPDF()
 	{
 		this.gestureProcessing = this.page != null;
@@ -240,8 +222,10 @@ public class FullPageField extends GestureField
 				public void run()
 				{
 					FullPageField fpf = FullPageField.this;
-					Bitmap bmp = fpf.setupDraw();
-					fpf.page.drawTo(bmp, bmp.getWidth(), bmp.getHeight(), null, true, true);
+					//TODO: Reset transformation
+					fpf.curRenderWidth = Fixed32.toInt(fpf.sW);
+					fpf.curRenderHeight = Fixed32.toInt(fpf.sH);
+					Bitmap bmp = fpf.page.getImage(fpf.curRenderWidth, fpf.curRenderHeight, null, true, true);
 					if(fpf.page.isFinished())
 					{
 						fpf.drawnPage = bmp;
