@@ -496,6 +496,8 @@ public class PDFViewer extends UiApplication
 		
 		private void closePDF()
 		{
+			this.currentpage = 0;
+			
 			this.setStatus(null);
 			this.pageField.showPage(null);
 			

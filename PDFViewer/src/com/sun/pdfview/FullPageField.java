@@ -99,7 +99,7 @@ public class FullPageField extends GestureField
 			int dvy = Fixed32.div(this.mat[DRAWING_MATRIX + 4], heightScale);
 			
 			//Draw
-			graphics.drawTexturedPath(xPts, yPts, null, null, 0, 0, dux, dvx, duy, dvy, this.drawnPage);
+			graphics.drawTexturedPath(xPts, yPts, null, null, xPts[0], yPts[0], dux, dvx, duy, dvy, this.drawnPage);
 		}
 		else
 		{
@@ -223,7 +223,6 @@ public class FullPageField extends GestureField
 				public void run()
 				{
 					FullPageField fpf = FullPageField.this;
-					//TODO: Reset transformation
 					fpf.curRenderWidth = Fixed32.toInt(fpf.sW);
 					fpf.curRenderHeight = Fixed32.toInt(fpf.sH);
 					Bitmap bmp = fpf.page.getImage(fpf.curRenderWidth, fpf.curRenderHeight, null, true, true);
