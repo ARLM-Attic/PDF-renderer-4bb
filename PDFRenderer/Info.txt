@@ -2,6 +2,7 @@
 
 TODO:
 Figure out how to get entire texture to "move" when dragged around instead of just a "window" to the PDF
+Make sure that when switching PDFs, the FullPageView "works"
 
 Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).
 

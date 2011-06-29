@@ -94,8 +94,8 @@ public class FullPageField extends GestureField
 			int widthScale = Fixed32.div(Fixed32.toFP(this.curRenderWidth), Fixed32.toFP(extent.width));
 			int heightScale = Fixed32.div(Fixed32.toFP(this.curRenderHeight), Fixed32.toFP(extent.height));
 			int dux = Fixed32.div(this.mat[DRAWING_MATRIX], widthScale);
-			int duy = Fixed32.div(this.mat[DRAWING_MATRIX + 1], heightScale);
-			int dvx = Fixed32.div(this.mat[DRAWING_MATRIX + 3], widthScale);
+			int dvx = Fixed32.div(this.mat[DRAWING_MATRIX + 1], widthScale);
+			int duy = Fixed32.div(this.mat[DRAWING_MATRIX + 3], heightScale);
 			int dvy = Fixed32.div(this.mat[DRAWING_MATRIX + 4], heightScale);
 			
 			//Draw
@@ -208,6 +208,7 @@ public class FullPageField extends GestureField
 				}
 			}
 			this.page = page;
+			GestureField.matrixSetIdentity(mat, DRAWING_MATRIX);
 			renderPDF();
 		}
 	}
