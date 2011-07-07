@@ -294,6 +294,12 @@ public class PDFRenderer extends BaseWatchable implements Runnable
                 0, 1);
 
         Bitmap bi = image.getImage();
+        if (bi == null)
+        {
+            // maybe it was an unsupported format, or something.
+            // Nothing to draw, anyway!
+            return new XYRectFloat();
+        }
         if (image.isImageMask())
         {
             bi = getMaskedImage(bi);

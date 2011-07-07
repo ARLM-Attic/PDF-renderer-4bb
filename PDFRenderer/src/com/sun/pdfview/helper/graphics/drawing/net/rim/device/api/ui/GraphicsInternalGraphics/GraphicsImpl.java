@@ -24,6 +24,7 @@ package com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsIn
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.XYRect;
 
 import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.PDFGraphics;
@@ -39,6 +40,11 @@ import com.sun.pdfview.helper.graphics.TranslatedBitmap;
  */
 public class GraphicsImpl extends PDFGraphics
 {
+	private interface RenderEx
+	{
+		public void render(XYRect bounds);
+	}
+	
 	private AffineTransform trans;
 	private BasicStroke stroke;
 	private Paint background, foreground;
@@ -50,6 +56,9 @@ public class GraphicsImpl extends PDFGraphics
 	
 	private Bitmap tmpBmp;
 	private Graphics tmpG;
+	
+	private XYRect clipBounds;
+	private Bitmap clipBmp;
 	
 	public GraphicsImpl()
 	{
@@ -150,47 +159,6 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	/*
-	private void drawLine(float sx, float sy, float ex, float ey)
-	{
-		//Calculate size and "adjusted" line start and end
-		int[] xP = new int[4];
-		int[] yP = new int[4];
-		int width = 0;
-		int height = 0;
-		int x = 0;
-		int y = 0;
-		//TODO: Calculate line "rectangle" and determine width, height, and the origin point for it all
-		createMaskGraphics(width, height);
-		
-		//Push the drawing context that will be where the line is actually shown
-		this.destination.pushContext(x, y, width, height, 0, 0); //TODO: Need to figure out how to handle Geometry "clip"
-		
-		//Draw line
-		tmpG.translate(-x, -y);
-		tmpG.drawFilledPath(xP, yP, null, null); //It doesn't matter here but other path drawing need to take into account that drawFilledPath uses a even-odd drawing rule.
-		tmpG.translate(x, y);
-		
-		//Generate drawing surface, mask surface to get result
-		PaintGenerator gen = foreground.createGenerator(this.trans);
-		TranslatedBitmap btm = gen.getBitmap(x, y, width, height);
-		gen.dispose();
-		Graphics tg;
-//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
-		tg = Graphics.create(btm.getBitmap());
-//#else
-		tg = new Graphics(btm.getBitmap());
-//#endif
-		tg.rop(Graphics.ROP2_DSa, x, y, width, height, tmpBmp, 0, 0);
-		
-		//Draw masked surface
-		this.destination.drawBitmap(x, y, width, height, btm.getBitmap(), 0, 0);
-		
-		//Pop drawing context
-		this.destination.popContext();
-	}
-	*/
-	
 	public boolean drawImage(Bitmap img, AffineTransform xform)
 	{
 		if(img != null)
@@ -201,7 +169,7 @@ public class GraphicsImpl extends PDFGraphics
 			//TODO: Transform image
 			if(this.clip != null)
 			{
-				//TODO: Clip image
+				//TODO: Clip image (look at renderGraphics)
 			}
 			//TODO: Composite the image
 		}
@@ -214,37 +182,25 @@ public class GraphicsImpl extends PDFGraphics
 		Geometry.Enumeration en = s.getPathEnumerator(this.trans);
 		
 		//XXX Temp
-		net.rim.device.api.ui.XYRect bounds = new net.rim.device.api.ui.XYRect();
-		Object[] path = generatePath(en, bounds);
+		XYRect bounds = new XYRect();
+		final Object[] path = generatePath(en, bounds); //Generate the path to fill
 		if(path != null)
 		{
-			createMaskGraphics(bounds.width, bounds.height);
-			
-			PaintGenerator gen = foreground.createGenerator(this.trans);
-			TranslatedBitmap btm = gen.getBitmap(bounds.x, bounds.y, bounds.width, bounds.height);
-			gen.dispose();
-			
-			tmpG.translate(-bounds.x, -bounds.y);
-			tmpG.drawFilledPath((int[])path[0], (int[])path[1], (byte[])path[2], (int[])path[3]);
-			tmpG.translate(bounds.x, bounds.y);
-			
-			Graphics tg;
-//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
-			tg = Graphics.create(btm.getBitmap());
-//#else
-			tg = new Graphics(btm.getBitmap());
-//#endif
-			tg.rop(Graphics.ROP2_DSa, 0, 0, bounds.width, bounds.height, tmpBmp, 0, 0);
-			
-			this.destination.pushContext(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0);
-			
-			this.destination.drawBitmap(bounds, btm.getBitmap(), 0, 0);
-			
-			this.destination.popContext();
+			final RenderEx render = new RenderEx()
+			{
+				public void render(XYRect bounds)
+				{
+					//Draw path
+					tmpG.translate(-bounds.x, -bounds.y);
+					tmpG.drawFilledPath((int[])path[0], (int[])path[1], (byte[])path[2], (int[])path[3]);
+					tmpG.translate(bounds.x, bounds.y);
+				}
+			};
+			renderGraphics(bounds, render);
 		}
 	}
 	
-	private Object[] generatePath(Geometry.Enumeration en, net.rim.device.api.ui.XYRect rect)
+	private static Object[] generatePath(Geometry.Enumeration en, XYRect rect)
 	{
 		int[] xP = null;
 		int[] yP = null;
@@ -321,7 +277,7 @@ public class GraphicsImpl extends PDFGraphics
 		return new Object[]{xP, yP, types, offsets};
 	}
 	
-	private int[] ensureSize(int[] dat, int size)
+	private static int[] ensureSize(int[] dat, int size)
 	{
 		if(dat == null)
 		{
@@ -334,6 +290,41 @@ public class GraphicsImpl extends PDFGraphics
 			return n;
 		}
 		return dat;
+	}
+	
+	private void renderGraphics(XYRect bounds, RenderEx render)
+	{
+		//Generate mask graphics to use for rendering
+		createMaskGraphics(bounds.width, bounds.height);
+		
+		//Generate drawing surface
+		PaintGenerator gen = this.foreground.createGenerator(this.trans);
+		TranslatedBitmap btm = gen.getBitmap(bounds.x, bounds.y, bounds.width, bounds.height);
+		gen.dispose();
+		
+		//Perform render operation to create mask
+		render.render(bounds);
+		
+		//Mask drawing surface to get result
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1
+		Graphics tg = Graphics.create(btm.getBitmap());
+//#else
+		Graphics tg = new Graphics(btm.getBitmap());
+//#endif
+		if(this.clip != null)
+		{
+			tg.rop(Graphics.ROP2_DSa, this.clipBounds.x, this.clipBounds.y, this.clipBounds.width, this.clipBounds.height, this.clipBmp, 0, 0); //Apply clip
+		}
+		tg.rop(Graphics.ROP2_DSa, 0, 0, bounds.width, bounds.height, this.tmpBmp, 0, 0);
+		
+		//Push the drawing context that will be where the render is actually shown
+		this.destination.pushContext(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0);
+		
+		//Draw masked surface
+		this.destination.drawBitmap(bounds, btm.getBitmap(), 0, 0);
+		
+		//Pop drawing context
+		this.destination.popContext();
 	}
 	
 	public Geometry getClip()
@@ -356,16 +347,66 @@ public class GraphicsImpl extends PDFGraphics
 		if(s == null)
 		{
 			this.clip = null;
-		}
-		else if(direct || this.clip == null)
-		{
-			this.clip = s;
+			this.clipBmp = null;
+			this.clipBounds = null;
 		}
 		else
 		{
-			this.clip.append(s, false);
+			s = s.createTransformedShape(this.trans);
+			if(direct || this.clip == null)
+			{
+				this.clip = s;
+			}
+			else
+			{
+				this.clip.append(s, false);
+			}
+			
+			if(this.clipBounds == null)
+			{
+				this.clipBounds = new XYRect();
+			}
+			
+			//This isn't efficient but since the clip can completely change, it's not a major concern
+			
+			//Save graphics state
+			AffineTransform tmpTrans = this.trans;
+			this.trans = null;
+			Paint tmpForeground = this.foreground;
+			setColor(Color.WHITE);
+			Bitmap tmpTmpBmp = this.tmpBmp;
+			this.tmpBmp = null;
+			Graphics tmpTmpG = this.tmpG;
+			this.tmpG = null;
+			Graphics tmpDestination = this.destination;
+			
+			//Generate bounds
+			com.sun.pdfview.helper.XYRectFloat b = this.clip.getBounds2D();
+			this.clipBounds.x = (int)Math.floor(b.x);
+			this.clipBounds.y = (int)Math.floor(b.y);
+			this.clipBounds.width = (int)Math.floor(b.width);
+			this.clipBounds.height = (int)Math.floor(b.height);
+			
+			//Generate destination
+			createMaskGraphics(this.clipBounds.width, this.clipBounds.height);
+			this.destination = this.tmpG;
+			this.tmpG = null;
+			this.clipBmp = this.tmpBmp;
+			this.tmpBmp = null;
+			
+			//Draw clip
+			s = this.clip;
+			this.clip = null;
+			fill(s);
+			this.clip = s;
+			
+			//Restore graphics state
+			this.foreground = tmpForeground;
+			this.trans = tmpTrans;
+			this.tmpBmp = tmpTmpBmp;
+			this.tmpG = tmpTmpG;
+			this.destination = tmpDestination;
 		}
-		//TODO: The actual clip "mask" should be generated here so that it can simply be applied and doesn't need to be calculated each time
 	}
 	
 	public void setColor(int c)
@@ -424,6 +465,7 @@ public class GraphicsImpl extends PDFGraphics
 					default:
 						return;
 				}
+				//TODO
 				this.interp = hintValue;
 				break;
 			case PDFGraphics.KEY_ALPHA_INTERPOLATION:

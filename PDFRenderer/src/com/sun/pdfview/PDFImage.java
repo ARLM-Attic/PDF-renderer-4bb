@@ -630,18 +630,18 @@ public class PDFImage
     	{
     		// Use EncodedImage to decode the JPEG into a Bitmap
     		
-            // TODO - strictly speaking, the application of the YUV->RGB
+    		// TODO - strictly speaking, the application of the YUV->RGB
             // transformation when reading JPEGs does not adhere to the spec.
-            // We're just going to let JAI read this in - as it is, JAI looks
-            // for the specific Adobe marker header so that it may apply
-            // the transform, so that's good. If that marker isn't present,
-            // then it also applies a number of other heuristics to determine
-            // whether the transform should be applied.
+            // We're just going to let java read this in - as it is, the standard
+            // jpeg reader looks for the specific Adobe marker header so that
+            // it may apply the transform, so that's good. If that marker
+            // isn't present, then it also applies a number of other heuristics
+            // to determine whether the transform should be applied.
             // (http://java.sun.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html)
             // In practice, it probably almost always does the right thing here,
             // though note that the present or default value of the ColorTransform
             // dictionary entry is not being observed, so there is scope for
-            // error
+            // error. Hopefully the JAI reader does the same.
     		// NOTE - It's not entirely clear what EncodedImage does but it works and produces an RGB image
     		ByteBufferInputStream in = null;
     		try

@@ -1,11 +1,11 @@
---Revision Used: 129---
+--Revision Used: 131---
 
 TODO:
+Make sure that ROP is being used correctly.
+
 Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).
 
 Determine if CCITTFaxDecoder.java can use static final instead of simply static
-
-Make sure that ROP is being used correctly.
 
 It seems almost like CalGreyScale likes to have a blue-tint associated with it, figure out how to correct this when converting images (or maybe just use the native grey colorspace)
 

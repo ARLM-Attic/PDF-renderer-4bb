@@ -78,7 +78,7 @@ public class ICC_ColorSpace extends ColorSpace
 		}
 		
 		profile = pf;
-		converterCache = new Object[2];
+		converterCache = new Object[4];
 		fillMinMaxValues();
 	}
 	
@@ -145,7 +145,7 @@ public class ICC_ColorSpace extends ColorSpace
         
         short[] converted = ICC_Converter.convertColors(new ICC_Profile[]{xyzProfile, this.getProfile()}, data, converterCache, 1); //Could probably cache ICC_Profile array, maybe later
         
-        // unscale to XYZ
+        // unscale to color profile
         float[] res = new float[getNumComponents()];
         
         unscaleColor(res, converted);
@@ -155,14 +155,38 @@ public class ICC_ColorSpace extends ColorSpace
 	
 	public float[] fromRGB(float[] rgbvalue)
 	{
-		System.out.println("PDF ALERT---ICC_ColorSpace.fromRGB is called but not implemented.");
-		throw new UnsupportedOperationException("To Implement");
+		short[] data = new short[3];
+        
+        data[0] = (short)((rgbvalue[0] * MAX_SHORT) + 0.5f);
+        data[1] = (short)((rgbvalue[1] * MAX_SHORT) + 0.5f);
+        data[2] = (short)((rgbvalue[2] * MAX_SHORT) + 0.5f);
+		
+		short[] converted = ICC_Converter.convertColors(new ICC_Profile[]{sRGBProfile, this.getProfile()}, data, converterCache, 3); //Could probably cache ICC_Profile array, maybe later
+		
+		// unscale to color profile
+        float[] res = new float[getNumComponents()];
+        
+        unscaleColor(res, converted);
+        
+        return res;
 	}
 	
 	public float[] toCIEXYZ(float[] colorvalue)
 	{
-		System.out.println("PDF ALERT---ICC_ColorSpace.toCIEXYZ is called but not implemented.");
-		throw new UnsupportedOperationException("To Implement");
+		short[] data = new short[getNumComponents()];
+        
+        scaleColor(colorvalue, data);
+        
+        short[] converted = ICC_Converter.convertColors(new ICC_Profile[]{this.getProfile(), xyzProfile}, data, converterCache, 2); //Could probably cache ICC_Profile array, maybe later
+        
+        // unscale to XYZ
+        float[] res = new float[3];
+        
+        res[0] = ((converted[0] & 0xFFFF)) * SHORT2XYZ_FACTOR;
+        res[1] = ((converted[1] & 0xFFFF)) * SHORT2XYZ_FACTOR;
+        res[2] = ((converted[2] & 0xFFFF)) * SHORT2XYZ_FACTOR;
+        
+        return res;
 	}
 	
 	public float[] toRGB(float[] colorvalue)

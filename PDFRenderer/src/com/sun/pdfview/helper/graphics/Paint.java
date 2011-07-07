@@ -97,7 +97,7 @@ public abstract class Paint
 	
 	/**
 	 * Create a PaintGenerator, this is similar to a PaintContext but the Generator will simply produce a Bitmap that will be drawn with.
-	 * @param xform The AffineTransform from user space into device space.
+	 * @param xform The AffineTransform from user space into device space. Could be null.
 	 * @return The created PaintGenerator.
 	 */
 	public abstract PaintGenerator createGenerator(AffineTransform xform);

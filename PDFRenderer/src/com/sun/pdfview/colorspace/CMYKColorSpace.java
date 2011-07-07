@@ -31,6 +31,8 @@ import com.sun.pdfview.helper.ColorSpace;
  */
 public class CMYKColorSpace extends ColorSpace
 {
+	private final ColorSpace csRgb = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+	
 	/**
      * create a new CMYK color space:  a ColorSpace with 4 components
      */
@@ -40,11 +42,11 @@ public class CMYKColorSpace extends ColorSpace
     }
     
     /**
-     * Convert from CIEXYZ to RGB.  NOT IMPLEMENTED
+     * Convert from CIEXYZ to RGB.
      */    
     public float[] fromCIEXYZ(float[] colorvalue)
     {
-    	return new float[3];
+    	return fromRGB(csRgb.fromCIEXYZ(colorvalue));
     }
     
     /**
@@ -104,11 +106,11 @@ public class CMYKColorSpace extends ColorSpace
     }
     
     /**
-     * Convert from CMYK to CIEXYZ.  NOT IMPLEMENTED
+     * Convert from CMYK to CIEXYZ.
      */
     public float[] toCIEXYZ(float[] colorvalue)
     {
-    	return new float[3];
+    	return csRgb.toCIEXYZ(toRGB(colorvalue));
     }
     
     /**
