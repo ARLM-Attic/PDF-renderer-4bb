@@ -119,7 +119,7 @@ public class PDFRenderer extends BaseWatchable implements Runnable
     {
     	this(page, g, new ImageInfo(imgbounds.width, imgbounds.height, clip, bgColor));
     	
-        g.translate(imgbounds.x, imgbounds.y);
+        this.g.translate(imgbounds.x, imgbounds.y);
         //System.out.println("Translating by " + imgbounds.x + "," + imgbounds.y);
     }
     
@@ -642,6 +642,10 @@ public class PDFRenderer extends BaseWatchable implements Runnable
         //EDIT: No observers are used so there is no need
         if(imageRef != null)
         {
+        	if(g != null)
+        	{
+        		PDFGraphics.finishGraphics(g); //This can be called because the PDFGraphics was created from the imageRef and if we are getting rid of the imageRef, we can get rid of the PDFGraphics object too.
+        	}
 	        imageRef.clear();
 	        imageRef = null;
         }

@@ -35,15 +35,20 @@ import com.sun.pdfview.helper.graphics.Paint;
 /**
  * PDFgraphics implementation of Graphics.
  */
-public class GraphicsImpl extends PDFGraphics
+public final class GraphicsImpl extends PDFGraphics
 {
-	private com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl gDest;
+	private PDFGraphics gDest;
 	private net.rim.device.api.ui.Graphics g;
 	private Bitmap bmp;
 	private int[] buffer;
 	private int width, height;
 	
 	private Graphics destination;
+	
+	protected void onFinished()
+	{
+		PDFGraphics.finishGraphics(gDest);
+	}
 	
 	protected void setDrawingDevice(Object device)
 	{
@@ -68,7 +73,7 @@ public class GraphicsImpl extends PDFGraphics
 //#endif
 		this.buffer = new int[this.width * this.height];
 		
-		this.gDest = (com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl)PDFGraphics.createGraphics(this.g);
+		this.gDest = PDFGraphics.createGraphics(this.g);
 	}
 	
 	private void commit()
@@ -123,9 +128,16 @@ public class GraphicsImpl extends PDFGraphics
 		gDest.setBackgroundColor(c);
 	}
 	
-	public void setClip(Geometry s, boolean direct)
+	protected void setClip(Geometry s, boolean direct)
 	{
-		gDest.setClip(s, direct);
+		if(direct)
+		{
+			gDest.setClip(s);
+		}
+		else
+		{
+			gDest.clip(s);
+		}
 	}
 	
 	public void setColor(int c)
@@ -153,9 +165,16 @@ public class GraphicsImpl extends PDFGraphics
 		gDest.setStroke(s);
 	}
 	
-	public void setTransform(AffineTransform Tx, boolean direct)
+	protected void setTransform(AffineTransform Tx, boolean direct)
 	{
-		gDest.setTransform(Tx, direct);
+		if(direct)
+		{
+			gDest.setTransform(Tx);
+		}
+		else
+		{
+			gDest.transform(Tx);
+		}
 	}
 	
 	public void translate(int x, int y)

@@ -544,12 +544,10 @@ public class Type1CFont extends OutlineFont
     {
         if (base == 0) // this is the StandardEncoding
         {
-//        	System.out.println("**** STANDARD ENCODING!");
             System.arraycopy(FontSupport.standardEncoding, 0, encoding, 0, FontSupport.standardEncoding.length);
         }
         else if (base == 1) // this is the expert encoding
         {
-            System.out.println ("**** EXPERT ENCODING!");
             // TODO: copy ExpertEncoding
         } 
         else

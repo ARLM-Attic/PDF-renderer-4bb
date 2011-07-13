@@ -23,6 +23,6 @@ package com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsGr
  * PDFgraphics implementation of Graphics. Note, this is a "just in case" class since it is unlikely that a non-GraphicsInternal type Graphics object will be
  * used (though if you create a LCDUI Image, then a Graphics object, then look at "peer" inside the Graphics object, it is a non-GraphicsInternal type Graphics object.
  */
-public class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl
+public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics.GraphicsImpl
 {
 }

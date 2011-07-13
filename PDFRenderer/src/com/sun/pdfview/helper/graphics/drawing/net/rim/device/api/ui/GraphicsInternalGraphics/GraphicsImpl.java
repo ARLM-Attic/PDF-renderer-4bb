@@ -342,7 +342,7 @@ public class GraphicsImpl extends PDFGraphics
 		this.background = Paint.getInstance(c);
 	}
 	
-	public void setClip(Geometry s, boolean direct)
+	protected void setClip(Geometry s, boolean direct)
 	{
 		if(s == null)
 		{
@@ -465,7 +465,7 @@ public class GraphicsImpl extends PDFGraphics
 					default:
 						return;
 				}
-				//TODO
+				//TODO: Add support for interpolation
 				this.interp = hintValue;
 				break;
 			case PDFGraphics.KEY_ALPHA_INTERPOLATION:
@@ -477,7 +477,7 @@ public class GraphicsImpl extends PDFGraphics
 					default:
 						return;
 				}
-				//TODO
+				//TODO: Add support for alpha interpolation
 				this.alpha = hintValue;
 				break;
 		}
@@ -492,7 +492,7 @@ public class GraphicsImpl extends PDFGraphics
 		this.stroke = s;
 	}
 	
-	public void setTransform(AffineTransform Tx, boolean direct)
+	protected void setTransform(AffineTransform Tx, boolean direct)
 	{
 		if(Tx == null)
 		{

@@ -34,12 +34,17 @@ import com.sun.pdfview.helper.graphics.Paint;
 /**
  * PDFgraphics implementation of Image.
  */
-public class GraphicsImpl extends PDFGraphics
+public final class GraphicsImpl extends PDFGraphics
 {
-	private com.sun.pdfview.helper.graphics.drawing.javax.microedition.lcdui.GraphicsGraphics.GraphicsImpl gDest;
+	private PDFGraphics gDest;
 	private Graphics g;
 	
 	private Image destination;
+	
+	protected void onFinished()
+	{
+		PDFGraphics.finishGraphics(gDest);
+	}
 	
 	protected void setDrawingDevice(Object device)
 	{
@@ -51,7 +56,7 @@ public class GraphicsImpl extends PDFGraphics
 		
 		this.g = this.destination.getGraphics();
 		
-		this.gDest = (com.sun.pdfview.helper.graphics.drawing.javax.microedition.lcdui.GraphicsGraphics.GraphicsImpl)PDFGraphics.createGraphics(this.g);
+		this.gDest = PDFGraphics.createGraphics(this.g);
 	}
 	
 	public void clear(int x, int y, int width, int height)
@@ -91,7 +96,14 @@ public class GraphicsImpl extends PDFGraphics
 	
 	protected void setClip(Geometry s, boolean direct)
 	{
-		gDest.setClip(s, direct);
+		if(direct)
+		{
+			gDest.setClip(s);
+		}
+		else
+		{
+			gDest.clip(s);
+		}
 	}
 	
 	public void setColor(int c)
@@ -119,9 +131,16 @@ public class GraphicsImpl extends PDFGraphics
 		gDest.setStroke(s);
 	}
 	
-	public void setTransform(AffineTransform Tx, boolean direct)
+	protected void setTransform(AffineTransform Tx, boolean direct)
 	{
-		gDest.setTransform(Tx, direct);
+		if(direct)
+		{
+			gDest.setTransform(Tx);
+		}
+		else
+		{
+			gDest.transform(Tx);
+		}
 	}
 	
 	public void translate(int x, int y)

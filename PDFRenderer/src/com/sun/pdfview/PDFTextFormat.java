@@ -297,7 +297,7 @@ public class PDFTextFormat
     public void doText(PDFPage cmds, String text)
     {
         XYPointFloat zero = new XYPointFloat();
-        AffineTransform scale = new AffineTransform(fsize, 0, 0, fsize * th, 0, tr);
+        AffineTransform scale = new AffineTransform(fsize * th, 0, 0, fsize, 0, tr);
         AffineTransform at = new AffineTransform();
         
         Vector l = font.getGlyphs(text);

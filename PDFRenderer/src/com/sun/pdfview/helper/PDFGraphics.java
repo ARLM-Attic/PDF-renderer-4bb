@@ -155,6 +155,16 @@ public abstract class PDFGraphics
 		
 		if(graphics == null)
 		{
+			/* 
+			 * TODO: Helper function/class to try and load the fastest/best/most efficient PDFGraphics for use.
+			 * For example, if on OS 6+, OpenVG is very fast and perfect for this operation. So if no pre-made graphics device could be found then it would get 
+			 * here, see it's OS 6+ and load an OpenVG object to do the rendering. If that fails then it can fall back to something else, like SVG, if that fails
+			 * then it can fall back to plain-old Graphics, etc. If nothing can be found or no "wrapper" can be produced, then a standard load operation occurs (below)
+			 */
+		}
+		
+		if(graphics == null)
+		{
 			//Couldn't find a precreated graphics object, so try making one
 			String drawingSystemName = "com.sun.pdfview.helper.graphics.drawing." + drawingDevice.getClass().getName() + "Graphics.GraphicsImpl";
 			try
@@ -178,6 +188,55 @@ public abstract class PDFGraphics
 		//TODO: Testing needs to be done to determine what types the drawing objects will return and how to create the new drawing item. Should be dynamic so if someone creates their own drawing device it can still work.
 		//Remember: http://supportforums.blackberry.com/t5/Java-Development/Rotate-and-scale-bitmaps/ta-p/492524 and Advanced Graphics stuff
 		//Also remember: //#implicit (it's like //#ifdef around the entire file)
+	}
+	
+	/**
+	 * Instruct the graphics system that the specified PDFGraphics is done, and will not be used anymore. Simply a wrapper for the protected {@link #finished()} function.
+	 * @param gfx The {@link PDFGraphics} object that has finished its use.
+	 */
+	public static void finishGraphics(PDFGraphics gfx)
+	{
+		if(gfx != null)
+		{
+			gfx.finished();
+		}
+	}
+	
+	/**
+	 * Calling this function removes the PDFGraphics from the cache and will require it to be recreated for if {@link #createGraphics(Object)} is called with the 
+	 * same graphics object.
+	 */
+	protected final void finished()
+	{
+		//Allow any PDFGraphics object to clean itself up if necessary.
+		onFinished();
+		
+		Vector graphicsObjects;
+		Object obj;
+		if((obj = ResourceManager.singletonStorageGet(GFX_OBJS_ID)) != null)
+		{
+			graphicsObjects = (Vector)obj;
+			
+			//Go through the created PDFGraphics objects and find this PDFGraphics object
+			int c = graphicsObjects.size();
+			for(int i = 0; i < c; i++)
+			{
+				GraphicsObject gfx = (GraphicsObject)graphicsObjects.elementAt(i);
+				if(gfx.isValid() && gfx.graphics == this)
+				{
+					//Found it, simply clear it's reference. We only need to do this because if createGraphics is called, it will cleanup all references for us.
+					gfx.ref.clear();
+					break;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * This function is called before the {@link #finished()} function completes. Use this for any additional cleanup work before finished. Base function doesn't do anything.
+	 */
+	protected void onFinished()
+	{
 	}
 	
 	/**
@@ -278,7 +337,7 @@ public abstract class PDFGraphics
 	 * @param Tx The AffineTransform to set to the device's matrix.
 	 * @param direct true if the matrix will replace the device's matrix, false if it should be combined with the previous matrix.
 	 */
-	public abstract void setTransform(AffineTransform Tx, boolean direct);
+	protected abstract void setTransform(AffineTransform Tx, boolean direct);
 	
 	/**
 	 * Translates the origin of the PDFGraphics context to the point (x, y) in the current coordinate system.
