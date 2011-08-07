@@ -153,15 +153,17 @@ public abstract class PDFGraphics
 			ResourceManager.singletonStorageSet(GFX_OBJS_ID, graphicsObjects);
 		}
 		
+		/* Ignore: This has been moved to the graphics classes themselves.
 		if(graphics == null)
 		{
 			/* 
-			 * TODO: Helper function/class to try and load the fastest/best/most efficient PDFGraphics for use.
+			 * T.O.D.O.: Helper function/class to try and load the fastest/best/most efficient PDFGraphics for use.
 			 * For example, if on OS 6+, OpenVG is very fast and perfect for this operation. So if no pre-made graphics device could be found then it would get 
 			 * here, see it's OS 6+ and load an OpenVG object to do the rendering. If that fails then it can fall back to something else, like SVG, if that fails
 			 * then it can fall back to plain-old Graphics, etc. If nothing can be found or no "wrapper" can be produced, then a standard load operation occurs (below)
-			 */
+			 * /
 		}
+		*/
 		
 		if(graphics == null)
 		{
