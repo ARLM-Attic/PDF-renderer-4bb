@@ -470,6 +470,36 @@ public class AffineTransform
         }
 	}
 	
+	/**
+	 * Returns a 3x3 matrix of the values [M00, M10, M20, M01, M11, M21, M02, M12, M22]
+	 * @return The 3x3 matrix representing this {@link AffineTransform}.
+	 */
+	public float[] getArray()
+	{
+		float[] mat = new float[9];
+		getArray(mat);
+		return mat;
+	}
+	
+	/**
+	 * Returns a 3x3 matrix of the values [M00, M10, M20, M01, M11, M21, M02, M12, M22]
+	 * @param mat A 3x3 matrix buffer to copy into.
+	 */
+	public void getArray(float[] mat)
+	{
+		mat[0] = m00;
+		mat[1] = m10;
+		mat[2] = 0;
+		
+		mat[3] = m01;
+		mat[4] = m11;
+		mat[5] = 0;
+		
+		mat[6] = m02;
+		mat[7] = m12;
+		mat[8] = 1;
+	}
+	
 	public String toString()
 	{
         return getClass().getName() + "[[" + m00 + ", " + m01 + ", " + m02 + "], [" + m10 + ", " + m11 + ", " + m12 + "]]";

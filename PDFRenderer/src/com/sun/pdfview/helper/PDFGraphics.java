@@ -186,7 +186,7 @@ public abstract class PDFGraphics
 		
 		return graphics;
 		
-		//TYPES: RIM Bitmap, RIM Graphics, J2ME Graphics, J2ME Image
+		//TYPES: RIM Bitmap, RIM Graphics, J2ME Graphics, J2ME Image, OpenVG 1.0, OpenVG 1.1
 		//TODO: Testing needs to be done to determine what types the drawing objects will return and how to create the new drawing item. Should be dynamic so if someone creates their own drawing device it can still work.
 		//Remember: http://supportforums.blackberry.com/t5/Java-Development/Rotate-and-scale-bitmaps/ta-p/492524 and Advanced Graphics stuff
 		//Also remember: //#implicit (it's like //#ifdef around the entire file)

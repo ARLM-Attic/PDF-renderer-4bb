@@ -1,9 +1,11 @@
 //#preprocessor
 
+//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0
+
 /*
- * File: GraphicsImpl.java
+ * File: GraphicsImplOpenVG.java
  * Version: 1.0
- * Initial Creation: Jun 28, 2010 11:22:29 AM
+ * Initial Creation: Aug 7, 2011 7:52:43 PM
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +23,8 @@
  */
 package com.sun.pdfview.helper.graphics.drawing.net.rim.device.api.ui.GraphicsInternalGraphics;
 
+import net.rim.device.api.openvg.VG;
+import net.rim.device.api.openvg.VGUtils;
 import net.rim.device.api.system.Bitmap;
 
 import com.sun.pdfview.helper.AffineTransform;
@@ -31,127 +35,126 @@ import com.sun.pdfview.helper.graphics.Geometry;
 import com.sun.pdfview.helper.graphics.Paint;
 
 /**
- * PDFgraphics implementation of Graphics. This is simply a header for multiple graphics systems which can be OS specific, device specific, or just backups in case of failures.
+ * PDFgraphics implementation of Graphics, this is the native Graphics system only.
  */
-public class GraphicsImpl extends PDFGraphics
+final class GraphicsImplOpenVG extends PDFGraphics implements GraphicsImpl.InnerAccess
 {
-	//Leave as a "internal" type so that only sub-PDFGraphics can be used/uses it.
-	interface InnerAccess
+	public static PDFGraphics tryAndGet()
 	{
-		public void setDrawingDeviceIn(Object device);
-		
-		public void setClipIn(Geometry s, boolean direct);
-		
-		public void setTransformIn(AffineTransform Tx, boolean direct);
+		if(VGUtils.isSupported())
+		{
+			//TODO: Do a better check to make sure that OpenVG is actually supported and would work.
+			return new GraphicsImplOpenVG();
+		}
+		return null;
 	}
 	
-	private PDFGraphics subGraphics;
-	
-	public GraphicsImpl()
-	{
-		//Determine the sub-GraphicsImpl to use.
-//#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0
-		//OpenVG
-		this.subGraphics = GraphicsImplOpenVG.tryAndGet();
-//#endif
-//#ifndef BlackBerrySDK4.5.0
-		//SVG
-		if(this.subGraphics == null)
-		{
-			//TODO: Try to create GraphicsImplSVG
-		}
-//#endif
-		
-		//Last case Graphics use
-		if(this.subGraphics == null)
-		{
-			this.subGraphics = new GraphicsImplNative();
-		}
-	}
-	
-	//Some sub-graphics types need to be cleaned up, this facilitates that necessary cleanup.
 	protected void onFinished()
 	{
-		PDFGraphics.finishGraphics(this.subGraphics); //The PDFGraphics was not made with the PDFGraphics function but will still perform the proper operations on it.
+		//TODO: dispose the "actual" PDFGraphics, then clean up the VG graphics
+	}
+	
+	public void setDrawingDeviceIn(Object device)
+	{
+		setDrawingDevice(device);
 	}
 	
 	protected void setDrawingDevice(Object device)
 	{
-		((InnerAccess)this.subGraphics).setDrawingDeviceIn(device);
+		if(device == null)
+		{
+			throw new NullPointerException();
+		}
+		//TODO
 	}
 	
 	public void clear(int x, int y, int width, int height)
 	{
-		this.subGraphics.clear(x, y, width, height);
+		//TODO
 	}
 	
 	public void draw(Geometry s)
 	{
-		this.subGraphics.draw(s);
+		//TODO
 	}
 	
 	public boolean drawImage(Bitmap img, AffineTransform xform)
 	{
-		return this.subGraphics.drawImage(img, xform);
+		//TODO
+		return false;
 	}
 	
 	public void fill(Geometry s)
 	{
-		this.subGraphics.fill(s);
+		//TODO
 	}
 	
 	public Geometry getClip()
 	{
-		return this.subGraphics.getClip();
+		//TODO
+		return null;
 	}
 	
 	public AffineTransform getTransform()
 	{
-		return this.subGraphics.getTransform();
+		//TODO
+		return null;
 	}
 	
 	public void setBackgroundColor(int c)
 	{
-		this.subGraphics.setBackgroundColor(c);
+		//TODO
+	}
+	
+	public void setClipIn(Geometry s, boolean direct)
+	{
+		setClip(s, direct);
 	}
 	
 	protected void setClip(Geometry s, boolean direct)
 	{
-		((InnerAccess)this.subGraphics).setClipIn(s, direct);
+		//TODO
 	}
 	
 	public void setColor(int c)
 	{
-		this.subGraphics.setColor(c);
+		//TODO
 	}
 	
 	public void setComposite(Composite comp)
 	{
-		this.subGraphics.setComposite(comp);
+		//TODO
 	}
 	
 	public void setPaint(Paint paint)
 	{
-		this.subGraphics.setPaint(paint);
+		//TODO
 	}
 	
 	public void setRenderingHint(int hintKey, int hintValue)
 	{
-		this.subGraphics.setRenderingHint(hintKey, hintValue);
+		//TODO
 	}
 	
 	public void setStroke(BasicStroke s)
 	{
-		this.subGraphics.setStroke(s);
+		//TODO
+	}
+	
+	public void setTransformIn(AffineTransform Tx, boolean direct)
+	{
+		setTransform(Tx, direct);
 	}
 	
 	protected void setTransform(AffineTransform Tx, boolean direct)
 	{
-		((InnerAccess)this.subGraphics).setTransformIn(Tx, direct);
+		//TODO
 	}
 	
 	public void translate(int x, int y)
 	{
-		this.subGraphics.translate(x, y);
+		//TODO
 	}
 }
+
+//#endif
