@@ -92,6 +92,11 @@ public abstract class Paint
 			{
 				return color;
 			}
+			
+			boolean isInternal()
+			{
+				return true;
+			}
 		};
 	}
 	
@@ -112,4 +117,9 @@ public abstract class Paint
 	 * Get the Paint object's default color.
 	 */
 	public abstract int getColor();
+	
+	boolean isInternal()
+	{
+		return false;
+	}
 }

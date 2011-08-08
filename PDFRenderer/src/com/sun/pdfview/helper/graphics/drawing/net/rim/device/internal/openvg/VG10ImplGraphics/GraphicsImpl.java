@@ -31,6 +31,7 @@ import com.sun.pdfview.helper.PDFGraphics;
 import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Composite;
 import com.sun.pdfview.helper.graphics.Geometry;
+import com.sun.pdfview.helper.graphics.GfxUtil;
 import com.sun.pdfview.helper.graphics.Paint;
 
 /**
@@ -41,9 +42,25 @@ public class GraphicsImpl extends PDFGraphics
 	protected VG10 destination;
 	
 	private float[] tmpMatrix;
+	private int fillPaint;
+	private int error;
+	private int blendAlpha;
+	
+	public GraphicsImpl()
+	{
+		this.fillPaint = VG10.VG_INVALID_HANDLE;
+		this.error = VG10.VG_NO_ERROR;
+		this.blendAlpha = 255;
+	}
 	
 	protected void onFinished()
 	{
+		if(this.fillPaint != VG10.VG_INVALID_HANDLE)
+		{
+			this.destination.vgDestroyPaint(this.fillPaint);
+			this.fillPaint = VG10.VG_INVALID_HANDLE;
+			this.error = this.destination.vgGetError();
+		}
 		//TODO
 	}
 	
@@ -60,9 +77,15 @@ public class GraphicsImpl extends PDFGraphics
 		setRenderingHint(PDFGraphics.KEY_ALPHA_INTERPOLATION, PDFGraphics.VALUE_ALPHA_INTERPOLATION_DEFAULT);
 	}
 	
-	public void clear(int x, int y, int width, int height)
+	public final void clear(int x, int y, int width, int height)
 	{
-		//TODO
+		if(width >= 0 && height >= 0)
+		{
+			int preValue = this.destination.vgGeti(VG10.VG_MASKING);
+			this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_FALSE);
+			this.destination.vgClear(x, y, width, height);
+			this.destination.vgSeti(VG10.VG_MASKING, preValue);
+		}
 	}
 	
 	public void draw(Geometry s)
@@ -105,15 +128,27 @@ public class GraphicsImpl extends PDFGraphics
 		return null;
 	}
 	
-	public AffineTransform getTransform()
+	public final AffineTransform getTransform()
 	{
-		//TODO
-		return null;
+		if(tmpMatrix == null)
+		{
+			tmpMatrix = new float[9];
+		}
+		this.destination.vgSeti(VG10.VG_MATRIX_MODE, VG10.VG_MATRIX_PATH_USER_TO_SURFACE);
+		this.destination.vgGetMatrix(tmpMatrix, 0);
+		return new AffineTransform(tmpMatrix);
 	}
 	
-	public void setBackgroundColor(int c)
+	public final void setBackgroundColor(int c)
 	{
-		//TODO
+		if(tmpMatrix == null)
+		{
+			tmpMatrix = new float[9];
+		}
+		GfxUtil.getColorAsFloat(c, tmpMatrix); //tmpMatrix = {A, R, G, B, ...}
+		//Color format not in correct order, move it around
+		tmpMatrix[4] = tmpMatrix[0]; //tmpMatrix = {A, R, G, B, A, ...}
+		this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmpMatrix, 1); //tmpMatrix = {A, |R, G, B, A|, ...}
 	}
 	
 	protected void setClip(Geometry s, boolean direct)
@@ -121,29 +156,165 @@ public class GraphicsImpl extends PDFGraphics
 		//TODO
 	}
 	
-	public void setColor(int c)
+	public final void setColor(int c)
 	{
-		//TODO
+		if(this.error == VG10.VG_NO_ERROR)
+		{
+			if(this.fillPaint == VG10.VG_INVALID_HANDLE)
+			{
+				this.fillPaint = this.destination.vgCreatePaint();
+				if(this.fillPaint == VG10.VG_INVALID_HANDLE)
+				{
+					this.error = VG10.VG_OUT_OF_MEMORY_ERROR; //This is the only time something like this can happen
+				}
+				else
+				{
+					this.destination.vgSetParameteri(this.fillPaint, VG10.VG_PAINT_TYPE, VG10.VG_PAINT_TYPE_COLOR);
+				}
+			}
+			if(this.error == VG10.VG_NO_ERROR)
+			{
+				this.destination.vgSetColor(this.fillPaint, c);
+			}
+		}
 	}
 	
 	public void setComposite(Composite comp)
 	{
-		//TODO
+		if(GfxUtil.isCompositeInternal(comp))
+		{
+			int blend = this.destination.vgGeti(VG10.VG_BLEND_MODE);
+			switch(GfxUtil.compositeType(comp))
+			{
+				case Composite.SRC:
+					blend = VG10.VG_BLEND_SRC;
+					break;
+				case Composite.SRC_OVER:
+					blend = VG10.VG_BLEND_SRC_OVER;
+					break;
+			}
+			this.destination.vgSeti(VG10.VG_BLEND_MODE, blend);
+			this.blendAlpha = GfxUtil.compositeSrcAlpha(comp); //XXX See if there is a way to have VG handle this instead of making it a separate value... See if this can even be used.
+		}
+		else
+		{
+			//TODO: Not sure what to do here just yet
+		}
 	}
 	
 	public void setPaint(Paint paint)
 	{
-		//TODO
+		if(GfxUtil.isPaintInternal(paint))
+		{
+			setColor(paint.getColor()); //Internal Paint object is always a solid color
+		}
+		else
+		{
+			//TODO: paint needs to be a pattern
+		}
 	}
 	
 	public void setRenderingHint(int hintKey, int hintValue)
 	{
-		//TODO
+		switch(hintKey)
+		{
+			case PDFGraphics.KEY_ANTIALIASING:
+				switch(hintValue)
+				{
+					case PDFGraphics.VALUE_ANTIALIAS_ON:
+					case PDFGraphics.VALUE_ANTIALIAS_OFF:
+						//TODO: Would this be VG_RENDERING_QUALITY?
+						break;
+					default:
+						return;
+				}
+				break;
+			case PDFGraphics.KEY_INTERPOLATION:
+				switch(hintValue)
+				{
+					case PDFGraphics.VALUE_INTERPOLATION_BICUBIC:
+					case PDFGraphics.VALUE_INTERPOLATION_BILINEAR:
+					case PDFGraphics.VALUE_INTERPOLATION_NEAREST_NEIGHBOR:
+						//TODO
+						break;
+					default:
+						return;
+				}
+				break;
+			case PDFGraphics.KEY_ALPHA_INTERPOLATION:
+				switch(hintValue)
+				{
+					case PDFGraphics.VALUE_ALPHA_INTERPOLATION_QUALITY:
+					case PDFGraphics.VALUE_ALPHA_INTERPOLATION_SPEED:
+						//TODO
+						break;
+					default:
+						return;
+				}
+				break;
+		}
 	}
 	
-	public void setStroke(BasicStroke s)
+	public final void setStroke(BasicStroke s)
 	{
-		//TODO
+		if(this.error == VG10.VG_NO_ERROR)
+		{
+			int cap = this.destination.vgGeti(VG10.VG_STROKE_CAP_STYLE);
+			switch(s.getEndCap())
+			{
+				case BasicStroke.CAP_BUTT:
+					cap = VG10.VG_CAP_BUTT;
+					break;
+				case BasicStroke.CAP_ROUND:
+					cap = VG10.VG_CAP_ROUND;
+					break;
+				case BasicStroke.CAP_SQUARE:
+					cap = VG10.VG_CAP_SQUARE;
+					break;
+			}
+			this.destination.vgSeti(VG10.VG_STROKE_CAP_STYLE, cap);
+			
+			int join = this.destination.vgGeti(VG10.VG_STROKE_JOIN_STYLE);
+			switch(s.getLineJoin())
+			{
+				case BasicStroke.JOIN_BEVEL:
+					join = VG10.VG_JOIN_BEVEL;
+					break;
+				case BasicStroke.JOIN_MITER:
+					join = VG10.VG_JOIN_MITER;
+					break;
+				case BasicStroke.JOIN_ROUND:
+					join = VG10.VG_JOIN_ROUND;
+					break;
+			}
+			this.destination.vgSeti(VG10.VG_STROKE_JOIN_STYLE, join);
+			
+			this.destination.vgSetf(VG10.VG_STROKE_LINE_WIDTH, s.getLineWidth());
+			this.error = this.destination.vgGetError();
+			
+			if(this.error == VG10.VG_NO_ERROR)
+			{
+				this.destination.vgSetf(VG10.VG_STROKE_MITER_LIMIT, s.getMiterLimit());
+				this.error = this.destination.vgGetError();
+				
+				if(this.error == VG10.VG_NO_ERROR)
+				{
+					this.destination.vgSetf(VG10.VG_STROKE_DASH_PHASE, s.getDashPhase());
+					this.error = this.destination.vgGetError();
+					
+					if(this.error == VG10.VG_NO_ERROR)
+					{
+						float[] dash = s.getDashArray();
+						if(dash == null)
+						{
+							dash = new float[0];
+						}
+						this.destination.vgSetfv(VG10.VG_STROKE_DASH_PATTERN, dash.length, dash, 0);
+						this.error = this.destination.vgGetError();
+					}
+				}
+			}
+		}
 	}
 	
 	protected void setTransform(AffineTransform Tx, boolean direct)
@@ -171,10 +342,20 @@ public class GraphicsImpl extends PDFGraphics
 			}
 			else
 			{
-				//Don't need to work about getting the matrix data or creating the array, done already in previous else statement
+				//Don't need to worry about getting the matrix data or creating the array, done already in previous else statement
 				this.destination.vgLoadMatrix(tmpMatrix, 0);
 			}
-			//Ignore Stroke (VG_MATRIX_STROKE_PAINT_TO_USER if needed later)
+			//XXX This might not actually be needed
+			this.destination.vgSeti(VG10.VG_MATRIX_MODE, VG10.VG_MATRIX_STROKE_PAINT_TO_USER); //Stroke paint
+			if(Tx == null)
+			{
+				this.destination.vgLoadIdentity();
+			}
+			else
+			{
+				//Don't need to worry about getting the matrix data or creating the array, done already in previous else statement
+				this.destination.vgLoadMatrix(tmpMatrix, 0);
+			}
 		}
 		else if(Tx != null) //We only want to do this if Tx doesn't equal null. Null means identity, which we don't need to do an operation with.
 		{
@@ -187,7 +368,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	public void translate(int x, int y)
+	public final void translate(int x, int y)
 	{
 		this.destination.vgTranslate(x, y);
 	}

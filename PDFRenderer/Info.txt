@@ -4,6 +4,7 @@ TODO:
 Figure out what happens when the matrix is null in drawImage
 
 Implement OpenVG 1.0 support
+-Determine if the Composite's srcAlpha value can be used
 Implement OpenVG 1.1 support
 
 Make sure that ROP is being used correctly.

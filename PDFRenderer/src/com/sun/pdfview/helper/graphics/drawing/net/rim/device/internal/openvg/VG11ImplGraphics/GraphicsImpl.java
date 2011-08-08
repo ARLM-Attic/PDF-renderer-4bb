@@ -28,7 +28,7 @@ package com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.V
  */
 public class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG10ImplGraphics.GraphicsImpl
 {
-	//setTransform: same as the "ignore stroke" comment, ignore the glyph matrix (VG_MATRIX_GLYPH_USER_TO_SURFACE if needed later). All glyphs are direct geometry, no font/glyph code needed.
+	//setTransform: ignore the glyph matrix (VG_MATRIX_GLYPH_USER_TO_SURFACE if needed later). All glyphs are direct geometry, no font/glyph code needed.
 }
 
 //#endif

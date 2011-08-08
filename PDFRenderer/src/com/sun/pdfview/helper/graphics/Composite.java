@@ -118,9 +118,9 @@ public abstract class Composite
 	 */
 	public abstract void composite(TranslatedBitmap src, TranslatedBitmap dstIn, TranslatedBitmap dstOut);
 	
-	private static class DefaultComposite extends Composite
+	static final class DefaultComposite extends Composite
 	{
-		private int type, srcAlpha/*, dstAlpha*/;
+		int type, srcAlpha/*, dstAlpha*/;
 		
 		public DefaultComposite(int type)
 		{
