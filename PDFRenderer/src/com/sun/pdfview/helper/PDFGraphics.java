@@ -241,6 +241,55 @@ public abstract class PDFGraphics
 	{
 	}
 	
+	//Extra properties
+	/**
+	 * Get if this PDFGraphics has extra properties that need/should be set.
+	 * @return <code>true</code> if extra properties exist, <code>false</code> if otherwise. Default is <code>false</code>.
+	 */
+	public boolean hasExtraProperties()
+	{
+		return false;
+	}
+	
+	/**
+	 * Get if this PDFGraphics is valid and can be used.
+	 * @return <code>true</code> if it is valid, <code>false</code> if otherwise. Default is <code>true</code>.
+	 */
+	public boolean isValid()
+	{
+		return true;
+	}
+	
+	/**
+	 * Set a supported property.
+	 * @param propertyName The name of the property to set.
+	 * @param value The value of the property.
+	 * @return <code>true</code> if the property was set, <code>false</code> if otherwise. Default is <code>false</code>.
+	 */
+	public boolean setProperty(String propertyName, Object value)
+	{
+		return false;
+	}
+	
+	/**
+	 * Get a supported property.
+	 * @param propertyName The name of the property to get.
+	 * @return The value of the property or <code>null</code> if it doesn't exist.
+	 */
+	public Object getProperty(String propertyName)
+	{
+		return null;
+	}
+	
+	/**
+	 * Get all supported properties.
+	 * @return A list of supported properties, or <code>null</code> if no properties exist.
+	 */
+	public String[] getSupportedProperties()
+	{
+		return null;
+	}
+	
 	/**
 	 * Returns a copy of the current <code>Transform</code> in the <code>PDFGraphics</code> context.
 	 * @return The current <code>AffineTransform</code> in the <code>PDFGraphics</code> context.

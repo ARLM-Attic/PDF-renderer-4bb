@@ -23,12 +23,54 @@
  */
 package com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG11ImplGraphics;
 
+import net.rim.device.api.openvg.VG10;
+import net.rim.device.api.openvg.VG11;
+
+import com.sun.pdfview.helper.AffineTransform;
+import com.sun.pdfview.helper.graphics.Geometry;
+
 /**
  * PDFgraphics implementation of VG11.
  */
-public class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG10ImplGraphics.GraphicsImpl
+public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG10ImplGraphics.GraphicsImpl
 {
 	//setTransform: ignore the glyph matrix (VG_MATRIX_GLYPH_USER_TO_SURFACE if needed later). All glyphs are direct geometry, no font/glyph code needed.
+	
+	protected void onFinished()
+	{
+		//We want to clear the mask before "super" tries to destroy the image (a mask before 1.1)
+		if(super.mask != VG10.VG_INVALID_HANDLE)
+		{
+			((VG11)super.destination).vgDestroyMaskLayer(this.mask);
+			this.mask = VG10.VG_INVALID_HANDLE;
+		}
+		super.onFinished();
+	}
+	
+	protected void applyMask(boolean setMask, Geometry s)
+	{
+		VG11 maskVg = (VG11)super.destination;
+		if(setMask)
+		{
+			if(s == null)
+			{
+				//We don't need the mask anymore
+				if(super.mask != VG10.VG_INVALID_HANDLE)
+				{
+					maskVg.vgDestroyMaskLayer(this.mask);
+					this.mask = VG10.VG_INVALID_HANDLE;
+				}
+			}
+			else
+			{
+				//TODO: Set mask
+			}
+		}
+		else
+		{
+			//TODO: Append mask
+		}
+	}
 }
 
 //#endif

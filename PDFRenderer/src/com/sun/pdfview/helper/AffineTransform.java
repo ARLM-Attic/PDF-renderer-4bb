@@ -280,6 +280,11 @@ public class AffineTransform
 		scale.y = m11;
 	}
 	
+	public boolean isInvertable()
+	{
+		return Math.abs(getDeterminant()) >= ZERO;
+	}
+	
 	/**
 	 * Inverts this matrix and stores the result in dst.
 	 * @param dst A matrix to store the invert of this matrix in.
