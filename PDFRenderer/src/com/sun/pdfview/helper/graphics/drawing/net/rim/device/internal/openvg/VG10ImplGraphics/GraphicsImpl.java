@@ -23,6 +23,11 @@
  */
 package com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG10ImplGraphics;
 
+import javax.microedition.khronos.egl.EGL10;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+import javax.microedition.khronos.egl.EGLSurface;
+
 import net.rim.device.api.openvg.VG10;
 import net.rim.device.api.openvg.VGUtils;
 import net.rim.device.api.system.Bitmap;
@@ -48,8 +53,9 @@ public class GraphicsImpl extends PDFGraphics
 	protected float[] tmpMatrix;
 	private int fillPaint;
 	private int patternFillImage;
-	private int error;
-	private int blendAlpha;
+	protected int error;
+	protected float blendAlpha;
+	protected float blendAlphaScale;
 	
 	protected int mask;
 	protected Geometry clipObj; //It would be preferred to simply get the Clip from VG but there doesn't appear to be a way to get the clip
@@ -64,7 +70,8 @@ public class GraphicsImpl extends PDFGraphics
 	{
 		this.fillPaint = VG10.VG_INVALID_HANDLE;
 		this.error = VG10.VG_NO_ERROR;
-		this.blendAlpha = 255;
+		this.blendAlpha = 1;
+		this.blendAlphaScale = 1;
 	}
 	
 	protected void onFinished()
@@ -122,6 +129,7 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			contextLost = false;
 			this.destination = (VG10)value;
+			this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
 			return true;
 		}
 		return false;
@@ -152,7 +160,7 @@ public class GraphicsImpl extends PDFGraphics
 	}
 	
 	//Set default rendering hints
-	private void setDefaults()
+	private final void setDefaults()
 	{
 		setRenderingHint(PDFGraphics.KEY_ANTIALIASING, PDFGraphics.VALUE_ANTIALIAS_DEFAULT);
 		setRenderingHint(PDFGraphics.KEY_INTERPOLATION, PDFGraphics.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
@@ -166,6 +174,7 @@ public class GraphicsImpl extends PDFGraphics
 			throw new NullPointerException();
 		}
 		this.destination = (VG10)device; //Everything is based of VG10 so it can be used as the base.
+		this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
 	}
 	
 	public final void clear(int x, int y, int width, int height)
@@ -174,10 +183,13 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			if(width >= 0 && height >= 0)
 			{
-				int preValue = this.destination.vgGeti(VG10.VG_MASKING);
+				bind();
+				
 				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_FALSE);
 				this.destination.vgClear(x, y, width, height);
-				this.destination.vgSeti(VG10.VG_MASKING, preValue);
+				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
+				
+				this.releaseHandler.run();
 			}
 		}
 	}
@@ -201,7 +213,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	public boolean drawImage(Bitmap img, AffineTransform xform)
+	public final boolean drawImage(Bitmap img, AffineTransform xform)
 	{
 		boolean drawn = false;
 		if(isValid())
@@ -258,7 +270,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	protected int generatePath(Geometry geo)
+	protected final int generatePath(Geometry geo)
 	{
 		//TODO
 		return VG10.VG_INVALID_HANDLE;
@@ -314,10 +326,10 @@ public class GraphicsImpl extends PDFGraphics
 			
 			//VG 1.0 can do masking by using images. Instead of creating a "mask" (a la 1.1 >), you create an image, draw to the image, then apply that as a mask.
 			boolean set = false;
+			Geometry mod = null;
 			if(s == null)
 			{
 				this.clipObj = null;
-				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_FALSE);
 				set = true;
 			}
 			else
@@ -326,31 +338,31 @@ public class GraphicsImpl extends PDFGraphics
 				this.destination.vgSeti(VG10.VG_MATRIX_MODE, VG10.VG_MATRIX_FILL_PAINT_TO_USER);
 				this.destination.vgGetMatrix(tmpMatrix, 0);
 				
-				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
-				
 				//Modify the clip
-				s = s.createTransformedShape(new AffineTransform(tmpMatrix));
+				mod = s.createTransformedShape(new AffineTransform(tmpMatrix));
 				if(direct || this.clipObj == null)
 				{
-					this.clipObj = s;
+					this.clipObj = mod;
 					set = true;
 				}
 				else
 				{
-					this.clipObj.append(s, false);
+					this.clipObj.append(mod, false);
 				}
 			}
-			applyMask(set, s);
+			applyMask(set, false, s);
 			
 			this.releaseHandler.run();
 		}
 	}
 	
-	protected void applyMask(boolean setMask, Geometry s)
+	protected void applyMask(boolean setMask, boolean alphaAdjust, Geometry org)
 	{
+		//XXX Outdated, see VG11 impl for up to date version
+		
 		if(setMask)
 		{
-			if(s == null)
+			if(org == null)
 			{
 				//We don't need the mask anymore
 				if(this.mask != VG10.VG_INVALID_HANDLE)
@@ -358,6 +370,18 @@ public class GraphicsImpl extends PDFGraphics
 					this.destination.vgDestroyImage(this.mask);
 					this.mask = VG10.VG_INVALID_HANDLE;
 				}
+				
+				//Query to get the width and height of the current drawing surface
+				EGL10 egl = (EGL10)EGLContext.getEGL();
+				EGLDisplay cDisp = egl.eglGetCurrentDisplay();
+				EGLSurface cSurf = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
+				int[] values = new int[2];
+				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_HEIGHT, values);
+				values[1] = values[0];
+				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
+				
+				//Now clear the mask itself, this way that when the mask is recreated (if) that it won't have old data in it
+				this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_FILL_MASK, 0, 0, values[0], values[1]);
 			}
 			else
 			{
@@ -426,7 +450,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	public void setComposite(Composite comp)
+	public final void setComposite(Composite comp)
 	{
 		if(isValid())
 		{
@@ -445,7 +469,13 @@ public class GraphicsImpl extends PDFGraphics
 						break;
 				}
 				this.destination.vgSeti(VG10.VG_BLEND_MODE, blend);
-				this.blendAlpha = GfxUtil.compositeSrcAlpha(comp); //XXX See if there is a way to have VG handle this instead of making it a separate value... See if this can even be used.
+				float blendA = GfxUtil.compositeSrcAlphaF(comp);
+				if(blendA != this.blendAlpha)
+				{
+					this.blendAlphaScale = blendA / this.blendAlpha;
+					this.blendAlpha = blendA;
+					applyMask(true, true, clipObj);
+				}
 			}
 			else
 			{
@@ -457,7 +487,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	public void setPaint(Paint paint)
+	public final void setPaint(Paint paint)
 	{
 		if(paint != null && isValid())
 		{
@@ -637,7 +667,7 @@ public class GraphicsImpl extends PDFGraphics
 		}
 	}
 	
-	protected void setTransform(AffineTransform Tx, boolean direct)
+	protected final void setTransform(AffineTransform Tx, boolean direct)
 	{
 		if(isValid())
 		{

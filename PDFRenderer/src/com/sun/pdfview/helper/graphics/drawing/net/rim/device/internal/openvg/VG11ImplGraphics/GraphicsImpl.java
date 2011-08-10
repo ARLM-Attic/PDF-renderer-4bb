@@ -23,6 +23,11 @@
  */
 package com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG11ImplGraphics;
 
+import javax.microedition.khronos.egl.EGL10;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+import javax.microedition.khronos.egl.EGLSurface;
+
 import net.rim.device.api.openvg.VG10;
 import net.rim.device.api.openvg.VG11;
 
@@ -47,28 +52,114 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 		super.onFinished();
 	}
 	
-	protected void applyMask(boolean setMask, Geometry s)
+	protected void applyMask(boolean setMask, boolean alphaAdjust, Geometry org)
 	{
 		VG11 maskVg = (VG11)super.destination;
-		if(setMask)
+		
+		//Query to get the width and height of the current drawing surface
+		EGL10 egl = (EGL10)EGLContext.getEGL();
+		EGLDisplay cDisp = egl.eglGetCurrentDisplay();
+		EGLSurface cSurf = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
+		int[] values = new int[2];
+		egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_HEIGHT, values);
+		values[1] = values[0];
+		egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
+		
+		if(alphaAdjust)
 		{
-			if(s == null)
+			if(super.blendAlphaScale != 1) //We only want to change if something has actually changed
 			{
-				//We don't need the mask anymore
+				//Create the mask layer if it doesn't exist
+				if(super.mask == VG10.VG_INVALID_HANDLE)
+				{
+					super.mask = maskVg.vgCreateMaskLayer(values[0], values[1]);
+					if(super.mask == VG10.VG_INVALID_HANDLE)
+					{
+						super.error = VG10.VG_OUT_OF_MEMORY_ERROR;
+					}
+				}
+				
 				if(super.mask != VG10.VG_INVALID_HANDLE)
 				{
-					maskVg.vgDestroyMaskLayer(this.mask);
-					this.mask = VG10.VG_INVALID_HANDLE;
+					if(super.blendAlphaScale < 1)
+					{
+						//Set the mask layer to just the blendAlpha
+						maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlphaScale, 1), 0));
+						
+						//Update the mask
+						maskVg.vgMask(super.mask, VG10.VG_INTERSECT_MASK, 0, 0, values[0], values[1]);
+					}
+					else
+					{
+						//TODO: Figure out how to scale up since masks cannot have values greater then 1.
+					}
 				}
-			}
-			else
-			{
-				//TODO: Set mask
 			}
 		}
 		else
 		{
-			//TODO: Append mask
+			if(setMask)
+			{
+				if(org == null)
+				{
+					//Create the mask layer if it doesn't exist
+					if(super.mask == VG10.VG_INVALID_HANDLE)
+					{
+						super.mask = maskVg.vgCreateMaskLayer(values[0], values[1]);
+						if(super.mask == VG10.VG_INVALID_HANDLE)
+						{
+							super.error = VG10.VG_OUT_OF_MEMORY_ERROR;
+						}
+					}
+					
+					if(super.mask != VG10.VG_INVALID_HANDLE)
+					{
+						//Set the mask layer to just the blendAlpha
+						maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlpha, 1), 0));
+						
+						//Apply the mask
+						maskVg.vgMask(super.mask, VG10.VG_SET_MASK, 0, 0, values[0], values[1]);
+					}
+				}
+				else
+				{
+					//Create and set the mask layer to the blendAlpha
+					if(super.mask == VG10.VG_INVALID_HANDLE)
+					{
+						super.mask = maskVg.vgCreateMaskLayer(values[0], values[1]);
+						if(super.mask != VG10.VG_INVALID_HANDLE)
+						{
+							maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlpha, 1), 0));
+						}
+						else
+						{
+							super.error = VG10.VG_OUT_OF_MEMORY_ERROR;
+						}
+					}
+					
+					//Clear the mask
+					maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
+					
+					//Set the mask
+					int path = super.generatePath(org);
+					if(path != VG10.VG_INVALID_HANDLE)
+					{
+						maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH | VG10.VG_STROKE_PATH, VG10.VG_SET_MASK);
+						
+						maskVg.vgDestroyPath(path);
+					}
+					
+					//Modify the mask so that it takes blendAlpha into account
+					if(super.mask != VG10.VG_INVALID_HANDLE)
+					{
+						maskVg.vgMask(super.mask, VG10.VG_INTERSECT_MASK, 0, 0, values[0], values[1]);
+					}
+				}
+			}
+			else
+			{
+				//TODO: Append mask
+			}
 		}
 	}
 }

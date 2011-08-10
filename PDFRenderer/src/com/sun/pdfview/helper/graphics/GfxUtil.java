@@ -64,4 +64,9 @@ public final class GfxUtil
 	{
 		return ((Composite.DefaultComposite)com).srcAlpha;
 	}
+	
+	public static float compositeSrcAlphaF(Composite com)
+	{
+		return compositeSrcAlpha(com) * INV_FF;
+	}
 }

@@ -170,6 +170,7 @@ final class GraphicsImplOpenVG extends PDFGraphics implements GraphicsImpl.Inner
 //#endif
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1 | BlackBerrySDK5.0.0
             EGL10.EGL_ALPHA_SIZE,		8,
+            EGL12.EGL_ALPHA_MASK_SIZE,	8,	//Need this to be able to use masks. It's the bit-depth for the mask layer
             EGL10.EGL_SURFACE_TYPE,		surfaceType,
             EGL12.EGL_RENDERABLE_TYPE,	EGL12.EGL_OPENVG_BIT,
             EGL10.EGL_NONE
