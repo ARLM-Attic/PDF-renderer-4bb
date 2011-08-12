@@ -23,11 +23,15 @@
  */
 package com.sun.pdfview.helper.graphics.drawing.net.rim.device.internal.openvg.VG10ImplGraphics;
 
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 
+import net.rim.device.api.opengles.GLUtils;
 import net.rim.device.api.openvg.VG10;
 import net.rim.device.api.openvg.VGUtils;
 import net.rim.device.api.system.Bitmap;
@@ -42,6 +46,7 @@ import com.sun.pdfview.helper.graphics.GfxUtil;
 import com.sun.pdfview.helper.graphics.Paint;
 import com.sun.pdfview.helper.graphics.PaintGenerator;
 import com.sun.pdfview.helper.graphics.TranslatedBitmap;
+import com.sun.pdfview.helper.graphics.Geometry.Enumeration;
 
 /**
  * PDFgraphics implementation of VG10.
@@ -201,13 +206,18 @@ public class GraphicsImpl extends PDFGraphics
 		this.contextLost = false;
 	}
 	
-	public void draw(Geometry s)
+	public final void draw(Geometry s)
 	{
 		if(isValid())
 		{
 			bind();
 			
-			//TODO
+			int path = generatePath(s);
+			if(path != VG10.VG_INVALID_HANDLE)
+			{
+				draw(path, VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
+				this.destination.vgDestroyPath(path);
+			}
 			
 			this.releaseHandler.run();
 		}
@@ -258,13 +268,18 @@ public class GraphicsImpl extends PDFGraphics
 		return drawn;
 	}
 	
-	public void fill(Geometry s)
+	public final void fill(Geometry s)
 	{
 		if(isValid())
 		{
 			bind();
 			
-			//TODO
+			int path = generatePath(s);
+			if(path != VG10.VG_INVALID_HANDLE)
+			{
+				draw(path, VG10.VG_FILL_PATH | VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
+				this.destination.vgDestroyPath(path);
+			}
 			
 			this.releaseHandler.run();
 		}
@@ -272,8 +287,98 @@ public class GraphicsImpl extends PDFGraphics
 	
 	protected final int generatePath(Geometry geo)
 	{
-		//TODO
-		return VG10.VG_INVALID_HANDLE;
+		Geometry.Enumeration en = geo.getPathEnumerator(null);
+		float[] coords = new float[6];
+		
+		//First count everything
+		int cmdCount = 0;
+		int coordCount = 0;
+		while (!en.isDone())
+		{
+            switch (en.currentSegment(coords))
+            {
+	            case Enumeration.SEG_CUBICTO:
+	            	coordCount += 2; //6 coords
+	            case Enumeration.SEG_QUADTO:
+	            	coordCount += 2; //4 coords
+	            case Enumeration.SEG_MOVETO:
+	            case Enumeration.SEG_LINETO:
+	            	coordCount += 2; //2 coords
+	            case Enumeration.SEG_CLOSE:
+	            	cmdCount++;
+	                break;
+                default:
+                	cmdCount = -1;
+                	break;
+            }
+            if(cmdCount == -1)
+            {
+            	break; //Error
+            }
+            en.next();
+        }
+		
+		int path = VG10.VG_INVALID_HANDLE;
+		if(cmdCount > 0 && coordCount > 0)
+		{
+			path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_ALL);
+			
+			if(path != VG10.VG_INVALID_HANDLE) //We don't want to do extra work if we can't create the path
+			{
+				ByteBuffer cmdBuffer = ByteBuffer.allocateDirect(cmdCount); //Always use native Buffers. Do this because OpenVG is supported 6.0 and higher, NIO was introduced in 5.0.
+				FloatBuffer coordBuffer = ByteBuffer.allocateDirect(coordCount * 4).asFloatBuffer();
+				
+				en = geo.getPathEnumerator(null);
+				while (!en.isDone())
+				{
+					switch (en.currentSegment(coords))
+		            {
+			            case Enumeration.SEG_MOVETO:
+			            	cmdBuffer.put(VG10.VG_MOVE_TO_ABS);
+			            	coordBuffer.put(coords, 0, 2);
+			            	break;
+			            case Enumeration.SEG_LINETO:
+			            	cmdBuffer.put(VG10.VG_LINE_TO_ABS);
+			            	coordBuffer.put(coords, 0, 2);
+			                break;
+			            case Enumeration.SEG_QUADTO:
+			            	cmdBuffer.put(VG10.VG_QUAD_TO_ABS);
+			            	coordBuffer.put(coords, 0, 4);
+			                break;
+			            case Enumeration.SEG_CUBICTO:
+			            	cmdBuffer.put(VG10.VG_CUBIC_TO_ABS);
+			            	coordBuffer.put(coords, 0, 6);
+			                break;
+			            case Enumeration.SEG_CLOSE:
+			            	cmdBuffer.put(VG10.VG_CLOSE_PATH);
+			                break;
+		            }
+		            en.next();
+		        }
+				cmdBuffer.flip();
+				coordBuffer.flip();
+				
+				this.destination.vgAppendPathData(path, cmdBuffer, coordBuffer);
+				
+				GLUtils.freeBuffer(cmdBuffer);
+				GLUtils.freeBuffer(coordBuffer);
+			}
+		}
+		return path;
+	}
+	
+	protected final void draw(int path, int paintModes, int fillMode)
+	{
+		this.destination.vgSeti(VG10.VG_FILL_RULE, fillMode);
+		if((paintModes & VG10.VG_FILL_PATH) != 0)
+		{
+			this.destination.vgSetPaint(this.fillPaint, VG10.VG_FILL_PATH);
+		}
+		if((paintModes & VG10.VG_STROKE_PATH) != 0)
+		{
+			this.destination.vgSetPaint(this.fillPaint, VG10.VG_STROKE_PATH);
+		}
+		this.destination.vgDrawPath(path, paintModes);
 	}
 	
 	public final Geometry getClip()
@@ -311,7 +416,8 @@ public class GraphicsImpl extends PDFGraphics
 			}
 			GfxUtil.getColorAsFloat(c, tmpMatrix); //tmpMatrix = {A, R, G, B, ...}
 			//Color format not in correct order, move it around
-			tmpMatrix[4] = tmpMatrix[0]; //tmpMatrix = {A, R, G, B, A, ...}
+			//tmpMatrix[4] = tmpMatrix[0]; //tmpMatrix = {A, R, G, B, A, ...}
+			tmpMatrix[4] = 1; //Though using the alpha from the color would be preferred, it doesn't always include alpha.
 			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmpMatrix, 1); //tmpMatrix = {A, |R, G, B, A|, ...}
 			
 			this.releaseHandler.run();

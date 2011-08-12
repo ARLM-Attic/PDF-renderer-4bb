@@ -359,9 +359,9 @@ public class Geometry
 	public void append(Geometry g, boolean connect)
 	{
 		Enumeration path = g.getPathEnumerator(null);
+		float[] coords = new float[6];
 		while (!path.isDone())
 		{
-            float[] coords = new float[6];
             switch (path.currentSegment(coords))
             {
 	            case Enumeration.SEG_MOVETO:
