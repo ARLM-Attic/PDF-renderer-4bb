@@ -64,12 +64,11 @@ public class GraphicsImpl extends PDFGraphics
 	
 	protected int mask;
 	protected Geometry clipObj; //It would be preferred to simply get the Clip from VG but there doesn't appear to be a way to get the clip
+	protected boolean updateMask;
 	
 	private Runnable bindHandler;
 	protected Runnable releaseHandler;
 	private boolean contextLost;
-	
-	private static final int PATTERN_IMG_SIZE = 256;
 	
 	public GraphicsImpl()
 	{
@@ -77,6 +76,7 @@ public class GraphicsImpl extends PDFGraphics
 		this.error = VG10.VG_NO_ERROR;
 		this.blendAlpha = 1;
 		this.blendAlphaScale = 1;
+		this.updateMask = false;
 	}
 	
 	protected void onFinished()
@@ -130,11 +130,12 @@ public class GraphicsImpl extends PDFGraphics
 			}
 			return true;
 		}
-		else if(propertyName.equals("VG") && contextLost)
+		else if(propertyName.equals("VG") && this.contextLost)
 		{
-			contextLost = false;
+			this.contextLost = false;
 			this.destination = (VG10)value;
-			this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
+			this.updateMask = true;
+			//this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE); //It's assumed that loss of context would not mean that parameters would be erased.
 			return true;
 		}
 		return false;
@@ -191,7 +192,7 @@ public class GraphicsImpl extends PDFGraphics
 				bind();
 				
 				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_FALSE);
-				this.destination.vgClear(x, y, width, height);
+				this.destination.vgClear(x, y, width, height); //OpenVG Specification 1.1 says that vgClear is affected by scissoring and masking but not clipping.
 				this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
 				
 				this.releaseHandler.run();
@@ -321,7 +322,7 @@ public class GraphicsImpl extends PDFGraphics
 		int path = VG10.VG_INVALID_HANDLE;
 		if(cmdCount > 0 && coordCount > 0)
 		{
-			path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_ALL);
+			path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_APPEND_TO);
 			
 			if(path != VG10.VG_INVALID_HANDLE) //We don't want to do extra work if we can't create the path
 			{
@@ -362,6 +363,8 @@ public class GraphicsImpl extends PDFGraphics
 				
 				GLUtils.freeBuffer(cmdBuffer);
 				GLUtils.freeBuffer(coordBuffer);
+				
+				this.destination.vgRemovePathCapabilities(path, VG10.VG_PATH_CAPABILITY_APPEND_TO); //Make the path read-only
 			}
 		}
 		return path;
@@ -464,39 +467,57 @@ public class GraphicsImpl extends PDFGraphics
 	
 	protected void applyMask(boolean setMask, boolean alphaAdjust, Geometry org)
 	{
-		//XXX Outdated, see VG11 impl for up to date version
-		
-		if(setMask)
+		//If the mask needs to be updated (resize, lost context, etc.), free the old mask and remake it
+		if(this.updateMask)
 		{
-			if(org == null)
+			if(this.mask != VG10.VG_INVALID_HANDLE)
 			{
-				//We don't need the mask anymore
-				if(this.mask != VG10.VG_INVALID_HANDLE)
-				{
-					this.destination.vgDestroyImage(this.mask);
-					this.mask = VG10.VG_INVALID_HANDLE;
-				}
-				
-				//Query to get the width and height of the current drawing surface
-				EGL10 egl = (EGL10)EGLContext.getEGL();
-				EGLDisplay cDisp = egl.eglGetCurrentDisplay();
-				EGLSurface cSurf = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
-				int[] values = new int[2];
-				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_HEIGHT, values);
-				values[1] = values[0];
-				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
-				
-				//Now clear the mask itself, this way that when the mask is recreated (if) that it won't have old data in it
-				this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_FILL_MASK, 0, 0, values[0], values[1]);
+				this.destination.vgDestroyImage(this.mask);
+				this.mask = VG10.VG_INVALID_HANDLE;
 			}
-			else
+			this.updateMask = false;
+		}
+		
+		//Create and set the mask layer to the blendAlpha
+		if(this.mask == VG10.VG_INVALID_HANDLE)
+		{
+			//Query to get the width and height of the current drawing surface
+			EGL10 egl = (EGL10)EGLContext.getEGL();
+			EGLDisplay cDisp = egl.eglGetCurrentDisplay();
+			EGLSurface cSurf = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
+			int[] values = new int[2];
+			egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_HEIGHT, values);
+			values[1] = values[0];
+			egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
+			
+			this.mask = this.destination.vgCreateImage(VG10.VG_sL_8, values[0], values[1], this.destination.vgGeti(VG10.VG_IMAGE_QUALITY));
+			if(this.mask == VG10.VG_INVALID_HANDLE)
 			{
-				//TODO: Set mask
+				this.error = VG10.VG_OUT_OF_MEMORY_ERROR;
 			}
 		}
-		else
+		
+		if(this.mask != VG10.VG_INVALID_HANDLE)
 		{
-			//TODO: Append mask
+			int w = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_WIDTH);
+			int h = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_HEIGHT);
+			
+			//Set the mask
+			int path = this.generatePath(org);
+			if(path != VG10.VG_INVALID_HANDLE)
+			{
+				//TODO: (Equivalent) maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
+				
+				this.destination.vgDestroyPath(path);
+			}
+			
+			//Clear the mask
+			this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, w, h);
+			
+			//TODO: (Equivalent) maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlpha, 1), 0));
+			
+			//Modify the mask so that it takes blendAlpha into account
+			this.destination.vgMask(this.mask, VG10.VG_INTERSECT_MASK, 0, 0, w, h);
 		}
 	}
 	
@@ -605,6 +626,15 @@ public class GraphicsImpl extends PDFGraphics
 			}
 			else
 			{
+				//Get width and height
+				EGL10 egl = (EGL10)EGLContext.getEGL();
+				EGLDisplay cDisp = egl.eglGetCurrentDisplay();
+				EGLSurface cSurf = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
+				int[] values = new int[2];
+				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_HEIGHT, values);
+				values[1] = values[0];
+				egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
+				
 				if(this.patternFillImage != VG10.VG_INVALID_HANDLE)
 				{
 					this.destination.vgDestroyImage(this.patternFillImage);
@@ -635,7 +665,7 @@ public class GraphicsImpl extends PDFGraphics
 				
 				//Get the image
 				PaintGenerator gen = paint.createGenerator(new AffineTransform(tmpMatrix));
-				TranslatedBitmap img = gen.getBitmap(0, 0, PATTERN_IMG_SIZE, PATTERN_IMG_SIZE); //Is there a better way to determine the size of the paint so that it can be used more efficiently?
+				TranslatedBitmap img = gen.getBitmap(0, 0, values[0], values[1]);
 				gen.dispose();
 				
 				//Set the paint image

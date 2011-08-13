@@ -4,10 +4,8 @@ TODO:
 Figure out what happens when the matrix is null in drawImage
 
 Implement OpenVG 1.0 support
-Implement OpenVG 1.1 support
 
-90% sure that there is an Invert-Y axis parameter that can be used so that inverting the scale is not needed in OpenVG
-
+Fix GestureField use (since it seems "zooming in" is causing the image to zoom out)
 Make sure that ROP is being used correctly.
 
 Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).

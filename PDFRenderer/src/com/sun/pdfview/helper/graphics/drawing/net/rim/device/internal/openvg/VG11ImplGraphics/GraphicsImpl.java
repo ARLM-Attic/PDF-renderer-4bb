@@ -54,6 +54,9 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 	
 	protected void applyMask(boolean setMask, boolean alphaAdjust, Geometry org)
 	{
+		//The mathematical operations available in OpenVG are not suited to handle masks with a global alpha.
+		//This means that we need to do the inefficient method of masking in order to accomplish tasks
+		
 		VG11 maskVg = (VG11)super.destination;
 		
 		//Query to get the width and height of the current drawing surface
@@ -65,6 +68,50 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 		values[1] = values[0];
 		egl.eglQuerySurface(cDisp, cSurf, EGL10.EGL_WIDTH, values);
 		
+		//If the mask needs to be updated (resize, lost context, etc.), free the old mask and remake it
+		if(super.updateMask)
+		{
+			if(super.mask != VG10.VG_INVALID_HANDLE)
+			{
+				maskVg.vgDestroyMaskLayer(super.mask);
+				super.mask = VG10.VG_INVALID_HANDLE;
+			}
+			super.updateMask = false;
+		}
+		
+		//Create and set the mask layer to the blendAlpha
+		if(super.mask == VG10.VG_INVALID_HANDLE)
+		{
+			super.mask = maskVg.vgCreateMaskLayer(values[0], values[1]);
+			if(super.mask == VG10.VG_INVALID_HANDLE)
+			{
+				super.error = VG10.VG_OUT_OF_MEMORY_ERROR;
+			}
+		}
+		if(super.mask != VG10.VG_INVALID_HANDLE)
+		{
+			maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlpha, 1), 0));
+		}
+		
+		//Clear the mask
+		maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
+		
+		//Set the mask
+		int path = super.generatePath(org);
+		if(path != VG10.VG_INVALID_HANDLE)
+		{
+			maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
+			
+			maskVg.vgDestroyPath(path);
+		}
+		
+		//Modify the mask so that it takes blendAlpha into account
+		if(super.mask != VG10.VG_INVALID_HANDLE)
+		{
+			maskVg.vgMask(super.mask, VG10.VG_INTERSECT_MASK, 0, 0, values[0], values[1]);
+		}
+		
+		/* OLD CODE-Kept because it was close to what the goal of the masking operations were to achieve with better efficiency.
 		if(alphaAdjust)
 		{
 			if(super.blendAlphaScale != 1) //We only want to change if something has actually changed
@@ -144,7 +191,7 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 					int path = super.generatePath(org);
 					if(path != VG10.VG_INVALID_HANDLE)
 					{
-						maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH | VG10.VG_STROKE_PATH, VG10.VG_SET_MASK);
+						maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
 						
 						maskVg.vgDestroyPath(path);
 					}
@@ -158,9 +205,11 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 			}
 			else
 			{
-				//TODO: Append mask
+				//Append the mask
+				//TODO
 			}
 		}
+		*/
 	}
 }
 

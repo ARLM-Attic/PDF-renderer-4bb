@@ -32,6 +32,7 @@ import javax.microedition.khronos.egl.EGLSurface;
 
 import net.rim.device.api.egl.EGL12;
 import net.rim.device.api.openvg.VG;
+import net.rim.device.api.openvg.VG10;
 import net.rim.device.api.openvg.VGUtils;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Graphics;
@@ -305,6 +306,8 @@ final class GraphicsImplOpenVG extends PDFGraphics implements GraphicsImpl.Inner
 	
 	private void releaseTarget()
     {
+		((VG10)this.vg).vgFinish();
+		
 		bindDepth--;
 		if(bindDepth == 0)
 		{

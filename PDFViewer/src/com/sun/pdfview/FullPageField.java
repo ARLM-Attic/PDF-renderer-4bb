@@ -69,7 +69,8 @@ public class FullPageField extends GestureField
 		int palpha = graphics.getGlobalAlpha();
 		
 		XYRect extent = this.getExtent();
-		if(super.gestureProcessing) //Simple way to check if a PDF is in use
+		if(super.gestureProcessing && //Simple way to check if a PDF is in use
+				this.drawnPage != null) //Only draw if a page exists
 		{
 			//Clear the background
 			graphics.setColor(Color.GRAY);
