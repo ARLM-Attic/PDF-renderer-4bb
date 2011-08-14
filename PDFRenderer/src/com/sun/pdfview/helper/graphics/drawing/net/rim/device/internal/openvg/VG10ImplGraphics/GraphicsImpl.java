@@ -70,6 +70,7 @@ public class GraphicsImpl extends PDFGraphics
 	private Runnable bindHandler;
 	protected Runnable releaseHandler;
 	private boolean contextLost;
+	private int aaHint, alphaInterpHint;
 	
 	public GraphicsImpl()
 	{
@@ -177,8 +178,11 @@ public class GraphicsImpl extends PDFGraphics
 	}
 	
 	//Set default rendering hints
-	private final void setDefaults()
+	private void setDefaults()
 	{
+		this.aaHint = PDFGraphics.VALUE_ANTIALIAS_ON;
+		this.alphaInterpHint = PDFGraphics.VALUE_ALPHA_INTERPOLATION_QUALITY;
+		
 		setRenderingHint(PDFGraphics.KEY_ANTIALIASING, PDFGraphics.VALUE_ANTIALIAS_DEFAULT);
 		setRenderingHint(PDFGraphics.KEY_INTERPOLATION, PDFGraphics.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		setRenderingHint(PDFGraphics.KEY_ALPHA_INTERPOLATION, PDFGraphics.VALUE_ALPHA_INTERPOLATION_DEFAULT);
@@ -532,46 +536,78 @@ public class GraphicsImpl extends PDFGraphics
 		
 		if(this.mask != VG10.VG_INVALID_HANDLE)
 		{
+			//Not any way efficient but the best way to do the equivalent of vgRenderToMask.
+			//This is because there doesn't seem to be a way to set an image to be the drawing surface unless a full VG object was created for the image and the path was drawn to it.
+			
 			int w = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_WIDTH);
 			int h = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_HEIGHT);
 			
-			//Clear the mask
-			this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, w, h);
+			//Backup the clear-color
+			float[] clearColor = new float[8];
+			this.destination.vgGetfv(VG10.VG_CLEAR_COLOR, 4, clearColor, 0); //Get previous clear-color
 			
-			//Set the mask
-			generatePath(org);
-			if(path != VG10.VG_INVALID_HANDLE)
+			//Clear the mask
+			if(this.clipObj != null)
 			{
-				//TODO: (Equivalent) maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
-				/* Possible operation:
-				 * 1. Create tmp image
-				 * 2. Copy full drawing surface to tmp image
-				 * 3. Backup clear-color
-				 * 4. Set generic clear-color
-				 * 5. Clear drawing surface
-				 * 6. Reset clear-color
-				 * 7. Create tmp paint objects
-				 * 8. Set tmp paint objects to current paint surfaces
-				 * 9. Draw path (no stroke) to drawing surface
-				 * 10. Copy drawing surface to "mask"
-				 * 11. Redraw the original drawing surface (stored in tmp image) to drawing surface
-				 * 12. Draw "mask" to actual drawing surface mask
-				 * 13. Clear resources
-				 * 
-				 * Not any way efficient but the best way to do the equivalent of vgRenderToMask.
-				 * 
-				 * This is because there doesn't seem to be a way to set an image to be the drawing surface unless a full VG object was created for the image and the path was drawn to it.
-				 */
+				this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, w, h);
+				
+				//Set the mask
+				generatePath(this.clipObj);
+				if(path != VG10.VG_INVALID_HANDLE)
+				{
+					//Create a temp image to save the current drawing surface
+					int surfaceBackup = this.destination.vgCreateImage(VG10.VG_sARGB_8888, w, h, VG10.VG_IMAGE_QUALITY_BETTER);
+					if(surfaceBackup != VG10.VG_INVALID_HANDLE)
+					{
+						//Copy drawing surface to temp image
+						this.destination.vgGetPixels(surfaceBackup, 0, 0, 0, 0, w, h);
+						
+						//Clear the surface
+						clearColor[4] = clearColor[5] = clearColor[6] = clearColor[7] = 0; //Black (no drawing)
+						this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, clearColor, 4);
+						this.destination.vgClear(0, 0, w, h);
+						
+						//Create temp paint objects
+						clearColor[4] = clearColor[5] = clearColor[6] = clearColor[7] = 1; //White (draw everything)
+						int maskPaint = this.destination.vgCreatePaint();
+						if(maskPaint != VG10.VG_INVALID_HANDLE)
+						{
+							this.destination.vgSetParameteri(maskPaint, VG10.VG_PAINT_TYPE, VG10.VG_PAINT_TYPE_COLOR);
+							this.destination.vgSetParameterfv(maskPaint, VG10.VG_PAINT_COLOR, 4, clearColor, 4);
+							
+							//Draw mask to drawing surface
+							draw(this.path, VG10.VG_FILL_PATH, this.clipObj.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
+							
+							//Copy drawing surface to mask
+							this.destination.vgGetPixels(this.mask, 0, 0, 0, 0, w, h);
+							
+							//Draw mask
+							this.destination.vgMask(this.mask, VG10.VG_SET_MASK, 0, 0, w, h);
+						}
+						
+						//Restore the drawing (make sure masking is off first)
+						this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_FALSE);
+						this.destination.vgSetPixels(0, 0, surfaceBackup, 0, 0, w, h);
+						this.destination.vgSeti(VG10.VG_MASKING, VG10.VG_TRUE);
+						
+						//Clear resources
+						this.destination.vgDestroyImage(surfaceBackup);
+					}
+				}
+				finishPath();
 			}
-			finishPath();
+			else
+			{
+				this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_FILL_MASK, 0, 0, w, h); //This sets everything to be drawn
+			}
 			
 			//Need to temporarily set the clear color in order to set the mask
-			float[] tmp = new float[8];
-			tmp[4] = tmp[5] = tmp[6] = tmp[7] = Math.max(Math.min(this.blendAlpha, 1), 0);
-			this.destination.vgGetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 0); //Get previous clear-color
-			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 4); //Set the "new" clear-color
+			clearColor[4] = clearColor[5] = clearColor[6] = clearColor[7] = Math.max(Math.min(this.blendAlpha, 1), 0);
+			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, clearColor, 4); //Set the "new" clear-color
 			this.destination.vgClearImage(this.mask, 0, 0, w, h); //Clear the mask
-			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 0); //Restore previous clear-color
+			
+			//Restore previous clear-color
+			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, clearColor, 0);
 			
 			//Modify the mask so that it takes blendAlpha into account
 			this.destination.vgMask(this.mask, VG10.VG_INTERSECT_MASK, 0, 0, w, h);
@@ -751,44 +787,70 @@ public class GraphicsImpl extends PDFGraphics
 			
 			switch(hintKey)
 			{
+				/* Combined quality setting
+				 * (KEY_ANTIALIASING = VALUE_ANTIALIAS_ON) & (KEY_ALPHA_INTERPOLATION = VALUE_ALPHA_INTERPOLATION_QUALITY) == VG_RENDERING_QUALITY_BETTER
+				 * (KEY_ANTIALIASING = VALUE_ANTIALIAS_OFF) & (KEY_ALPHA_INTERPOLATION = VALUE_ALPHA_INTERPOLATION_QUALITY) == VG_RENDERING_QUALITY_FASTER
+				 * (KEY_ANTIALIASING = VALUE_ANTIALIAS_ON) & (KEY_ALPHA_INTERPOLATION = VALUE_ALPHA_INTERPOLATION_SPEED) == VG_RENDERING_QUALITY_FASTER
+				 * (KEY_ANTIALIASING = VALUE_ANTIALIAS_OFF) & (KEY_ALPHA_INTERPOLATION = VALUE_ALPHA_INTERPOLATION_SPEED) == VG_RENDERING_QUALITY_NONANTIALIASED
+				 */
 				case PDFGraphics.KEY_ANTIALIASING:
 					switch(hintValue)
 					{
 						case PDFGraphics.VALUE_ANTIALIAS_ON:
 						case PDFGraphics.VALUE_ANTIALIAS_OFF:
-							//TODO: Would this be VG_RENDERING_QUALITY?
+							this.aaHint = hintValue;
 							break;
-						default:
-							return;
 					}
-					break;
-				case PDFGraphics.KEY_INTERPOLATION:
-					switch(hintValue)
-					{
-						case PDFGraphics.VALUE_INTERPOLATION_BICUBIC:
-						case PDFGraphics.VALUE_INTERPOLATION_BILINEAR:
-						case PDFGraphics.VALUE_INTERPOLATION_NEAREST_NEIGHBOR:
-							//TODO
-							break;
-						default:
-							return;
-					}
+					setRenderingQuaility();
 					break;
 				case PDFGraphics.KEY_ALPHA_INTERPOLATION:
 					switch(hintValue)
 					{
 						case PDFGraphics.VALUE_ALPHA_INTERPOLATION_QUALITY:
 						case PDFGraphics.VALUE_ALPHA_INTERPOLATION_SPEED:
-							//TODO
+							this.alphaInterpHint = hintValue;
 							break;
-						default:
-							return;
+					}
+					setRenderingQuaility();
+					break;
+					
+				//Dedicated quality function
+				case PDFGraphics.KEY_INTERPOLATION:
+					switch(hintValue)
+					{
+						case PDFGraphics.VALUE_INTERPOLATION_BICUBIC:
+							this.destination.vgSeti(VG10.VG_IMAGE_QUALITY, VG10.VG_IMAGE_QUALITY_BETTER);
+							break;
+						case PDFGraphics.VALUE_INTERPOLATION_BILINEAR:
+							this.destination.vgSeti(VG10.VG_IMAGE_QUALITY, VG10.VG_IMAGE_QUALITY_FASTER);
+							break;
+						case PDFGraphics.VALUE_INTERPOLATION_NEAREST_NEIGHBOR:
+							this.destination.vgSeti(VG10.VG_IMAGE_QUALITY, VG10.VG_IMAGE_QUALITY_NONANTIALIASED);
+							break;
 					}
 					break;
 			}
 			
 			this.releaseHandler.run();
 		}
+	}
+	
+	private void setRenderingQuaility()
+	{
+		int quality;
+		if(this.aaHint == PDFGraphics.VALUE_ANTIALIAS_ON && this.alphaInterpHint == PDFGraphics.VALUE_ALPHA_INTERPOLATION_QUALITY)
+		{
+			quality = VG10.VG_RENDERING_QUALITY_BETTER;
+		}
+		else if(this.aaHint == PDFGraphics.VALUE_ANTIALIAS_OFF && this.alphaInterpHint == PDFGraphics.VALUE_ALPHA_INTERPOLATION_SPEED)
+		{
+			quality = VG10.VG_RENDERING_QUALITY_NONANTIALIASED;
+		}
+		else
+		{
+			quality = VG10.VG_RENDERING_QUALITY_FASTER;
+		}
+		this.destination.vgSeti(VG10.VG_RENDERING_QUALITY, quality);
 	}
 	
 	public final void setStroke(BasicStroke s)

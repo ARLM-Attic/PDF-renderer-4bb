@@ -11,6 +11,7 @@ Make sure that ROP is being used correctly.
 Find out how static final treats Objects (Strings are known). Adjust code accordingly (such as next todo).
 
 Determine if CCITTFaxDecoder.java can use static final instead of simply static
+Rewrite of some graphics functions in VG impl so that blend-alpha isn't applied on the mask, but instead on the fill paint (how was this missed?)
 
 It seems almost like CalGreyScale likes to have a blue-tint associated with it, figure out how to correct this when converting images (or maybe just use the native grey colorspace)
 

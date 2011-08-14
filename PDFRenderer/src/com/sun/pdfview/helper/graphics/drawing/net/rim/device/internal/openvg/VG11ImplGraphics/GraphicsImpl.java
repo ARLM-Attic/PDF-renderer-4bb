@@ -31,7 +31,6 @@ import javax.microedition.khronos.egl.EGLSurface;
 import net.rim.device.api.openvg.VG10;
 import net.rim.device.api.openvg.VG11;
 
-import com.sun.pdfview.helper.AffineTransform;
 import com.sun.pdfview.helper.graphics.Geometry;
 
 /**
@@ -88,15 +87,22 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 		}
 		
 		//Clear the mask
-		maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
-		
-		//Set the mask
-		super.generatePath(org);
-		if(super.path != VG10.VG_INVALID_HANDLE)
+		if(super.clipObj != null)
 		{
-			maskVg.vgRenderToMask(super.path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
+			maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
+			
+			//Set the mask
+			super.generatePath(super.clipObj);
+			if(super.path != VG10.VG_INVALID_HANDLE)
+			{
+				maskVg.vgRenderToMask(super.path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
+			}
+			super.finishPath();
 		}
-		super.finishPath();
+		else
+		{
+			maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_FILL_MASK, 0, 0, values[0], values[1]); //This sets everything to be drawn
+		}
 		
 		//Modify the mask so that it takes blendAlpha into account
 		if(super.mask != VG10.VG_INVALID_HANDLE)
