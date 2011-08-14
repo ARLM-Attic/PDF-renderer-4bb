@@ -58,6 +58,7 @@ public class GraphicsImpl extends PDFGraphics
 	protected float[] tmpMatrix;
 	private int fillPaint;
 	private int patternFillImage;
+	protected int path;
 	protected int error;
 	protected float blendAlpha;
 	protected float blendAlphaScale;
@@ -79,8 +80,13 @@ public class GraphicsImpl extends PDFGraphics
 		this.updateMask = false;
 	}
 	
-	protected void onFinished()
+	protected final void onFinished()
 	{
+		if(this.path != VG10.VG_INVALID_HANDLE)
+		{
+			this.destination.vgDestroyPath(this.path);
+			this.path = VG10.VG_INVALID_HANDLE;
+		}
 		if(this.fillPaint != VG10.VG_INVALID_HANDLE)
 		{
 			this.destination.vgDestroyPaint(this.fillPaint);
@@ -91,13 +97,18 @@ public class GraphicsImpl extends PDFGraphics
 			this.destination.vgDestroyImage(this.patternFillImage);
 			this.patternFillImage = VG10.VG_INVALID_HANDLE;
 		}
+		freeMask();
+		this.bindHandler = null;
+		this.releaseHandler = null;
+	}
+	
+	protected void freeMask()
+	{
 		if(this.mask != VG10.VG_INVALID_HANDLE)
 		{
 			this.destination.vgDestroyImage(this.mask);
 			this.mask = VG10.VG_INVALID_HANDLE;
 		}
-		this.bindHandler = null;
-		this.releaseHandler = null;
 	}
 	
 	public final boolean hasExtraProperties()
@@ -213,12 +224,12 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			bind();
 			
-			int path = generatePath(s);
-			if(path != VG10.VG_INVALID_HANDLE)
+			generatePath(s);
+			if(this.path != VG10.VG_INVALID_HANDLE)
 			{
-				draw(path, VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
-				this.destination.vgDestroyPath(path);
+				draw(this.path, VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
 			}
+			finishPath();
 			
 			this.releaseHandler.run();
 		}
@@ -275,18 +286,18 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			bind();
 			
-			int path = generatePath(s);
-			if(path != VG10.VG_INVALID_HANDLE)
+			generatePath(s);
+			if(this.path != VG10.VG_INVALID_HANDLE)
 			{
-				draw(path, VG10.VG_FILL_PATH | VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
-				this.destination.vgDestroyPath(path);
+				draw(this.path, VG10.VG_FILL_PATH | VG10.VG_STROKE_PATH, s.getWindingRule() == Geometry.WIND_EVEN_ODD ? VG10.VG_EVEN_ODD : VG10.VG_NON_ZERO);
 			}
+			finishPath();
 			
 			this.releaseHandler.run();
 		}
 	}
 	
-	protected final int generatePath(Geometry geo)
+	protected final void generatePath(Geometry geo)
 	{
 		Geometry.Enumeration en = geo.getPathEnumerator(null);
 		float[] coords = new float[6];
@@ -319,12 +330,14 @@ public class GraphicsImpl extends PDFGraphics
             en.next();
         }
 		
-		int path = VG10.VG_INVALID_HANDLE;
 		if(cmdCount > 0 && coordCount > 0)
 		{
-			path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_APPEND_TO);
+			if(this.path == VG10.VG_INVALID_HANDLE)
+			{
+				this.path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_APPEND_TO);
+			}
 			
-			if(path != VG10.VG_INVALID_HANDLE) //We don't want to do extra work if we can't create the path
+			if(this.path != VG10.VG_INVALID_HANDLE) //We don't want to do extra work if we can't create the path
 			{
 				ByteBuffer cmdBuffer = ByteBuffer.allocateDirect(cmdCount); //Always use native Buffers. Do this because OpenVG is supported 6.0 and higher, NIO was introduced in 5.0.
 				FloatBuffer coordBuffer = ByteBuffer.allocateDirect(coordCount * 4).asFloatBuffer();
@@ -359,15 +372,39 @@ public class GraphicsImpl extends PDFGraphics
 				cmdBuffer.flip();
 				coordBuffer.flip();
 				
-				this.destination.vgAppendPathData(path, cmdBuffer, coordBuffer);
+				this.destination.vgAppendPathData(this.path, cmdBuffer, coordBuffer);
+				
+				if((this.error = this.destination.vgGetError()) != VG10.VG_NO_ERROR)
+				{
+					//An error occurred, destroy the path and recreate it
+					this.destination.vgDestroyPath(this.path);
+					this.path = this.destination.vgCreatePath(VG10.VG_PATH_FORMAT_STANDARD, VG10.VG_PATH_DATATYPE_F, 1, 0, cmdCount, coordCount, VG10.VG_PATH_CAPABILITY_APPEND_TO);
+					
+					if(this.path != VG10.VG_INVALID_HANDLE)
+					{
+						this.destination.vgAppendPathData(this.path, cmdBuffer, coordBuffer);
+					}
+					
+					//If this doesn't work then it won't work and should be ignored
+				}
 				
 				GLUtils.freeBuffer(cmdBuffer);
 				GLUtils.freeBuffer(coordBuffer);
 				
-				this.destination.vgRemovePathCapabilities(path, VG10.VG_PATH_CAPABILITY_APPEND_TO); //Make the path read-only
+				if(this.path != VG10.VG_INVALID_HANDLE)
+				{
+					this.destination.vgRemovePathCapabilities(this.path, VG10.VG_PATH_CAPABILITY_APPEND_TO); //Make the path read-only
+				}
 			}
 		}
-		return path;
+	}
+	
+	protected final void finishPath()
+	{
+		if(this.path != VG10.VG_INVALID_HANDLE)
+		{
+			this.destination.vgClearPath(this.path, VG10.VG_PATH_CAPABILITY_APPEND_TO);
+		}
 	}
 	
 	protected final void draw(int path, int paintModes, int fillMode)
@@ -470,11 +507,7 @@ public class GraphicsImpl extends PDFGraphics
 		//If the mask needs to be updated (resize, lost context, etc.), free the old mask and remake it
 		if(this.updateMask)
 		{
-			if(this.mask != VG10.VG_INVALID_HANDLE)
-			{
-				this.destination.vgDestroyImage(this.mask);
-				this.mask = VG10.VG_INVALID_HANDLE;
-			}
+			this.freeMask();
 			this.updateMask = false;
 		}
 		
@@ -502,19 +535,43 @@ public class GraphicsImpl extends PDFGraphics
 			int w = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_WIDTH);
 			int h = this.destination.vgGetParameteri(this.mask, VG10.VG_IMAGE_HEIGHT);
 			
-			//Set the mask
-			int path = this.generatePath(org);
-			if(path != VG10.VG_INVALID_HANDLE)
-			{
-				//TODO: (Equivalent) maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
-				
-				this.destination.vgDestroyPath(path);
-			}
-			
 			//Clear the mask
 			this.destination.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, w, h);
 			
-			//TODO: (Equivalent) maskVg.vgFillMaskLayer(super.mask, 0, 0, values[0], values[1], Math.max(Math.min(super.blendAlpha, 1), 0));
+			//Set the mask
+			generatePath(org);
+			if(path != VG10.VG_INVALID_HANDLE)
+			{
+				//TODO: (Equivalent) maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
+				/* Possible operation:
+				 * 1. Create tmp image
+				 * 2. Copy full drawing surface to tmp image
+				 * 3. Backup clear-color
+				 * 4. Set generic clear-color
+				 * 5. Clear drawing surface
+				 * 6. Reset clear-color
+				 * 7. Create tmp paint objects
+				 * 8. Set tmp paint objects to current paint surfaces
+				 * 9. Draw path (no stroke) to drawing surface
+				 * 10. Copy drawing surface to "mask"
+				 * 11. Redraw the original drawing surface (stored in tmp image) to drawing surface
+				 * 12. Draw "mask" to actual drawing surface mask
+				 * 13. Clear resources
+				 * 
+				 * Not any way efficient but the best way to do the equivalent of vgRenderToMask.
+				 * 
+				 * This is because there doesn't seem to be a way to set an image to be the drawing surface unless a full VG object was created for the image and the path was drawn to it.
+				 */
+			}
+			finishPath();
+			
+			//Need to temporarily set the clear color in order to set the mask
+			float[] tmp = new float[8];
+			tmp[4] = tmp[5] = tmp[6] = tmp[7] = Math.max(Math.min(this.blendAlpha, 1), 0);
+			this.destination.vgGetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 0); //Get previous clear-color
+			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 4); //Set the "new" clear-color
+			this.destination.vgClearImage(this.mask, 0, 0, w, h); //Clear the mask
+			this.destination.vgSetfv(VG10.VG_CLEAR_COLOR, 4, tmp, 0); //Restore previous clear-color
 			
 			//Modify the mask so that it takes blendAlpha into account
 			this.destination.vgMask(this.mask, VG10.VG_INTERSECT_MASK, 0, 0, w, h);

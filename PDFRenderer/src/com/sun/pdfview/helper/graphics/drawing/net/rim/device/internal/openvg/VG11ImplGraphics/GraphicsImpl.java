@@ -41,15 +41,13 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 {
 	//setTransform: ignore the glyph matrix (VG_MATRIX_GLYPH_USER_TO_SURFACE if needed later). All glyphs are direct geometry, no font/glyph code needed.
 	
-	protected void onFinished()
+	protected void freeMask()
 	{
-		//We want to clear the mask before "super" tries to destroy the image (a mask before 1.1)
 		if(super.mask != VG10.VG_INVALID_HANDLE)
 		{
 			((VG11)super.destination).vgDestroyMaskLayer(this.mask);
 			this.mask = VG10.VG_INVALID_HANDLE;
 		}
-		super.onFinished();
 	}
 	
 	protected void applyMask(boolean setMask, boolean alphaAdjust, Geometry org)
@@ -71,11 +69,7 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 		//If the mask needs to be updated (resize, lost context, etc.), free the old mask and remake it
 		if(super.updateMask)
 		{
-			if(super.mask != VG10.VG_INVALID_HANDLE)
-			{
-				maskVg.vgDestroyMaskLayer(super.mask);
-				super.mask = VG10.VG_INVALID_HANDLE;
-			}
+			this.freeMask();
 			super.updateMask = false;
 		}
 		
@@ -97,13 +91,12 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 		maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
 		
 		//Set the mask
-		int path = super.generatePath(org);
-		if(path != VG10.VG_INVALID_HANDLE)
+		super.generatePath(org);
+		if(super.path != VG10.VG_INVALID_HANDLE)
 		{
-			maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
-			
-			maskVg.vgDestroyPath(path);
+			maskVg.vgRenderToMask(super.path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
 		}
+		super.finishPath();
 		
 		//Modify the mask so that it takes blendAlpha into account
 		if(super.mask != VG10.VG_INVALID_HANDLE)
@@ -188,13 +181,12 @@ public final class GraphicsImpl extends com.sun.pdfview.helper.graphics.drawing.
 					maskVg.vgMask(VG10.VG_INVALID_HANDLE, VG10.VG_CLEAR_MASK, 0, 0, values[0], values[1]);
 					
 					//Set the mask
-					int path = super.generatePath(org);
-					if(path != VG10.VG_INVALID_HANDLE)
+					super.generatePath(org);
+					if(super.path != VG10.VG_INVALID_HANDLE)
 					{
-						maskVg.vgRenderToMask(path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
-						
-						maskVg.vgDestroyPath(path);
+						maskVg.vgRenderToMask(super.path, VG10.VG_FILL_PATH, VG10.VG_SET_MASK);
 					}
+					super.finishPath();
 					
 					//Modify the mask so that it takes blendAlpha into account
 					if(super.mask != VG10.VG_INVALID_HANDLE)
