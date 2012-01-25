@@ -72,14 +72,14 @@ public class PDFDocCharsetEncoder extends CharsetEncoder
     static
     {
     	int len = PDFStringUtil.PDF_DOC_ENCODING_MAP.length;
-        for (byte i = 0; i < len; ++i)
+        for (int i = 0; i < len; ++i)
         {
             final short c = (short)PDFStringUtil.PDF_DOC_ENCODING_MAP[i];
             final boolean identical = (c == i);
             IDENT_PDF_DOC_ENCODING_MAP[i] = identical;
             if (!identical)
             {
-                EXTENDED_TO_PDF_DOC_ENCODING_MAP.put(new Short(c), new Byte(i));
+                EXTENDED_TO_PDF_DOC_ENCODING_MAP.put(new Short(c), new Byte((byte)i));
             }
         }
     }

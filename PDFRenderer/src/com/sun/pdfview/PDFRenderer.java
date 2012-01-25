@@ -39,6 +39,8 @@ import com.sun.pdfview.helper.XYRectFloat;
 import com.sun.pdfview.helper.graphics.BasicStroke;
 import com.sun.pdfview.helper.graphics.Composite;
 import com.sun.pdfview.helper.graphics.Geometry;
+import com.sun.pdfview.helper.graphics.GfxUtil;
+import com.sun.pdfview.helper.graphics.Paint;
 
 import com.sun.pdfview.i18n.ResourcesResource;
 
@@ -690,8 +692,15 @@ public class PDFRenderer extends BaseWatchable implements Runnable
      */
     private Bitmap getMaskedImage(Bitmap bi)
     {
+    	final Paint paint = state.fillPaint.getPaint();
+    	if(!GfxUtil.isPaintInternal(paint))
+    	{
+    		// TODO - support other types of Paint
+            return bi;
+    	}
+    	
         // get the color of the current paint
-        int col = state.fillPaint.getPaint().getColor();
+        int col = paint.getColor();
         
         // format as 8 bits each of ARGB
         int paintColor = PDFUtil.Color_getAlpha(col) << 24;

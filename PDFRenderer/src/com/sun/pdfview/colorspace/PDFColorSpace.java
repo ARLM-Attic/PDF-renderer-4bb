@@ -60,9 +60,11 @@ public class PDFColorSpace
     private static final long PDF_CS_GRAY_ID = 0x4A042B32B235E300L;
     private static final long PDF_CS_RGB_ID = 0x4CB4C8A6537D5C18L;
     private static final long PDF_CS_CMYK_ID = 0x8ED55C5DB58272C0L;
+    private static final long PDF_CS_YCCK_ID = 0x63454268D512235CL;
     //private static PDFColorSpace graySpace;
     private static PDFColorSpace rgbSpace;
     private static PDFColorSpace cmykSpace;
+    private static PDFColorSpace ycckSpace;
     
     /** the pattern space */
     private static final long PDF_PATTERY_SPACE_ID = 0x22CCE51F780E6E80L;
@@ -96,6 +98,13 @@ public class PDFColorSpace
     		ResourceManager.singletonStorageSet(PDF_CS_CMYK_ID, cmykSpace);
     	}
     	
+    	ycckSpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_CS_YCCK_ID);
+    	if(ycckSpace == null)
+    	{
+    		ycckSpace = new PDFColorSpace(new YCCKColorSpace());
+    		ResourceManager.singletonStorageSet(PDF_CS_YCCK_ID, ycckSpace);
+    	}
+    	
     	patternSpace = (PDFColorSpace)ResourceManager.singletonStorageGet(PDF_PATTERY_SPACE_ID);
     	if(patternSpace == null)
     	{
@@ -127,7 +136,7 @@ public class PDFColorSpace
      * create a PDFColorSpace based on a Java ColorSpace
      * @param cs the Java ColorSpace
      */
-    protected PDFColorSpace(ColorSpace cs)
+    public PDFColorSpace(ColorSpace cs)
     {
         this.cs = cs;
     }

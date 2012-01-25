@@ -45,6 +45,13 @@ public class GraphicsImpl extends PDFGraphics
 		public void setTransformIn(AffineTransform Tx, boolean direct);
 	}
 	
+	private static boolean[] allowAccess;
+	
+	static
+	{
+		//TODO
+	}
+	
 	private PDFGraphics subGraphics;
 	
 	public GraphicsImpl()
@@ -67,6 +74,36 @@ public class GraphicsImpl extends PDFGraphics
 		{
 			this.subGraphics = new GraphicsImplNative();
 		}
+	}
+	
+	public boolean hasExtraProperties()
+	{
+		//TODO
+		return false;
+	}
+	
+	public boolean isValid()
+	{
+		//TODO
+		return true;
+	}
+	
+	public boolean setProperty(String propertyName, Object value)
+	{
+		//TODO
+		return false;
+	}
+	
+	public Object getProperty(String propertyName)
+	{
+		//TODO
+		return null;
+	}
+	
+	public String[] getSupportedProperties()
+	{
+		//TODO
+		return null;
 	}
 	
 	//Some sub-graphics types need to be cleaned up, this facilitates that necessary cleanup.

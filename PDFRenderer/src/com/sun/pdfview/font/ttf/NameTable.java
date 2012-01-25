@@ -32,6 +32,7 @@ import com.sun.pdfview.helper.nio.ByteBuffer;
 //#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Vector;
 
 import com.sun.pdfview.helper.PDFUtil;
 
@@ -359,6 +360,16 @@ public class NameTable extends TrueTypeTable
         }
         
         return charset;
+    }
+    
+    public Vector getNames()
+    {
+    	Vector v = new Vector(records.size());
+    	for(Enumeration en = records.elements(); en.hasMoreElements();)
+    	{
+    		v.addElement(en.nextElement());
+    	}
+    	return PDFUtil.readonlyVector(v);
     }
     
     /** Get a pretty string */

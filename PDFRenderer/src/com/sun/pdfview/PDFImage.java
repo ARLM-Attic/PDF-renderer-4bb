@@ -74,6 +74,8 @@ import com.sun.pdfview.helper.PDFUtil;
 
 /**
  * Encapsulates a PDF Image
+ * 
+ * This is based off, but not a "real" port of PDFImage from PDF Renderer (for J2SE) as many classes and operations are either consolidated and/or unavailable.
  */
 public class PDFImage
 {

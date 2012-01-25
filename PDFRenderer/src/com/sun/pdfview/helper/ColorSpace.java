@@ -47,6 +47,8 @@ public abstract class ColorSpace
 	public static final int TYPE_GRAY = 6;
 	/** Any of the family of CMYK color spaces.*/
 	public static final int TYPE_CMYK = 9;
+	/** Generic 4 component color spaces.*/
+    public static final int TYPE_4CLR = 14;
 	
 	private static final long CS_GRAY_ID = 0x1AE1A3BDC83FEE96L;
 	private static final long CS_CIEXYZ_ID = 0x6296029173B47810L;

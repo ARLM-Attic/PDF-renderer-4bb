@@ -33,6 +33,7 @@ import com.sun.pdfview.helper.nio.ByteBuffer;
 //#endif
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Vector;
 
 import net.rim.device.api.ui.FontFamily;
 //#ifndef BlackBerrySDK4.5.0 | BlackBerrySDK4.6.0 | BlackBerrySDK4.6.1 | BlackBerrySDK4.7.0 | BlackBerrySDK4.7.1
@@ -89,6 +90,19 @@ public class TrueTypeFont
         parseDirectories(inBuf, numTables, font);
         
         return font;
+    }
+    
+    public Vector getNames()
+    {
+        NameTable table = (NameTable)getTable("name");
+        if (table != null)
+        {
+            return table.getNames();
+        }
+        else
+        {
+            return PDFUtil.readonlyVector(new Vector());
+        }
     }
     
     /**
@@ -305,10 +319,15 @@ public class TrueTypeFont
         
         int pos = data.position();
         
-        // special adjustment for head table
-        if (tagString.equals("head"))
+        // special adjustment for head table: always treat the 4-bytes
+        // starting at byte 8 as 0x0000. This the checkSumAdjustment so
+        // must be ignored here (see the TTF spec)
+        if (tagString.equals ("head"))
         {
-            data.putInt(8, 0);
+            sum += data.getInt();
+            sum += data.getInt();
+            // consume the uncounted checkSumAdjustment int
+            data.getInt();
         }
         
         int nlongs = (data.remaining() + 3) / 4;

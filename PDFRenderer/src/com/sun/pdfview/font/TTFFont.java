@@ -23,6 +23,13 @@
 package com.sun.pdfview.font;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Vector;
+
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
+
+import net.rim.device.api.io.IOUtilities;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.font.ttf.AdobeGlyphList;
@@ -50,6 +57,11 @@ public class TTFFont extends OutlineFont
     /** the number of units per em in the font */
     private float unitsPerEm;
     
+    public TTFFont (String baseFont, PDFObject fontObj, PDFFontDescriptor descriptor) throws IOException
+    {
+    	this(baseFont, fontObj, descriptor, null);
+    }
+    
     /**
      * create a new TrueTypeFont object based on a description of the
      * font from the PDF file.  If the description happens to contain
@@ -57,7 +69,7 @@ public class TTFFont extends OutlineFont
      * true type font.  Otherwise, parse the description for key information
      * and use that to generate an appropriate font.
      */
-    public TTFFont(String baseFont, PDFObject fontObj, PDFFontDescriptor descriptor) throws IOException
+    public TTFFont(String baseFont, PDFObject fontObj, PDFFontDescriptor descriptor, String fontFile) throws IOException
     {
         super(baseFont, fontObj, descriptor);
         
@@ -84,9 +96,39 @@ public class TTFFont extends OutlineFont
         // {
         //    ex.printStackTrace();
         // }
-        if (ttfObj != null)
+        if (ttfObj != null || fontFile != null)
         {
-            font = TrueTypeFont.parseFont(ttfObj.getStreamBuffer());
+        	if (ttfObj != null)
+        	{
+        		font = TrueTypeFont.parseFont(ttfObj.getStreamBuffer());
+        	}
+        	else
+        	{
+        		final FileConnection fcon = (FileConnection)Connector.open(fontFile, Connector.READ);
+        		InputStream in = null;
+        		try
+        		{
+        			in = fcon.openInputStream();
+        			font = TrueTypeFont.parseFont(IOUtilities.streamToBytes(in));
+        		}
+        		finally
+        		{
+        			try
+        			{
+        				in.close();
+        			}
+        			catch(Exception e)
+        			{
+        			}
+        			try
+        			{
+        				fcon.close();
+        			}
+        			catch(Exception e)
+        			{
+        			}
+        		}
+        	}
             // read the units per em from the head table
             HeadTable head = (HeadTable)font.getTable("head");
             unitsPerEm = head.getUnitsPerEm();
@@ -96,6 +138,11 @@ public class TTFFont extends OutlineFont
             font = null;
         }
 //        System.out.println ("TTFFont: ttfObj: " + ttfObj + ", fontName: " + fontName);
+    }
+    
+    public Vector getNames()
+    {
+        return font.getNames();
     }
     
     /**

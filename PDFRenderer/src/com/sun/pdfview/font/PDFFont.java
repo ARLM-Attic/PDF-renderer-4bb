@@ -186,6 +186,9 @@ public abstract class PDFFont
             }
             else
             {
+            	//NOTE: The J2SE version of PDF Renderer has an additional call to try and manually find the font. This is not done here because there is no 
+            	//	access to the built in fonts.
+            	
                 // fake it with a built-in font
                 font = new BuiltinFont(baseFont, obj, descriptor);
             }
