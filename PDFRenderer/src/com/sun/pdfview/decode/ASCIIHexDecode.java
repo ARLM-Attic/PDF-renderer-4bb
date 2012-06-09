@@ -113,13 +113,13 @@ public class ASCIIHexDecode
         while (true)
         {
         	int first = readHexDigit();
-        	int second = readHexDigit();
-        	
-            if (first == -1)
+        	if (first == -1)
             {
                 break;
             }
-            else if (second == -1)
+        	int second = readHexDigit();
+        	
+            if (second == -1)
             {
             	baos.write((byte) (first << 4));
             	break;
@@ -130,7 +130,6 @@ public class ASCIIHexDecode
             }
         }
         
-        //Is it not required to close a ByteArray____Stream?
         return ByteBuffer.wrap(baos.toByteArray());
     }
     
